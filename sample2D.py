@@ -213,7 +213,8 @@ def sampleMassArray(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.14, _fEPC18 = 0.
 
 	return m, c_ipc15, c_ipc18, c_x17
 
-def sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.14, _fEPC18 = 0.48, _Nx17 = 500, year = 2021):
+def sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.14, _fEPC18 = 0.48, _Nx17 = 500, year = 2021, SEED = 0):
+	np.random.seed(SEED)
 	# Sample number of events
 	Nipc15 = np.random.poisson(_Nbkg*_fIPC15)
 	Nipc18 = np.random.poisson(_Nbkg*_fIPC18)
@@ -409,7 +410,7 @@ def sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.14, _fEPC18 = 0.48, _
 	e_tot = np.concatenate((e_tot, e_x17))
 
 	# Write to file
-	with uproot.recreate("/meg/home/dalmaso_g/offline/analyzer/X17/X17MC%d.root" %(year)) as file:
+	with uproot.recreate("/meg/home/dalmaso_g/offline/analyzer/X17/X17MC%d_s%d.root" %(year, SEED)) as file:
 		run = np.zeros(len(m_tot)) + year*1000
 		event = np.linspace(0, len(m_tot)-1, len(m_tot))
 		year = np.zeros(len(m_tot)) + year
