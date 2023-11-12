@@ -18,7 +18,7 @@ MCFile = 'X17reference.root'
 
 dthMin = 20
 dthMax = 180
-dthnBins = 40
+dthnBins = 20
 
 esumMin = 10
 esumMax = 24
@@ -172,137 +172,31 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False):
     return -2*LL
 
 ########################################################################
-# Get data and MC
-hMX, binsXMCx, binsXMCy = loadMC(MCFile)
-hdata, binsdatax, binsdatay = loadData(dataFile)
+# Maximize likelihood
 
-nMCXtot = hMX[0].sum()
-nMCXe15 = hMX[1].sum()
-nMCXi15 = hMX[2].sum()
-nMCXe18 = hMX[3].sum()
-nMCXi18 = hMX[4].sum()
+def getMaxLikelihood(hdata, hMX, startingPs,  plotFigure = False):
+    nMCXtot = hMX[0].sum()
+    nMCXe15 = hMX[1].sum()
+    nMCXi15 = hMX[2].sum()
+    nMCXe18 = hMX[3].sum()
+    nMCXi18 = hMX[4].sum()
 
-# Set up Minuit
-def ll(nX, nE15, nI15, nE18, nI18):
-    p0 = nX/nMCXtot
-    p1 = nE15/nMCXe15
-    p2 = nI15/nMCXi15
-    p3 = nE18/nMCXe18
-    p4 = nI18/nMCXi18
-    return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False)
+    # Set up Minuit
+    def ll(nX, nE15, nI15, nE18, nI18):
+        p0 = nX/nMCXtot
+        p1 = nE15/nMCXe15
+        p2 = nI15/nMCXi15
+        p3 = nE18/nMCXe18
+        p4 = nI18/nMCXi18
+        return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False)
 
-logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4])
-#logL.tol = 1e-18
-logL.limits[0] = (0, None)
-logL.limits[1] = (0, None)
-logL.limits[2] = (0, None)
-logL.limits[3] = (0, None)
-logL.limits[4] = (0, None)
-
-startTime = time.time()
-
-# Solve
-logL.simplex()
-logL.strategy = 2
-logL.migrad()
-logL.hesse()
-
-values = logL.values
-
-# Print results
-print(values)
-print(logL.errors)
-print(logL.fval)
-print(logL.accurate)
-print('Elapsed time: ' + str(time.time() - startTime))
-
-#values = -250.89331607760076, 38449.541931702224, 27341.37928828502, 133338.37165301378, 50990.33196120494
-#pvalues = values/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
-#
-#val, AIJ = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True)
-#
-#print(val)
-
-#values = 474, 37704, 27134, 134720, 49742
-
-pvalues = values/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
-
-val, AIJ = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True)
-
-print(val)
-
-# Compute best fit histograms
-hBestFit = []
-for j in range(len(hMX)):
-    hj = []
-    for I in range(dthnBins):
-        htemp = []
-        for J in range(esumnBins):
-            htemp.append(AIJ[I*esumnBins + J][j]*pvalues[j])
-        
-        hj.append(np.array(htemp))
-        
-    hBestFit.append(np.array(hj))
-
-# Reshape
-hBestFit = np.array(hBestFit)
-
-# Plot marginal distributions
-fig = plt.figure(figsize=(42, 14), dpi=100)
-plt.subplot(131)
-for j in range(len(hMX)):
-    if j == len(hMX) - 1:
-        bottom = np.sum(hBestFit[:], axis=0)
-        bottom = np.sum(bottom, axis=1)
-        plt.plot(binsdatax[:-1], (bottom - np.sum(hdata, axis=1))/np.sqrt(np.sum(hdata, axis=1)), 'k--')
-
-plt.subplot(132)
-# make bar step
-plt.step(binsdatax[:-1], np.sum(hdata, axis=1), where='post', label='data', linewidth=2, color='k')
-# Stack MC fit
-bottom = np.sum(hBestFit[0:], axis=0)
-bottom = np.sum(bottom, axis=1)
-plt.bar(binsdatax[:-1], bottom, width=(binsdatax[1] - binsdatax[0]), alpha=0.5, label='MC BKG', align='edge')
-plt.bar(binsdatax[:-1], np.sum(hBestFit[0], axis=1), width=(binsdatax[1] - binsdatax[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
-#plt.bar(binsdatax[:-1], np.sum(hBestFit[j], axis=1), width=binsdatax[1] - binsdatax[0], bottom=bottom, alpha=0.5, label='MC' + str(j))
-
-plt.xlim(100, 180)
-plt.ylim(0, 3000*20/dthnBins)
-plt.legend()
-plt.xlabel('Relative angle [deg]')
-plt.grid()
-
-
-plt.subplot(133)
-# make bar step
-plt.step(binsdatay[:-1], np.sum(hdata, axis=0), where='post', label='data', linewidth=2, color='k')
-# Stack MC fit
-bottom = np.sum(hBestFit[0:], axis=0)
-bottom = np.sum(bottom, axis=0)
-plt.bar(binsdatay[:-1], bottom, width=(binsdatay[1] - binsdatay[0]), alpha=0.5, label='MC BKG', align='edge')
-plt.bar(binsdatay[:-1], np.sum(hBestFit[0], axis=0), width=(binsdatay[1] - binsdatay[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
-#plt.bar(binsdatax[:-1], np.sum(hBestFit[j], axis=1), width=binsdatax[1] - binsdatax[0], bottom=bottom, alpha=0.5, label='MC' + str(j))
-
-#plt.xlim(100, 180)
-#plt.ylim(0, 3000)
-plt.xlabel('Energy sum [MeV]')
-plt.grid()
-
-########################################################################
-# Profile likelihood
-X = []
-Y = []
-for i in range(5):
-    X.append(i*200)
-    
-    logL = Minuit(ll, X[-1], startingPs[1], startingPs[2], startingPs[3], startingPs[4])
+    logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4])
     #logL.tol = 1e-18
     logL.limits[0] = (0, None)
     logL.limits[1] = (0, None)
     logL.limits[2] = (0, None)
     logL.limits[3] = (0, None)
     logL.limits[4] = (0, None)
-    logL.fixed[0] = True
 
     startTime = time.time()
 
@@ -311,22 +205,138 @@ for i in range(5):
     logL.strategy = 2
     logL.migrad()
     logL.hesse()
+
+    values = logL.values
+
+    # Print results
+    print(values)
+    print(logL.errors)
+    print(logL.fval)
+    print(logL.accurate)
+    print('Elapsed time: ' + str(time.time() - startTime))
+
+    if plotFigure:
+        pvalues = values/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
+
+        val, AIJ = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True)
+
+        print(val)
+
+        # Compute best fit histograms
+        hBestFit = []
+        for j in range(len(hMX)):
+            hj = []
+            for I in range(dthnBins):
+                htemp = []
+                for J in range(esumnBins):
+                    htemp.append(AIJ[I*esumnBins + J][j]*pvalues[j])
+                
+                hj.append(np.array(htemp))
+                
+            hBestFit.append(np.array(hj))
+
+        # Reshape
+        hBestFit = np.array(hBestFit)
+
+        # Plot marginal distributions
+        fig = plt.figure(figsize=(42, 14), dpi=100)
+        plt.subplot(131)
+        for j in range(len(hMX)):
+            if j == len(hMX) - 1:
+                bottom = np.sum(hBestFit[:], axis=0)
+                bottom = np.sum(bottom, axis=1)
+                plt.plot(binsdatax[:-1], (bottom - np.sum(hdata, axis=1))/np.sqrt(np.sum(hdata, axis=1)), 'k--')
+
+        plt.subplot(132)
+        # make bar step
+        plt.step(binsdatax[:-1], np.sum(hdata, axis=1), where='post', label='data', linewidth=2, color='k')
+        # Stack MC fit
+        bottom = np.sum(hBestFit[0:], axis=0)
+        bottom = np.sum(bottom, axis=1)
+        plt.bar(binsdatax[:-1], bottom, width=(binsdatax[1] - binsdatax[0]), alpha=0.5, label='MC BKG', align='edge')
+        plt.bar(binsdatax[:-1], np.sum(hBestFit[0], axis=1), width=(binsdatax[1] - binsdatax[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
+
+        plt.xlim(100, 180)
+        plt.ylim(0, 3000*20/dthnBins)
+        plt.legend()
+        plt.xlabel('Relative angle [deg]')
+        plt.grid()
+
+
+        plt.subplot(133)
+        # make bar step
+        plt.step(binsdatay[:-1], np.sum(hdata, axis=0), where='post', label='data', linewidth=2, color='k')
+        # Stack MC fit
+        bottom = np.sum(hBestFit[0:], axis=0)
+        bottom = np.sum(bottom, axis=0)
+        plt.bar(binsdatay[:-1], bottom, width=(binsdatay[1] - binsdatay[0]), alpha=0.5, label='MC BKG', align='edge')
+        plt.bar(binsdatay[:-1], np.sum(hBestFit[0], axis=0), width=(binsdatay[1] - binsdatay[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
+        plt.xlabel('Energy sum [MeV]')
+        plt.grid()
+
+########################################################################
+# Profile likelihood
+def doProfileLL(startingPs, hdata, hMX, plotFigure = False):
+    X = []
+    Y = []
+    nMCXtot = hMX[0].sum()
+    nMCXe15 = hMX[1].sum()
+    nMCXi15 = hMX[2].sum()
+    nMCXe18 = hMX[3].sum()
+    nMCXi18 = hMX[4].sum()
+    def ll(nX, nE15, nI15, nE18, nI18):
+        p0 = nX/nMCXtot
+        p1 = nE15/nMCXe15
+        p2 = nI15/nMCXi15
+        p3 = nE18/nMCXe18
+        p4 = nI18/nMCXi18
+        return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False)
     
-    Y.append(logL.fval)
+    for i in range(5):
+        X.append(i*200)
+        
+        logL = Minuit(ll, X[-1], startingPs[1], startingPs[2], startingPs[3], startingPs[4])
+        #logL.tol = 1e-18
+        logL.limits[0] = (0, None)
+        logL.limits[1] = (0, None)
+        logL.limits[2] = (0, None)
+        logL.limits[3] = (0, None)
+        logL.limits[4] = (0, None)
+        logL.fixed[0] = True
 
-plt.figure(figsize=(14, 14), dpi=100)
-plt.plot(X, Y, 'k--')
-plt.xlabel('X17 population')
-plt.ylabel(r'$-2\log{\mathcal{L}}$')
-plt.grid()
+        startTime = time.time()
 
-print('Elapsed time: ' + str(time.time() - startTime))
+        # Solve
+        logL.simplex()
+        logL.strategy = 2
+        logL.migrad()
+        logL.hesse()
+        
+        Y.append(logL.fval)
+    if plotFigure:
+        plt.figure(figsize=(14, 14), dpi=100)
+        plt.plot(X, Y, 'k--')
+        plt.xlabel('X17 population')
+        plt.ylabel(r'$-2\log{\mathcal{L}}$')
+        plt.grid()
+    return X, Y
+
 
 ########################################################################
 # Significance
-lratio = Y[0] - val
-DOF = 1
-print('Likelihood ratio: ' + str(lratio))
-print('p-value: ' + str(1 - chi2.cdf(lratio, DOF)))
-print('Significance: ' + str(norm.ppf(1 - chi2.cdf(lratio, DOF))))
+def computeSignificance(H0, H1, DOF):
+    lratio = H0 - H1
+    print('Likelihood ratio: ' + str(lratio))
+    print('p-value: ' + str(1 - chi2.cdf(lratio, DOF)))
+    print('Significance: ' + str(norm.ppf(1 - chi2.cdf(lratio, DOF))))
+    return lratio, 1 - chi2.cdf(lratio, DOF), norm.ppf(1 - chi2.cdf(lratio, DOF))
 
+########################################################################
+# Main for testing
+if __name__ == '__main__':
+    # Get data and MC
+    hMX, binsXMCx, binsXMCy = loadMC(MCFile)
+    hdata, binsdatax, binsdatay = loadData(dataFile)
+    startingPs = np.array([450, 37500, 27500, 135000, 50000])
+    getMaxLikelihood(hdata, hMX, startingPs, plotFigure = True)
+    doProfileLL(startingPs, hdata, hMX, plotFigure = True)
