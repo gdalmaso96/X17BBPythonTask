@@ -189,6 +189,9 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         p3 = nE18/nMCXe18
         p4 = nI18/nMCXi18
         return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False)
+    
+    if doNullHyphotesis:
+        startingPs[0] = 0
 
     logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4])
     #logL.tol = 1e-18
@@ -330,10 +333,12 @@ def doProfileLL(startingPs, hdata, hMX, plotFigure = False):
 # Significance
 def computeSignificance(H0, H1, DOF):
     lratio = H0 - H1
+    pvalue = chi2.sf(lratio, 1)
+    sigma = norm.isf(pvalue*0.5)
     print('Likelihood ratio: ' + str(lratio))
-    print('p-value: ' + str(1 - chi2.cdf(lratio, DOF)))
-    print('Significance: ' + str(norm.ppf(1 - chi2.cdf(lratio, DOF))))
-    return lratio, 1 - chi2.cdf(lratio, DOF), norm.ppf(1 - chi2.cdf(lratio, DOF))
+    print('p-value: ' + str(pvalue))
+    print('Significance: ' + str(sigma))
+    return lratio, pvalue, sigma
 
 ########################################################################
 # Main for testing

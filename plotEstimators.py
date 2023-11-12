@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
 import matplotlib
+from scipy.stats import chi2, norm
 
 # set font size
 matplotlib.rcParams.update({'font.size': 35})
@@ -119,7 +120,9 @@ plt.yscale('log')
 plt.grid()
 
 plt.subplot(2, 4, 7)
-sigma = -sigma[np.isfinite(sigma)]
+lr = fvalH0 - fval
+sigma = chi2.sf(lr, 1)
+sigma = norm.isf(sigma*0.5)
 plt.hist(sigma, bins=100, label=f'mean = {np.mean(sigma):.2f}, std = {np.std(sigma):.2f}')
 plt.xlabel('sigma')
 plt.legend()
