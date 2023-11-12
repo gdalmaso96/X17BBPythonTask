@@ -33,8 +33,8 @@ VariableSelection = 0 # 0: dth, 1: imas
 startingPs = np.array([450, 37500, 27500, 135000, 50000])
 
 # Import MC histogram
-def loadMC(fileName):
-    with uproot.open(fileName + ':ntuple') as MC:
+def loadMC(fileName, workDir = ''):
+    with uproot.open(workDir + fileName + ':ntuple') as MC:
         x = MC.arrays(['imas', 'ecode', 'esum', 'dth'], library='np')
         if VariableSelection == 0:
             var = 'dth'
@@ -64,8 +64,8 @@ def loadMC(fileName):
     return hMX, binsXMCx, binsXMCy
 
 # Import data histogram
-def loadData(fileName):
-    with uproot.open(fileName + ':ntuple') as data:
+def loadData(fileName, workDir = ''):
+    with uproot.open(workDir + fileName + ':ntuple') as data:
         x = data.arrays(['imas', 'ecode', 'esum', 'dth'], library='np')
         if VariableSelection == 0:
             var = 'dth'
@@ -174,7 +174,7 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False):
 ########################################################################
 # Maximize likelihood
 
-def getMaxLikelihood(hdata, hMX, startingPs,  plotFigure = False):
+def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False):
     nMCXtot = hMX[0].sum()
     nMCXe15 = hMX[1].sum()
     nMCXi15 = hMX[2].sum()
@@ -197,6 +197,7 @@ def getMaxLikelihood(hdata, hMX, startingPs,  plotFigure = False):
     logL.limits[2] = (0, None)
     logL.limits[3] = (0, None)
     logL.limits[4] = (0, None)
+    logL.fixed[0] = doNullHyphotesis
 
     startTime = time.time()
 
@@ -273,6 +274,9 @@ def getMaxLikelihood(hdata, hMX, startingPs,  plotFigure = False):
         plt.bar(binsdatay[:-1], np.sum(hBestFit[0], axis=0), width=(binsdatay[1] - binsdatay[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
         plt.xlabel('Energy sum [MeV]')
         plt.grid()
+    
+    
+    return values, logL.errors, logL.fval, logL.accurate
 
 ########################################################################
 # Profile likelihood
