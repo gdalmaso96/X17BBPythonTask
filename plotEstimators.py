@@ -1,6 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from glob import glob
+import matplotlib
+
+# set font size
+matplotlib.rcParams.update({'font.size': 35})
 
 # Import all results files
 results = glob('results/results_SEED*.txt')
@@ -79,43 +83,52 @@ execTimeH0 = np.array(execTimeH0)
 # Plot results
 plt.figure(figsize=(4*14, 2*14), dpi=100)
 plt.subplot(2, 4, 1)
-plt.hist(nSig, bins=100)
+plt.hist(nSig, bins=100, label=f'mean = {np.mean(nSig):.2f}, std = {np.std(nSig):.2f}')
 plt.xlabel('nSig')
+plt.legend()
 plt.grid()
 
 plt.subplot(2, 4, 2)
-plt.hist(nEpc15, bins=100)
+plt.hist(nEpc15, bins=100, label=f'mean = {np.mean(nEpc15):.2f}, std = {np.std(nEpc15):.2f}')
 plt.xlabel('nEpc15')
+plt.legend()
 plt.grid()
 
 plt.subplot(2, 4, 3)
-plt.hist(nIpc15, bins=100)
+plt.hist(nIpc15, bins=100, label=f'mean = {np.mean(nIpc15):.2f}, std = {np.std(nIpc15):.2f}')
 plt.xlabel('nIpc15')
+plt.legend()
 plt.grid()
 
 plt.subplot(2, 4, 4)
-plt.hist(nEpc18, bins=100)
+plt.hist(nEpc18, bins=100, label=f'mean = {np.mean(nEpc18):.2f}, std = {np.std(nEpc18):.2f}')
 plt.xlabel('nEpc18')
+plt.legend()
 plt.grid()
 
 plt.subplot(2, 4, 5)
-plt.hist(nIpc18, bins=100)
+plt.hist(nIpc18, bins=100, label=f'mean = {np.mean(nIpc18):.2f}, std = {np.std(nIpc18):.2f}')
 plt.xlabel('nIpc18')
+plt.legend()
 plt.grid()
 
 plt.subplot(2, 4, 6)
 plt.bar(['True', 'False'], [np.sum(accurate), np.sum(accurate == False)])
 plt.xlabel('accurate')
+plt.yscale('log')
 plt.grid()
 
 plt.subplot(2, 4, 7)
-plt.hist(sigma, bins=100)
+sigma = -sigma[np.isfinite(sigma)]
+plt.hist(sigma, bins=100, label=f'mean = {np.mean(sigma):.2f}, std = {np.std(sigma):.2f}')
 plt.xlabel('sigma')
+plt.legend()
 plt.grid()
 
 plt.subplot(2, 4, 8)
-plt.hist(execTime, bins=100)
+plt.hist(execTime, bins=100, label=f'mean = {np.mean(execTime):.2f}, std = {np.std(execTime):.2f}')
 plt.xlabel('Execution time')
+plt.legend()
 plt.grid()
 
 plt.savefig('results.png')
