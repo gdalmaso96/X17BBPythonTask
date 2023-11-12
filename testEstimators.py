@@ -10,7 +10,7 @@ def argparser():
     parser = argparse.ArgumentParser(description='Test estimators from 2DLLFiniteMC.py')
     parser.add_argument('-n', '--nSamples', type=int, default=1000, help='Number of samples to draw')
     parser.add_argument('-s', '--seed', type=int, default=0, help='Random seed')
-    parser.add_argument('-w', '--workDir', type=str, default='/Users/giovanni/PhD/Analysis/X17BBPythonTask/', help='Working directory')
+    parser.add_argument('-w', '--workDir', type=str, default='/Users/giovanni/PhD/Analysis/X17BBPythonTask/results/', help='Working directory')
     parser.add_argument('-r', '--reset', type=bool, help='Replace results file', default=False)
     return parser.parse_args()
 
