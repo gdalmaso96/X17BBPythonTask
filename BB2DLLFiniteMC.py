@@ -29,7 +29,7 @@ imasMin = 12
 imasMax = 20
 imasnBins = 40
 
-nMCXtotParametrized = 1e6
+nMCXtotParametrized = 1e9
 
 VariableSelection = 0 # 0: dth, 1: imas
 
@@ -102,7 +102,7 @@ def solveTi(ti, di, p, ai):
     B = B.sum()
     return A - B
 
-def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False):
+def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
     LL = 0
     AIJ = []
     p = np.array([p0, p1, p2, p3, p4])
@@ -159,7 +159,7 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False):
             elif Di > 0:
                 LL+= -Di*1e7
             
-            for k in K:
+            for k in range(Kstart, len(K)):
                 if Ai[k] > 0:
                     LL += ai[k]*np.log(Ai[k]) - Ai[k]
                 elif ai[k] > 0:
@@ -200,10 +200,9 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
             p2 = nI15/nMCXi15
             p3 = nE18/nMCXe18
             p4 = nI18/nMCXi18
-            return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False)
+            return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False, Kstart = 1)
         
         logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4], startingPs[5])
-        #logL.tol = 1e-18
         logL.limits[0] = (0, None)
         logL.limits[1] = (0, None)
         logL.limits[2] = (0, None)
@@ -237,6 +236,13 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     #logL.simplex()
     logL.strategy = 2
     logL.migrad(ncall = 1000000)
+    I = 0
+    while (not logL.accurate or I > 10):
+        #logL.simplex()
+        logL.strategy = 2
+        logL.tol = 1e-18
+        logL.migrad(ncall = 1000000)
+        I += 1
     logL.hesse()
 
     values = logL.values
@@ -380,7 +386,7 @@ if __name__ == '__main__':
     hMX, binsXMCx, binsXMCy = loadMC(MCFile)
     hdata, binsdatax, binsdatay = loadData(dataFile)
     startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
-    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True)
-    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True)
+    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = False)
+    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = False)
     computeSignificance(H0[2], H1[2], 2)
     #doProfileLL(startingPs, hdata, hMX, plotFigure = True)
