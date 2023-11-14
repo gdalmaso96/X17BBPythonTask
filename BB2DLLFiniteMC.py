@@ -10,8 +10,9 @@ from iminuit import Minuit
 import matplotlib
 from scipy.stats import chi2, norm
 import time
+import SigLikX17
 
-matplotlib.rcParams.update({'font.size': 30})
+matplotlib.rcParams.update({'font.size': 35})
 
 dataFile = 'X17MC2021.root'
 MCFile = 'X17reference.root'
@@ -27,6 +28,8 @@ esumnBins = 14
 imasMin = 12
 imasMax = 20
 imasnBins = 40
+
+nMCXtotParametrized = 1e6
 
 VariableSelection = 0 # 0: dth, 1: imas
 
@@ -174,40 +177,66 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False):
 ########################################################################
 # Maximize likelihood
 
-def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False):
+def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False):
     nMCXtot = hMX[0].sum()
     nMCXe15 = hMX[1].sum()
     nMCXi15 = hMX[2].sum()
     nMCXe18 = hMX[3].sum()
     nMCXi18 = hMX[4].sum()
-
-    # Set up Minuit
-    def ll(nX, nE15, nI15, nE18, nI18):
-        p0 = nX/nMCXtot
-        p1 = nE15/nMCXe15
-        p2 = nI15/nMCXi15
-        p3 = nE18/nMCXe18
-        p4 = nI18/nMCXi18
-        return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False)
     
+    # Bin centers with mesh grid
+    X, Y = np.meshgrid((binsdatax[:-1] + binsdatax[1:])/2, (binsdatay[:-1] + binsdatay[1:])/2)
+
     if doNullHyphotesis:
         startingPs[0] = 0
 
-    logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4])
-    #logL.tol = 1e-18
-    logL.limits[0] = (0, None)
-    logL.limits[1] = (0, None)
-    logL.limits[2] = (0, None)
-    logL.limits[3] = (0, None)
-    logL.limits[4] = (0, None)
-    logL.fixed[0] = doNullHyphotesis
+    # Set up Minuit
+    if parametrizedX17:
+        def ll(nX, nE15, nI15, nE18, nI18, mX17):
+            nMCXtot = nMCXtotParametrized
+            hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+            p0 = nX/nMCXtot
+            p1 = nE15/nMCXe15
+            p2 = nI15/nMCXi15
+            p3 = nE18/nMCXe18
+            p4 = nI18/nMCXi18
+            return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False)
+        
+        logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4], startingPs[5])
+        #logL.tol = 1e-18
+        logL.limits[0] = (0, None)
+        logL.limits[1] = (0, None)
+        logL.limits[2] = (0, None)
+        logL.limits[3] = (0, None)
+        logL.limits[4] = (0, None)
+        logL.limits[5] = (15, 18.15)
+        logL.fixed[0] = doNullHyphotesis
+        logL.fixed[5] = doNullHyphotesis
+    else:
+        def ll(nX, nE15, nI15, nE18, nI18):
+            p0 = nX/nMCXtot
+            p1 = nE15/nMCXe15
+            p2 = nI15/nMCXi15
+            p3 = nE18/nMCXe18
+            p4 = nI18/nMCXi18
+            return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False)
+        
+        logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4])
+        #logL.tol = 1e-18
+        logL.limits[0] = (0, None)
+        logL.limits[1] = (0, None)
+        logL.limits[2] = (0, None)
+        logL.limits[3] = (0, None)
+        logL.limits[4] = (0, None)
+        logL.fixed[0] = doNullHyphotesis
+    
 
     startTime = time.time()
 
     # Solve
-    logL.simplex()
+    #logL.simplex()
     logL.strategy = 2
-    logL.migrad()
+    logL.migrad(ncall = 1000000)
     logL.hesse()
 
     values = logL.values
@@ -220,7 +249,11 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     print('Elapsed time: ' + str(time.time() - startTime))
 
     if plotFigure:
-        pvalues = values/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
+        if parametrizedX17:
+            mX17 = values[5]
+            nMCXtot = nMCXtotParametrized
+            hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+        pvalues = values[:5]/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
 
         val, AIJ = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True)
 
@@ -255,7 +288,7 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         # make bar step
         plt.step(binsdatax[:-1], np.sum(hdata, axis=1), where='post', label='data', linewidth=2, color='k')
         # Stack MC fit
-        bottom = np.sum(hBestFit[0:], axis=0)
+        bottom = np.sum(hBestFit[1:], axis=0)
         bottom = np.sum(bottom, axis=1)
         plt.bar(binsdatax[:-1], bottom, width=(binsdatax[1] - binsdatax[0]), alpha=0.5, label='MC BKG', align='edge')
         plt.bar(binsdatax[:-1], np.sum(hBestFit[0], axis=1), width=(binsdatax[1] - binsdatax[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
@@ -271,7 +304,7 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         # make bar step
         plt.step(binsdatay[:-1], np.sum(hdata, axis=0), where='post', label='data', linewidth=2, color='k')
         # Stack MC fit
-        bottom = np.sum(hBestFit[0:], axis=0)
+        bottom = np.sum(hBestFit[1:], axis=0)
         bottom = np.sum(bottom, axis=0)
         plt.bar(binsdatay[:-1], bottom, width=(binsdatay[1] - binsdatay[0]), alpha=0.5, label='MC BKG', align='edge')
         plt.bar(binsdatay[:-1], np.sum(hBestFit[0], axis=0), width=(binsdatay[1] - binsdatay[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
@@ -333,7 +366,7 @@ def doProfileLL(startingPs, hdata, hMX, plotFigure = False):
 # Significance
 def computeSignificance(H0, H1, DOF):
     lratio = H0 - H1
-    pvalue = chi2.sf(lratio, 1)
+    pvalue = chi2.sf(lratio, DOF)
     sigma = norm.isf(pvalue*0.5)
     print('Likelihood ratio: ' + str(lratio))
     print('p-value: ' + str(pvalue))
@@ -346,6 +379,8 @@ if __name__ == '__main__':
     # Get data and MC
     hMX, binsXMCx, binsXMCy = loadMC(MCFile)
     hdata, binsdatax, binsdatay = loadData(dataFile)
-    startingPs = np.array([450, 37500, 27500, 135000, 50000])
-    getMaxLikelihood(hdata, hMX, startingPs, plotFigure = True)
-    doProfileLL(startingPs, hdata, hMX, plotFigure = True)
+    startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
+    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True)
+    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True)
+    computeSignificance(H0[2], H1[2], 2)
+    #doProfileLL(startingPs, hdata, hMX, plotFigure = True)
