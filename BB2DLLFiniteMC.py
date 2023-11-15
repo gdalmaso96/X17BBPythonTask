@@ -17,7 +17,10 @@ matplotlib.rcParams.update({'font.size': 35})
 plt.rcParams['figure.constrained_layout.use'] = True
 
 dataFile = 'X17MC2021.root'
+dataFile = 'X17MC2021_s1.root'
 MCFile = 'X17reference.root'
+#MCFile = 'X17referenceRealistic.root'
+workDir = 'results/'
 
 dthMin = 20
 dthMax = 180
@@ -404,8 +407,8 @@ def computeSignificance(H0, H1, DOF):
 # Main for testing
 if __name__ == '__main__':
     # Get data and MC
-    hMX, binsXMCx, binsXMCy = loadMC(MCFile)
-    hdata, binsdatax, binsdatay = loadData(dataFile)
+    hMX, binsXMCx, binsXMCy = loadMC(MCFile, workDir)
+    hdata, binsdatax, binsdatay = loadData(dataFile, workDir)
     startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
     H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True)
     H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True)
