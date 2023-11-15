@@ -15,7 +15,10 @@ import SigLikX17
 matplotlib.rcParams.update({'font.size': 35})
 
 dataFile = 'X17MC2021.root'
+dataFile = 'X17MC2021_s1.root'
 MCFile = 'X17reference.root'
+#MCFile = 'X17referenceRealistic.root'
+workDir = 'results/'
 
 dthMin = 20
 dthMax = 180
@@ -316,6 +319,7 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         plt.bar(binsdatay[:-1], np.sum(hBestFit[0], axis=0), width=(binsdatay[1] - binsdatay[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
         plt.xlabel('Energy sum [MeV]')
         plt.grid()
+        plt.savefig('X17Fit.png')
     
     
     return values, logL.errors, logL.fval, logL.accurate
@@ -383,10 +387,10 @@ def computeSignificance(H0, H1, DOF):
 # Main for testing
 if __name__ == '__main__':
     # Get data and MC
-    hMX, binsXMCx, binsXMCy = loadMC(MCFile)
-    hdata, binsdatax, binsdatay = loadData(dataFile)
+    hMX, binsXMCx, binsXMCy = loadMC(MCFile, workDir)
+    hdata, binsdatax, binsdatay = loadData(dataFile, workDir)
     startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
-    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = False)
-    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = False)
+    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True,  doNullHyphotesis = False, parametrizedX17 = True)
+    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = True,  parametrizedX17 = True)
     computeSignificance(H0[2], H1[2], 2)
     #doProfileLL(startingPs, hdata, hMX, plotFigure = True)
