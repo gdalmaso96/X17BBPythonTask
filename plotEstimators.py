@@ -41,6 +41,7 @@ if __name__ == '__main__':
     sigma = []
     execTime = []
     execTimeH0 = []
+    mX17 = []
     
     # Loop over all results files
     for result in results:
@@ -70,6 +71,8 @@ if __name__ == '__main__':
                     sigma.append(float(values[16]))
                     execTime.append(float(values[17]))
                     execTimeH0.append(float(values[18]))
+                    if len(values) > 19:
+                        mX17.append(float(values[19]))
                 
     # Convert to numpy arrays
     nSig = np.array(nSig)
@@ -91,9 +94,11 @@ if __name__ == '__main__':
     sigma = np.array(sigma)
     execTime = np.array(execTime)
     execTimeH0 = np.array(execTimeH0)
+    mX17 = np.array(mX17)
     
     # Plot results
     plt.figure(figsize=(4*14, 2*14), dpi=100)
+    plt.suptitle(f'{prefix}, {len(nSig)} tests')
     plt.subplot(2, 4, 1)
     plt.hist(nSig, bins=50, label=f'mean = {np.mean(nSig):.2f}, std = {np.std(nSig):.2f}')
     plt.xlabel('nSig')
@@ -140,9 +145,15 @@ if __name__ == '__main__':
     plt.grid()
     
     plt.subplot(2, 4, 8)
-    plt.hist(execTime, bins=50, label=f'mean = {np.mean(execTime):.2f}, std = {np.std(execTime):.2f}')
-    plt.xlabel('Execution time')
-    plt.legend()
-    plt.grid()
+    if len(mX17) > 0:
+        plt.hist(mX17, bins=50, label=f'mean = {np.mean(mX17):.2f}, std = {np.std(mX17):.2f}')
+        plt.xlabel(r'$\mathrm{X17 mass [MeV/c^2]}$')
+        plt.legend()
+        plt.grid()
+    else:
+        plt.hist(execTime, bins=50, label=f'mean = {np.mean(execTime):.2f}, std = {np.std(execTime):.2f}')
+        plt.xlabel('Execution time')
+        plt.legend()
+        plt.grid()
     
-    plt.savefig(f'{prefix}.png')
+    plt.savefig(f'{prefix}.png', bbox_inches='tight')

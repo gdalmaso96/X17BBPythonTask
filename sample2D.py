@@ -34,6 +34,7 @@ esumIpc15 = [16, 0.99448, 1.8715, 0.83188]
 esumEpc15 = [15.206, 0.68424, 1.7012]
 esumIpc18 = [17.953, 0.54388, 1.1256, 0.47898]
 esumEpc18 = [17.410, 1.4282, 1.3006]
+esumX17   = [18, 1.15]
 esumX17   = [18.15, 1.15]
 
 rangIpc15 = [1, -0.0218731, 0.00017231, -0.000000457066]
@@ -47,392 +48,396 @@ rangX17   = [138.92106967187416, 9.5]
 # Definition of PDFs and likelihood functions
 # 15 MeV IPC PDF parametrization
 def integrate(func, args = (), xmin=0, xmax=1, n=100000):
-	x = np.linspace(xmin, xmax, n)
-	y = func(x, *args)
+    x = np.linspace(xmin, xmax, n)
+    y = func(x, *args)
 
-	dx = x[1] - x[0]
-	y = y[1:] + y[:-1]
-	y *= 0.5
-	return dx*y.sum()
+    dx = x[1] - x[0]
+    y = y[1:] + y[:-1]
+    y *= 0.5
+    return dx*y.sum()
 
 def tail(x, a, b):
-	return np.exp(x*a + x**2*b)
+    return np.exp(x*a + x**2*b)
 
 def tail18(x, a, b, c):
-	return np.exp(a/x + x*b + x**2*c)
+    return np.exp(a/x + x*b + x**2*c)
 
 def shoulder(x, x0, s1, l1, g1, s2, l2, g2):
-	# Left side of the peak
-	should = (x < x0)*np.exp(-(x - x0)**2/(2*(s1**2 + l1*x + g1*x**2)))
-	# Right side of the peak
-	should += (x > x0)*np.exp(-(x - x0)**2/(2*(s2**2 + l2*x + g2*x**2)))
-	return should
+    # Left side of the peak
+    should = (x < x0)*np.exp(-(x - x0)**2/(2*(s1**2 + l1*x + g1*x**2)))
+    # Right side of the peak
+    should += (x > x0)*np.exp(-(x - x0)**2/(2*(s2**2 + l2*x + g2*x**2)))
+    return should
 
 def mIPC15(x, a, b, x0, s1, l1, g1, s2, l2, g2, F):
-	# Normalize tail
-	t = integrate(tail, xmin = mIPC15min, xmax = mIPC15max, args = (a,b))
-	t = tail(x, a, b)/t
+    # Normalize tail
+    t = integrate(tail, xmin = mIPC15min, xmax = mIPC15max, args = (a,b))
+    t = tail(x, a, b)/t
 
-	# Normalize shoulder
-	s = integrate(shoulder, xmin = mIPC15min, xmax = mIPC15max, args = (x0, s1, l1, g1, s2, l2, g2))
-	s = shoulder(x, x0, s1, l1, g1, s2, l2, g2)/s
+    # Normalize shoulder
+    s = integrate(shoulder, xmin = mIPC15min, xmax = mIPC15max, args = (x0, s1, l1, g1, s2, l2, g2))
+    s = shoulder(x, x0, s1, l1, g1, s2, l2, g2)/s
 
-	return (1 - F)*t + F*s
+    return (1 - F)*t + F*s
 
 def tIPC15(x, p0, p1, p2, p3):
-	result = p0
-	result += p1*x
-	result += p2*x**2
-	result += p3*x**3
+    result = p0
+    result += p1*x
+    result += p2*x**2
+    result += p3*x**3
 
-	return result
+    return result
 
 def eIPC15(x, mu, sigma1, sigma2, f):
-	result = f*np.exp(-0.5*(x - mu)**2/sigma1**2)/np.sqrt(2*np.pi)/sigma1
-	result += (1 - f)*np.exp(-0.5*(x - mu)**2/sigma2**2)/np.sqrt(2*np.pi)/sigma2
+    result = f*np.exp(-0.5*(x - mu)**2/sigma1**2)/np.sqrt(2*np.pi)/sigma1
+    result += (1 - f)*np.exp(-0.5*(x - mu)**2/sigma2**2)/np.sqrt(2*np.pi)/sigma2
 
-	return result
+    return result
 
 def tEPC15(x, mu, sigmaL, sigmaR, alphaL, alphaR):
-	result = (x < mu)*np.exp(-0.5*(x - mu)**2/(sigmaL**2 + (alphaL*(x - mu))**2))
-	result += (x >= mu)*np.exp(-0.5*(x - mu)**2/(sigmaR**2 + (alphaR*(x - mu))**2))
+    result = (x < mu)*np.exp(-0.5*(x - mu)**2/(sigmaL**2 + (alphaL*(x - mu))**2))
+    result += (x >= mu)*np.exp(-0.5*(x - mu)**2/(sigmaR**2 + (alphaR*(x - mu))**2))
 
-	return result
+    return result
 
 def eEPC15(x, mu, sigmaL, sigmaR):
-	result = (x < mu)*np.exp(-0.5*(x - mu)**2/sigmaL**2)
-	result += (x >= mu)*np.exp(-0.5*(x - mu)**2/sigmaR**2)
+    result = (x < mu)*np.exp(-0.5*(x - mu)**2/sigmaL**2)
+    result += (x >= mu)*np.exp(-0.5*(x - mu)**2/sigmaR**2)
 
-	return result
+    return result
 
 def mIPC18(x, a, b, c, x0, s1, l1, g1, s2, l2, g2, F):
-	# Normalize tail
-	t = integrate(tail18, xmin = mIPC18min, xmax = mIPC18max, args = (a,b, c))
-	t = tail18(x, a, b, c)/t
+    # Normalize tail
+    t = integrate(tail18, xmin = mIPC18min, xmax = mIPC18max, args = (a,b, c))
+    t = tail18(x, a, b, c)/t
 
-	# Normalize shoulder
-	s = integrate(shoulder, xmin = mIPC18min, xmax = mIPC18max, args = (x0, s1, l1, g1, s2, l2, g2))
-	s = shoulder(x, x0, s1, l1, g1, s2, l2, g2)/s
+    # Normalize shoulder
+    s = integrate(shoulder, xmin = mIPC18min, xmax = mIPC18max, args = (x0, s1, l1, g1, s2, l2, g2))
+    s = shoulder(x, x0, s1, l1, g1, s2, l2, g2)/s
 
-	return (1 - F)*t + F*s
+    return (1 - F)*t + F*s
 
 def tIPC18(x, p0, p1, p2, p3):
-	result = p0
-	result += p1*x
-	result += p2*x**2
-	result += p3*x**3
+    result = p0
+    result += p1*x
+    result += p2*x**2
+    result += p3*x**3
 
-	return result
+    return result
 
 def eIPC18(x, mu, sigma1, sigma2, f):
-	result = f*np.exp(-0.5*(x - mu)**2/sigma1**2)/np.sqrt(2*np.pi)/sigma1
-	result += (1 - f)*np.exp(-0.5*(x - mu)**2/sigma2**2)/np.sqrt(2*np.pi)/sigma2
+    result = f*np.exp(-0.5*(x - mu)**2/sigma1**2)/np.sqrt(2*np.pi)/sigma1
+    result += (1 - f)*np.exp(-0.5*(x - mu)**2/sigma2**2)/np.sqrt(2*np.pi)/sigma2
 
-	return result
+    return result
 
 def tEPC18(x, mu, sigmaL, sigmaR, alphaL, alphaR):
-	result = (x < mu)*np.exp(-0.5*(x - mu)**2/(sigmaL**2 + (alphaL*(x - mu))**2))
-	result += (x >= mu)*np.exp(-0.5*(x - mu)**2/(sigmaR**2 + (alphaR*(x - mu))**2))
+    result = (x < mu)*np.exp(-0.5*(x - mu)**2/(sigmaL**2 + (alphaL*(x - mu))**2))
+    result += (x >= mu)*np.exp(-0.5*(x - mu)**2/(sigmaR**2 + (alphaR*(x - mu))**2))
 
-	return result
+    return result
 
 def eEPC18(x, mu, sigmaL, sigmaR):
-	result = (x < mu)*np.exp(-0.5*(x - mu)**2/sigmaL**2)
-	result += (x >= mu)*np.exp(-0.5*(x - mu)**2/sigmaR**2)
+    result = (x < mu)*np.exp(-0.5*(x - mu)**2/sigmaL**2)
+    result += (x >= mu)*np.exp(-0.5*(x - mu)**2/sigmaR**2)
 
-	return result
+    return result
 
 def mX17(x, x0, s1, l1, g1, s2, l2, g2, x01, s11, l11, g11, s21, l21, g21, F):
-	# Normalize shoulder
-	s = integrate(shoulder, xmin = mX17min, xmax = mX17max, args = (x0, s1, l1, g1, s2, l2, g2))
-	s = shoulder(x, x0, s1, l1, g1, s2, l2, g2)/s
+    # Normalize shoulder
+    s = integrate(shoulder, xmin = mX17min, xmax = mX17max, args = (x0, s1, l1, g1, s2, l2, g2))
+    s = shoulder(x, x0, s1, l1, g1, s2, l2, g2)/s
 
-	# Normalize shoulder
-	S1 = integrate(shoulder, xmin = mX17min, xmax = mX17max, args = (x01, s11, l11, g11, s21, l21, g21))
-	S1 = shoulder(x, x01, s11, l11, g11, s21, l21, g21)/S1
+    # Normalize shoulder
+    S1 = integrate(shoulder, xmin = mX17min, xmax = mX17max, args = (x01, s11, l11, g11, s21, l21, g21))
+    S1 = shoulder(x, x01, s11, l11, g11, s21, l21, g21)/S1
 
-	return s*F + (1 - F)*S1
+    return s*F + (1 - F)*S1
 
 #def tX17(x, x0, s1, l1, g1, s2, l2, g2, x01, s11, l11, g11, s21, l21, g21, F):
-#	# Normalize shoulder
-#	s = integrate(shoulder, xmin = tX17min, xmax = tX17max, args = (x0, s1, l1, g1, s2, l2, g2))
-#	s = shoulder(x, x0, s1, l1, g1, s2, l2, g2)/s
+#    # Normalize shoulder
+#    s = integrate(shoulder, xmin = tX17min, xmax = tX17max, args = (x0, s1, l1, g1, s2, l2, g2))
+#    s = shoulder(x, x0, s1, l1, g1, s2, l2, g2)/s
 #
-#	# Normalize shoulder
-#	S1 = integrate(shoulder, xmin = tX17min, xmax = tX17max, args = (x01, s11, l11, g11, s21, l21, g21))
-#	S1 = shoulder(x, x01, s11, l11, g11, s21, l21, g21)/S1
+#    # Normalize shoulder
+#    S1 = integrate(shoulder, xmin = tX17min, xmax = tX17max, args = (x01, s11, l11, g11, s21, l21, g21))
+#    S1 = shoulder(x, x01, s11, l11, g11, s21, l21, g21)/S1
 #
-#	return s*F + (1 - F)*S1
+#    return s*F + (1 - F)*S1
 
 def tX17(x, mu, sigma):
-	result = np.exp(-0.5*(x - mu)**2/sigma**2)
+    result = np.exp(-0.5*(x - mu)**2/sigma**2)
 
-	return result
+    return result
 
 def eX17(x, mu, sigma):
-	return np.exp(-0.5*(x - mu)**2/sigma**2)
+    return np.exp(-0.5*(x - mu)**2/sigma**2)
 
 def sampleMassArray(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.14, _fEPC18 = 0.48, _Nx17 = 500, year = 2021):
-	# Sample number of events
-	Nipc15 = np.random.poisson(_Nbkg*_fIPC15)
-	Nipc18 = np.random.poisson(_Nbkg*_fIPC18)
-	Nepc15 = np.random.poisson(_Nbkg*(1 - _fIPC15 - _fIPC18 - _fEPC18))
-	Nepc18 = np.random.poisson(_Nbkg*_fEPC18)
-	Nx17   = np.random.poisson(_Nx17)
+    # Sample number of events
+    Nipc15 = np.random.poisson(_Nbkg*_fIPC15)
+    Nipc18 = np.random.poisson(_Nbkg*_fIPC18)
+    Nepc15 = np.random.poisson(_Nbkg*(1 - _fIPC15 - _fIPC18 - _fEPC18))
+    Nepc18 = np.random.poisson(_Nbkg*_fEPC18)
+    Nx17   = np.random.poisson(_Nx17)
 
-	# Build imas cumulative
-	m = np.linspace(12, 20, 100000)
+    # Build imas cumulative
+    m = np.linspace(12, 20, 100000)
 
-	ipc15 = mIPC15(m, *imasIpc15)
-	ipc18 = mIPC18(m, *imasIpc18)
-	x17   = mX17(m, *imasX17)
+    ipc15 = mIPC15(m, *imasIpc15)
+    ipc18 = mIPC18(m, *imasIpc18)
+    x17   = mX17(m, *imasX17)
 
-	c_ipc15 = np.cumsum(ipc15)
-	c_ipc15 -= c_ipc15.min()
-	c_ipc15 /= c_ipc15.max()
+    c_ipc15 = np.cumsum(ipc15)
+    c_ipc15 -= c_ipc15.min()
+    c_ipc15 /= c_ipc15.max()
 
-	c_ipc18 = np.cumsum(ipc18)
-	c_ipc18 -= c_ipc18.min()
-	c_ipc18 /= c_ipc18.max()
+    c_ipc18 = np.cumsum(ipc18)
+    c_ipc18 -= c_ipc18.min()
+    c_ipc18 /= c_ipc18.max()
 
-	c_x17 = np.cumsum(x17)
-	c_x17 -= c_x17.min()
-	c_x17 /= c_x17.max()
+    c_x17 = np.cumsum(x17)
+    c_x17 -= c_x17.min()
+    c_x17 /= c_x17.max()
 
-	# Sample uniform
-	s_ipc15 = np.random.uniform(0, 1, Nipc15 + Nepc15)
-	f = interp1d(c_ipc15, m, kind='linear')
-	m_ipc15 = f(s_ipc15)
+    # Sample uniform
+    s_ipc15 = np.random.uniform(0, 1, Nipc15 + Nepc15)
+    f = interp1d(c_ipc15, m, kind='linear')
+    m_ipc15 = f(s_ipc15)
 
-	s_ipc18 = np.random.uniform(0, 1, Nipc18 + Nepc18)
-	f = interp1d(c_ipc18, m, kind='linear')
-	m_ipc18 = f(s_ipc18)
-	
-	s_x17 = np.random.uniform(0, 1, Nx17)
-	f = interp1d(c_x17, m, kind='linear')
-	m_x17 = f(s_x17)
+    s_ipc18 = np.random.uniform(0, 1, Nipc18 + Nepc18)
+    f = interp1d(c_ipc18, m, kind='linear')
+    m_ipc18 = f(s_ipc18)
+    
+    s_x17 = np.random.uniform(0, 1, Nx17)
+    f = interp1d(c_x17, m, kind='linear')
+    m_x17 = f(s_x17)
 
-	return m, c_ipc15, c_ipc18, c_x17
+    return m, c_ipc15, c_ipc18, c_x17
 
-def sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.14, _fEPC18 = 0.48, _Nx17 = 500, year = 2021, SEED = 0, workDir = './'):
-	np.random.seed(SEED)
-	# Sample number of events
-	Nipc15 = np.random.poisson(_Nbkg*_fIPC15)
-	Nipc18 = np.random.poisson(_Nbkg*_fIPC18)
-	Nepc15 = np.random.poisson(_Nbkg*(1 - _fIPC15 - _fIPC18 - _fEPC18))
-	Nepc18 = np.random.poisson(_Nbkg*_fEPC18)
-	Nx17   = np.random.poisson(_Nx17)
+def sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.14, _fEPC18 = 0.48, _Nx17 = 500, year = 2021, SEED = 0, workDir = './', fileName=''):
+    np.random.seed(SEED)
+    # Sample number of events
+    Nipc15 = np.random.poisson(_Nbkg*_fIPC15)
+    Nipc18 = np.random.poisson(_Nbkg*_fIPC18)
+    Nepc15 = np.random.poisson(_Nbkg*(1 - _fIPC15 - _fIPC18 - _fEPC18))
+    Nepc18 = np.random.poisson(_Nbkg*_fEPC18)
+    Nx17   = np.random.poisson(_Nx17)
 
-	# Build imas cumulative
-	m = np.linspace(12, 20, 100000)
+    # Build imas cumulative
+    m = np.linspace(12, 20, 100000)
 
-	ipc15 = mIPC15(m, *imasIpc15)
-	ipc18 = mIPC18(m, *imasIpc18)
-	x17   = mX17(m, *imasX17)
+    ipc15 = mIPC15(m, *imasIpc15)
+    ipc18 = mIPC18(m, *imasIpc18)
+    x17   = mX17(m, *imasX17)
 
-	c_ipc15 = np.cumsum(ipc15)
-	c_ipc15 -= c_ipc15.min()
-	c_ipc15 /= c_ipc15.max()
+    c_ipc15 = np.cumsum(ipc15)
+    c_ipc15 -= c_ipc15.min()
+    c_ipc15 /= c_ipc15.max()
 
-	c_ipc18 = np.cumsum(ipc18)
-	c_ipc18 -= c_ipc18.min()
-	c_ipc18 /= c_ipc18.max()
+    c_ipc18 = np.cumsum(ipc18)
+    c_ipc18 -= c_ipc18.min()
+    c_ipc18 /= c_ipc18.max()
 
-	c_x17 = np.cumsum(x17)
-	c_x17 -= c_x17.min()
-	c_x17 /= c_x17.max()
+    c_x17 = np.cumsum(x17)
+    c_x17 -= c_x17.min()
+    c_x17 /= c_x17.max()
 
-	# Sample uniform
-	s_ipc15 = np.random.uniform(0, 1, Nipc15 + Nepc15)
-	f = interp1d(c_ipc15, m, kind='linear')
-	m_ipc15 = f(s_ipc15)
+    # Sample uniform
+    s_ipc15 = np.random.uniform(0, 1, Nipc15 + Nepc15)
+    f = interp1d(c_ipc15, m, kind='linear')
+    m_ipc15 = f(s_ipc15)
 
-	s_ipc18 = np.random.uniform(0, 1, Nipc18 + Nepc18)
-	f = interp1d(c_ipc18, m, kind='linear')
-	m_ipc18 = f(s_ipc18)
-	
-	s_x17 = np.random.uniform(0, 1, Nx17)
-	f = interp1d(c_x17, m, kind='linear')
-	m_x17 = f(s_x17)
+    s_ipc18 = np.random.uniform(0, 1, Nipc18 + Nepc18)
+    f = interp1d(c_ipc18, m, kind='linear')
+    m_ipc18 = f(s_ipc18)
+    
+    s_x17 = np.random.uniform(0, 1, Nx17)
+    f = interp1d(c_x17, m, kind='linear')
+    m_x17 = f(s_x17)
 
-	m_tot = m_ipc15
-	m_tot = np.concatenate((m_tot, m_ipc18))
-	m_tot = np.concatenate((m_tot, m_x17))
+    m_tot = m_ipc15
+    m_tot = np.concatenate((m_tot, m_ipc18))
+    m_tot = np.concatenate((m_tot, m_x17))
 
-	# Build rang cumulative
-	m = np.linspace(20, 180, 100000)
+    # Build rang cumulative
+    m = np.linspace(20, 180, 100000)
 
-	ipc15 = tIPC15(m, *rangIpc15)
-	mipc15 = m[ipc15 > 0]
-	ipc15 = ipc15[ipc15 > 0]
-	ipc18 = tIPC18(m, *rangIpc18)
-	mipc18 = m[ipc18 > 0]
-	ipc18 = ipc18[ipc18 > 0]
-	epc15 = tEPC15(m, *rangEpc15)
-	epc18 = tEPC18(m, *rangEpc18)
-	x17   = tX17(m, *rangX17)
-	#plt.plot(mipc15, ipc15)
-	#plt.show()
-	#plt.plot(mipc15, ipc18)
-	#plt.show()
-	#plt.plot(m, epc15)
-	#plt.show()
-	#plt.plot(m, epc18)
-	#plt.show()
-	#plt.plot(m, x17)
-	#plt.show()
+    ipc15 = tIPC15(m, *rangIpc15)
+    mipc15 = m[ipc15 > 0]
+    ipc15 = ipc15[ipc15 > 0]
+    ipc18 = tIPC18(m, *rangIpc18)
+    mipc18 = m[ipc18 > 0]
+    ipc18 = ipc18[ipc18 > 0]
+    epc15 = tEPC15(m, *rangEpc15)
+    epc18 = tEPC18(m, *rangEpc18)
+    x17   = tX17(m, *rangX17)
+    #plt.plot(mipc15, ipc15)
+    #plt.show()
+    #plt.plot(mipc15, ipc18)
+    #plt.show()
+    #plt.plot(m, epc15)
+    #plt.show()
+    #plt.plot(m, epc18)
+    #plt.show()
+    #plt.plot(m, x17)
+    #plt.show()
 
-	c_ipc15 = np.cumsum(ipc15)
-	c_ipc15 -= c_ipc15.min()
-	c_ipc15 /= c_ipc15.max()
+    c_ipc15 = np.cumsum(ipc15)
+    c_ipc15 -= c_ipc15.min()
+    c_ipc15 /= c_ipc15.max()
 
-	c_ipc18 = np.cumsum(ipc18)
-	c_ipc18 -= c_ipc18.min()
-	c_ipc18 /= c_ipc18.max()
+    c_ipc18 = np.cumsum(ipc18)
+    c_ipc18 -= c_ipc18.min()
+    c_ipc18 /= c_ipc18.max()
 
-	c_epc15 = np.cumsum(epc15)
-	c_epc15 -= c_epc15.min()
-	c_epc15 /= c_epc15.max()
+    c_epc15 = np.cumsum(epc15)
+    c_epc15 -= c_epc15.min()
+    c_epc15 /= c_epc15.max()
 
-	c_epc18 = np.cumsum(epc18)
-	c_epc18 -= c_epc18.min()
-	c_epc18 /= c_epc18.max()
+    c_epc18 = np.cumsum(epc18)
+    c_epc18 -= c_epc18.min()
+    c_epc18 /= c_epc18.max()
 
-	c_x17 = np.cumsum(x17)
-	c_x17 -= c_x17.min()
-	c_x17 /= c_x17.max()
+    c_x17 = np.cumsum(x17)
+    c_x17 -= c_x17.min()
+    c_x17 /= c_x17.max()
 
-	# Do relative angle
-	s_ipc15 = np.random.uniform(0, 1, Nipc15)
-	s_ipc18 = np.random.uniform(0, 1, Nipc18)
-	s_epc15 = np.random.uniform(0, 1, Nepc15)
-	s_epc18 = np.random.uniform(0, 1, Nepc18)
-	s_x17   = np.random.uniform(0, 1, Nx17)
+    # Do relative angle
+    s_ipc15 = np.random.uniform(0, 1, Nipc15)
+    s_ipc18 = np.random.uniform(0, 1, Nipc18)
+    s_epc15 = np.random.uniform(0, 1, Nepc15)
+    s_epc18 = np.random.uniform(0, 1, Nepc18)
+    s_x17   = np.random.uniform(0, 1, Nx17)
 
-	f = interp1d(c_ipc15, mipc15, kind='linear')
-	t_ipc15 = f(s_ipc15)
-	#plt.hist(t_ipc15, bins=50)
-	#plt.show()
-	#plt.plot(mipc15, c_ipc15)
-	#plt.show()
+    f = interp1d(c_ipc15, mipc15, kind='linear')
+    t_ipc15 = f(s_ipc15)
+    #plt.hist(t_ipc15, bins=50)
+    #plt.show()
+    #plt.plot(mipc15, c_ipc15)
+    #plt.show()
 
-	f = interp1d(c_ipc18, mipc18, kind='linear')
-	t_ipc18 = f(s_ipc18)
-	#plt.hist(t_ipc18, bins=50)
-	#plt.show()
-	#plt.plot(mipc18, c_ipc18)
-	#plt.show()
-	
-	f = interp1d(c_epc15, m, kind='linear')
-	t_epc15 = f(s_epc15)
-	#plt.hist(t_epc15, bins=50)
-	#plt.show()
-	#plt.plot(m, c_epc15)
-	#plt.show()
+    f = interp1d(c_ipc18, mipc18, kind='linear')
+    t_ipc18 = f(s_ipc18)
+    #plt.hist(t_ipc18, bins=50)
+    #plt.show()
+    #plt.plot(mipc18, c_ipc18)
+    #plt.show()
+    
+    f = interp1d(c_epc15, m, kind='linear')
+    t_epc15 = f(s_epc15)
+    #plt.hist(t_epc15, bins=50)
+    #plt.show()
+    #plt.plot(m, c_epc15)
+    #plt.show()
 
-	f = interp1d(c_epc18, m, kind='linear')
-	t_epc18 = f(s_epc18)
-	#plt.hist(t_epc18, bins=50)
-	#plt.show()
-	#plt.plot(m, c_epc18)
-	#plt.show()
-	
-	f = interp1d(c_x17, m, kind='linear')
-	t_x17 = f(s_x17)
-	#plt.hist(t_x17, bins=50)
-	#plt.show()
-	
-	t_tot = t_ipc15
-	t_tot = np.concatenate((t_tot, t_ipc18))
-	t_tot = np.concatenate((t_tot, t_epc15))
-	t_tot = np.concatenate((t_tot, t_epc18))
-	t_tot = np.concatenate((t_tot, t_x17))
+    f = interp1d(c_epc18, m, kind='linear')
+    t_epc18 = f(s_epc18)
+    #plt.hist(t_epc18, bins=50)
+    #plt.show()
+    #plt.plot(m, c_epc18)
+    #plt.show()
+    
+    f = interp1d(c_x17, m, kind='linear')
+    t_x17 = f(s_x17)
+    #plt.hist(t_x17, bins=50)
+    #plt.show()
+    
+    t_tot = t_ipc15
+    t_tot = np.concatenate((t_tot, t_ipc18))
+    t_tot = np.concatenate((t_tot, t_epc15))
+    t_tot = np.concatenate((t_tot, t_epc18))
+    t_tot = np.concatenate((t_tot, t_x17))
 
-	# Build esum cumulative
-	m = np.linspace(10, 24, 100000)
-	s_ipc15 = np.random.uniform(0, 1, Nipc15)
-	s_ipc18 = np.random.uniform(0, 1, Nipc18)
-	s_epc15 = np.random.uniform(0, 1, Nepc15)
-	s_epc18 = np.random.uniform(0, 1, Nepc18)
-	s_x17   = np.random.uniform(0, 1, Nx17)
+    # Build esum cumulative
+    m = np.linspace(10, 24, 100000)
+    s_ipc15 = np.random.uniform(0, 1, Nipc15)
+    s_ipc18 = np.random.uniform(0, 1, Nipc18)
+    s_epc15 = np.random.uniform(0, 1, Nepc15)
+    s_epc18 = np.random.uniform(0, 1, Nepc18)
+    s_x17   = np.random.uniform(0, 1, Nx17)
 
-	ipc15 = eIPC15(m, *esumIpc15)
-	#plt.plot(m, ipc15)
-	#plt.show()
-	ipc18 = eIPC18(m, *esumIpc18)
-	epc15 = eEPC15(m, *esumEpc15)
-	epc18 = eEPC18(m, *esumEpc18)
-	x17   = eX17(m, *esumX17)
-	print(eX17(17, *esumX17),eEPC15(17, *esumEpc15),eIPC15(17, *esumIpc15),eEPC18(17, *esumEpc18),eIPC18(17, *esumIpc18))
-	#plt.plot(m, x17)
-	#plt.show()
+    ipc15 = eIPC15(m, *esumIpc15)
+    #plt.plot(m, ipc15)
+    #plt.show()
+    ipc18 = eIPC18(m, *esumIpc18)
+    epc15 = eEPC15(m, *esumEpc15)
+    epc18 = eEPC18(m, *esumEpc18)
+    x17   = eX17(m, *esumX17)
+    print(eX17(17, *esumX17),eEPC15(17, *esumEpc15),eIPC15(17, *esumIpc15),eEPC18(17, *esumEpc18),eIPC18(17, *esumIpc18))
+    #plt.plot(m, x17)
+    #plt.show()
 
-	#print(ipc15)
-	c_ipc15 = np.cumsum(ipc15)
-	c_ipc15 -= c_ipc15.min()
-	c_ipc15 /= c_ipc15.max()
+    #print(ipc15)
+    c_ipc15 = np.cumsum(ipc15)
+    c_ipc15 -= c_ipc15.min()
+    c_ipc15 /= c_ipc15.max()
 
-	c_ipc18 = np.cumsum(ipc18)
-	c_ipc18 -= c_ipc18.min()
-	c_ipc18 /= c_ipc18.max()
+    c_ipc18 = np.cumsum(ipc18)
+    c_ipc18 -= c_ipc18.min()
+    c_ipc18 /= c_ipc18.max()
 
-	c_epc15 = np.cumsum(epc15)
-	c_epc15 -= c_epc15.min()
-	c_epc15 /= c_epc15.max()
+    c_epc15 = np.cumsum(epc15)
+    c_epc15 -= c_epc15.min()
+    c_epc15 /= c_epc15.max()
 
-	c_epc18 = np.cumsum(epc18)
-	c_epc18 -= c_epc18.min()
-	c_epc18 /= c_epc18.max()
+    c_epc18 = np.cumsum(epc18)
+    c_epc18 -= c_epc18.min()
+    c_epc18 /= c_epc18.max()
 
-	c_x17 = np.cumsum(x17)
-	c_x17 -= c_x17.min()
-	c_x17 /= c_x17.max()
+    c_x17 = np.cumsum(x17)
+    c_x17 -= c_x17.min()
+    c_x17 /= c_x17.max()
 
-	# Do relative angle
-	f = interp1d(c_ipc15, m, kind='linear')
-	e_ipc15 = f(s_ipc15)
+    # Do relative angle
+    f = interp1d(c_ipc15, m, kind='linear')
+    e_ipc15 = f(s_ipc15)
 
-	f = interp1d(c_ipc18, m, kind='linear')
-	e_ipc18 = f(s_ipc18)
-	
-	f = interp1d(c_epc15, m, kind='linear')
-	e_epc15 = f(s_epc15)
+    f = interp1d(c_ipc18, m, kind='linear')
+    e_ipc18 = f(s_ipc18)
+    
+    f = interp1d(c_epc15, m, kind='linear')
+    e_epc15 = f(s_epc15)
 
-	f = interp1d(c_epc18, m, kind='linear')
-	e_epc18 = f(s_epc18)
-	
-	f = interp1d(c_x17, m, kind='linear')
-	e_x17 = f(s_x17)
-	
-	e_tot = e_ipc15
-	e_tot = np.concatenate((e_tot, e_ipc18))
-	e_tot = np.concatenate((e_tot, e_epc15))
-	e_tot = np.concatenate((e_tot, e_epc18))
-	e_tot = np.concatenate((e_tot, e_x17))
+    f = interp1d(c_epc18, m, kind='linear')
+    e_epc18 = f(s_epc18)
+    
+    f = interp1d(c_x17, m, kind='linear')
+    e_x17 = f(s_x17)
+    
+    e_tot = e_ipc15
+    e_tot = np.concatenate((e_tot, e_ipc18))
+    e_tot = np.concatenate((e_tot, e_epc15))
+    e_tot = np.concatenate((e_tot, e_epc18))
+    e_tot = np.concatenate((e_tot, e_x17))
 
-	# Write to file
-	with uproot.recreate(workDir + "X17MC%d_s%d.root" %(year, SEED)) as file:
-		run = np.zeros(len(m_tot)) + year*1000
-		event = np.linspace(0, len(m_tot)-1, len(m_tot))
-		year = np.zeros(len(m_tot)) + year
-		ecode = np.zeros(len(e_ipc15)) + 2
-		ecode = np.concatenate((ecode, np.zeros(len(e_ipc18)) + 4))
-		ecode = np.concatenate((ecode, np.zeros(len(e_epc15)) + 1))
-		ecode = np.concatenate((ecode, np.zeros(len(e_epc18)) + 3))
-		ecode = np.concatenate((ecode, np.zeros(len(e_x17))))
-		cat = np.ones(len(m_tot))
-		#run = run[t_tot > 100]
-		#event = event[t_tot > 100]
-		#year = year[t_tot > 100]
-		#ecode = ecode[t_tot > 100]
-		#cat = cat[t_tot > 100]
-		#m_tot = m_tot[t_tot > 100]
-		#e_tot = e_tot[t_tot > 100]
-		#t_tot = t_tot[t_tot > 100]
-		file['ntuple'] = {'run' : run.astype('float32'), 'event' : event.astype('float32'), 'year' : year.astype('float32'), 'ecode' : ecode.astype('float32'), 'esum' : e_tot.astype('float32'), 'imas' : m_tot.astype('float32'), 'dth' : t_tot.astype('float32'), 'cat' : cat.astype('float32')}
+    # Write to file
+    if fileName == '':
+        prefix = 'X17MC%d_s%d.root' %(year, SEED)
+    else:
+        prefix = fileName + '_s%d.root' %(SEED)
+    with uproot.recreate(workDir + prefix) as file:
+        run = np.zeros(len(m_tot)) + year*1000
+        event = np.linspace(0, len(m_tot)-1, len(m_tot))
+        year = np.zeros(len(m_tot)) + year
+        ecode = np.zeros(len(e_ipc15)) + 2
+        ecode = np.concatenate((ecode, np.zeros(len(e_ipc18)) + 4))
+        ecode = np.concatenate((ecode, np.zeros(len(e_epc15)) + 1))
+        ecode = np.concatenate((ecode, np.zeros(len(e_epc18)) + 3))
+        ecode = np.concatenate((ecode, np.zeros(len(e_x17))))
+        cat = np.ones(len(m_tot))
+        #run = run[t_tot > 100]
+        #event = event[t_tot > 100]
+        #year = year[t_tot > 100]
+        #ecode = ecode[t_tot > 100]
+        #cat = cat[t_tot > 100]
+        #m_tot = m_tot[t_tot > 100]
+        #e_tot = e_tot[t_tot > 100]
+        #t_tot = t_tot[t_tot > 100]
+        file['ntuple'] = {'run' : run.astype('float32'), 'event' : event.astype('float32'), 'year' : year.astype('float32'), 'ecode' : ecode.astype('float32'), 'esum' : e_tot.astype('float32'), 'imas' : m_tot.astype('float32'), 'dth' : t_tot.astype('float32'), 'cat' : cat.astype('float32')}
 
 if __name__ ==  '__main__':
-	sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = 450, year = 2021)
-	sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.25, _fEPC18 = 0.25, _Nx17 = 100000, year = 2021, SEED=299792458)
-	sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.25, _fEPC18 = 0.25, _Nx17 = 100000000, year = 2021, SEED=299792459)
+    sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = 450, year = 2021)
+    sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.25, _fEPC18 = 0.25, _Nx17 = 100000, year = 2021, SEED=299792459)
+    sampleMass(_Nbkg = 220000, _fIPC18 = 0.4545454545, _fIPC15 = 0.04545454545, _fEPC18 = 0.04545454545, _Nx17 = 100000, year = 2021, SEED = 299792458, workDir = '')
 
