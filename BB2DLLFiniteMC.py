@@ -5,6 +5,7 @@ import uproot
 import numpy as np
 from scipy.integrate import quad
 from matplotlib import pyplot as plt
+from matplotlib import cm
 from scipy.optimize import brentq
 from iminuit import Minuit
 import matplotlib
@@ -13,6 +14,7 @@ import time
 import SigLikX17
 
 matplotlib.rcParams.update({'font.size': 35})
+plt.rcParams['figure.constrained_layout.use'] = True
 
 dataFile = 'X17MC2021.root'
 dataFile = 'X17MC2021_s1.root'
@@ -285,22 +287,36 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         hBestFit = np.array(hBestFit)
 
         # Plot marginal distributions
-        fig = plt.figure(figsize=(42, 14), dpi=100)
-        plt.subplot(131)
+        fig = plt.figure(figsize=(42, 16), dpi=100)
+        ax = fig.add_subplot(131)
         for j in range(len(hMX)):
             if j == len(hMX) - 1:
-                bottom = np.sum(hBestFit[:], axis=0)
+                bottom = np.sum(hBestFit[1:], axis=0)
+                bottomMC = hMX[1] * pvalues[1] + hMX[2] * pvalues[2] + hMX[3] * pvalues[3] + hMX[4] * pvalues[4] 
+                
+                plt.imshow(((bottom - bottomMC)/bottom).transpose()[::-1], cmap=cm.coolwarm, extent=[binsdatax.min(), binsdatax.max(), binsdatay.min(), binsdatay.max()], aspect='auto')
+                plt.grid()
+                cbar = plt.colorbar(orientation='horizontal')
+                cbar.set_label('(Aji - aji)/Aji')
+                #cbar.set_ticks(np.linspace(0, 2, num=10))
+
+                
+                plt.xlabel('Relative angle, [deg]')
+                plt.ylabel('Energy sum [MeV]')
                 bottom = np.sum(bottom, axis=1)
-                plt.plot(binsdatax[:-1], (bottom - np.sum(hdata, axis=1))/np.sqrt(np.sum(hdata, axis=1)), 'k--')
+                bottomMC = np.sum(bottomMC, axis=1)
+                #plt.plot(binsdatax[:-1], (bottom - np.sum(hdata, axis=1))/np.sqrt(np.sum(hdata, axis=1)), 'k--')
 
         plt.subplot(132)
         # make bar step
-        plt.step(binsdatax[:-1], np.sum(hdata, axis=1), where='post', label='data', linewidth=2, color='k')
+        plt.stairs( np.sum(hdata, axis=1), binsdatax,label='data', linewidth=8, color='k')
         # Stack MC fit
         bottom = np.sum(hBestFit[1:], axis=0)
         bottom = np.sum(bottom, axis=1)
-        plt.bar(binsdatax[:-1], bottom, width=(binsdatax[1] - binsdatax[0]), alpha=0.5, label='MC BKG', align='edge')
-        plt.bar(binsdatax[:-1], np.sum(hBestFit[0], axis=1), width=(binsdatax[1] - binsdatax[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
+        plt.bar(binsdatax[:-1], bottom, width=(binsdatax[1] - binsdatax[0]), label='MC BKG', align='edge', color=cm.coolwarm(0), alpha=0.5)
+        plt.stairs(bottom, binsdatax, linewidth=8, color=cm.coolwarm(0))
+        plt.bar(binsdatax[:-1], np.sum(hBestFit[0], axis=1), width=(binsdatax[1] - binsdatax[0]),bottom=bottom, label='MC X17', align='edge', color=cm.coolwarm(0.99), alpha=0.5)
+        plt.stairs(np.sum(hBestFit[0], axis=1), binsdatax, linewidth=8, color=cm.coolwarm(0.99))
 
         plt.xlim(100, 180)
         plt.ylim(0, 3000*20/dthnBins)
@@ -311,15 +327,19 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
 
         plt.subplot(133)
         # make bar step
-        plt.step(binsdatay[:-1], np.sum(hdata, axis=0), where='post', label='data', linewidth=2, color='k')
+        plt.stairs(np.sum(hdata, axis=0), binsdatay, label='data', linewidth=8, color='k')
         # Stack MC fit
         bottom = np.sum(hBestFit[1:], axis=0)
         bottom = np.sum(bottom, axis=0)
-        plt.bar(binsdatay[:-1], bottom, width=(binsdatay[1] - binsdatay[0]), alpha=0.5, label='MC BKG', align='edge')
-        plt.bar(binsdatay[:-1], np.sum(hBestFit[0], axis=0), width=(binsdatay[1] - binsdatay[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge')
+        plt.bar(binsdatay[:-1], bottom, width=(binsdatay[1] - binsdatay[0]), alpha=0.5, label='MC BKG', align='edge', color=cm.coolwarm(0))
+        plt.stairs(bottom, binsdatay, linewidth=8, color=cm.coolwarm(0))
+        plt.bar(binsdatay[:-1], np.sum(hBestFit[0], axis=0), width=(binsdatay[1] - binsdatay[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge', color=cm.coolwarm(0.99))
+        plt.stairs(np.sum(hBestFit[0], axis=0), binsdatay, linewidth=8, color=cm.coolwarm(0.99))
+        plt.yscale('log')
         plt.xlabel('Energy sum [MeV]')
         plt.grid()
-        plt.savefig('X17Fit.png')
+        if not doNullHyphotesis:
+            plt.savefig('X17Fit.png', bbox_inches='tight')
     
     
     return values, logL.errors, logL.fval, logL.accurate
@@ -390,7 +410,7 @@ if __name__ == '__main__':
     hMX, binsXMCx, binsXMCy = loadMC(MCFile, workDir)
     hdata, binsdatax, binsdatay = loadData(dataFile, workDir)
     startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
-    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True,  doNullHyphotesis = False, parametrizedX17 = True)
-    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = True,  parametrizedX17 = True)
+    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True)
+    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True)
     computeSignificance(H0[2], H1[2], 2)
     #doProfileLL(startingPs, hdata, hMX, plotFigure = True)
