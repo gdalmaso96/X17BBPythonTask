@@ -180,6 +180,23 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
     return -2*LL
 
 ########################################################################
+# Toy MC
+def sampleToyMC(hMXtemp, SEED = 0):
+    np.random.seed(SEED)
+    hToyMC = []
+    for i in range(len(hMXtemp)):
+        hTemp = []
+        for j in range(len(hMXtemp[i])):
+            if hMXtemp[i][j] > 0:
+                hTemp.append(np.random.poisson(hMXtemp[i][j]))
+            else:
+                hTemp.append(0)
+        hToyMC.append(np.array(hTemp))
+    return np.array(hToyMC)
+
+# Do FC point
+
+########################################################################
 # Maximize likelihood
 
 def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False):
@@ -191,9 +208,6 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     
     # Bin centers with mesh grid
     X, Y = np.meshgrid((binsdatax[:-1] + binsdatax[1:])/2, (binsdatay[:-1] + binsdatay[1:])/2)
-
-    if doNullHyphotesis:
-        startingPs[0] = 0
 
     # Set up Minuit
     if parametrizedX17:
@@ -340,6 +354,8 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         plt.grid()
         if not doNullHyphotesis:
             plt.savefig('X17Fit.png', bbox_inches='tight')
+        else:
+            plt.savefig('X17FitNull.png', bbox_inches='tight')
     
     
     return values, logL.errors, logL.fval, logL.accurate
