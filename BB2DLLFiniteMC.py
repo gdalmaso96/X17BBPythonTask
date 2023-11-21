@@ -6,7 +6,7 @@ import numpy as np
 from scipy.integrate import quad
 from matplotlib import pyplot as plt
 from matplotlib import cm
-from scipy.optimize import brentq
+from scipy.optimize import brentq, differential_evolution
 from iminuit import Minuit
 import matplotlib
 from scipy.stats import chi2, norm
@@ -254,12 +254,28 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     # Solve
     #logL.simplex()
     logL.strategy = 2
-    logL.migrad(ncall = 1000000)
+    logL.migrad()
     I = 0
     while (not logL.accurate or I > 10):
+        print('Elapsed time: ' + str(time.time() - startTime))
+        print('Trying again')
+        # Find starting point with differential evolution
+        bounds = []
+        for sp in startingPs:
+            if sp == 0:
+                bounds.append((0, 100))
+            else:
+                bounds.append((sp*0.5, sp*1.5))
+        if parametrizedX17:
+            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), maxiter = 1000, popsize=20*(I+1))
+        else:
+            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), maxiter = 1000, popsize=20*(I+1))
+        print('Elapsed time: ' + str(time.time() - startTime))
+        print('Found starting point:', res.x)
+        logL.values = res.x
         #logL.simplex()
         logL.strategy = 2
-        logL.tol = 1e-18
+        #logL.tol = 1e-18
         logL.migrad(ncall = 1000000)
         I += 1
     logL.hesse()
