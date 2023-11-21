@@ -17,7 +17,7 @@ matplotlib.rcParams.update({'font.size': 35})
 plt.rcParams['figure.constrained_layout.use'] = True
 
 dataFile = 'X17MC2021.root'
-dataFile = 'X17MC2021_s1.root'
+#dataFile = 'X17MC2021_s1.root'
 MCFile = 'X17reference.root'
 #MCFile = 'X17referenceRealistic.root'
 workDir = 'results/'
@@ -110,6 +110,7 @@ def solveTi(ti, di, p, ai):
 def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
     LL = 0
     AIJ = []
+    TI = []
     p = np.array([p0, p1, p2, p3, p4])
     K = np.argsort(p)[::-1]
     
@@ -172,10 +173,12 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
             
             if getA:
                 AIJ.append(Ai)
+                TI.append(ti[0])
     
     if getA:
         AIJ = np.array(AIJ)
-        return -2*LL, AIJ
+        TI = np.array(TI)
+        return -2*LL, AIJ, TI
     
     return -2*LL
 
@@ -251,42 +254,72 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
 
     startTime = time.time()
 
+    # Find starting point with differential evolution
+    bounds = []
+    for sp,fix in zip(startingPs, logL.fixed):
+        if fix:
+            bounds.append((sp, sp))
+        elif sp == 0:
+            bounds.append((0, 100))
+        else:
+            bounds.append((sp*0.9, sp*1.1))
+    if parametrizedX17:
+        res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), x0=startingPs, popsize=20, updating='immediate', tol=1e-6, disp=True)
+    else:
+        res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), x0=startingPs, popsize=20, updating='immediate', tol=1e-6, disp=True)
+    logL.values = res.x
+    if parametrizedX17:
+        logL.values[0] = startingPs[0]
+        logL.values[5] = startingPs[5]
+    print('Found starting point:', res.x, res.fun)
     # Solve
     #logL.simplex()
     logL.strategy = 2
+    logL.tol = 1e-18
     logL.migrad()
+    print(logL.fval)
+    print(logL.accurate)
+    initialFval = res.fun
     I = 0
-    while (not logL.accurate or I > 10):
+    while (((not logL.accurate) or logL.fval - initialFval > 1e-3) and I < 10):
         print('Elapsed time: ' + str(time.time() - startTime))
         print('Trying again')
         # Find starting point with differential evolution
         bounds = []
-        for sp in startingPs:
-            if sp == 0:
+        for sp, fix in zip(startingPs, logL.fixed):
+            if fix:
+                bounds.append((sp, sp))
+            elif sp == 0:
                 bounds.append((0, 100))
             else:
                 bounds.append((sp*0.5, sp*1.5))
         if parametrizedX17:
-            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), maxiter = 1000, popsize=20*(I+1))
+            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), maxiter = 1000, tol=1e-6, popsize=20*(I+1), disp=True)
         else:
-            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), maxiter = 1000, popsize=20*(I+1))
+            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), maxiter = 1000, tol=1e-6, popsize=20*(I+1), disp=True)
         print('Elapsed time: ' + str(time.time() - startTime))
-        print('Found starting point:', res.x)
+        print('Found starting point:', res.x, res.fun)
         logL.values = res.x
         #logL.simplex()
         logL.strategy = 2
-        #logL.tol = 1e-18
+        logL.tol = 1e-18
         logL.migrad(ncall = 1000000)
+        print(logL.fval)
+        print(logL.accurate)
         I += 1
+        if I > 10:
+            break
+        if logL.fval < initialFval and logL.accurate:
+            break
     logL.hesse()
 
     values = logL.values
 
     # Print results
     print(values)
+    pvalues = values[:5]/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
+    print(pvalues.argsort()[::-1])
     print(logL.errors)
-    print(logL.fval)
-    print(logL.accurate)
     print('Elapsed time: ' + str(time.time() - startTime))
 
     if plotFigure:
@@ -296,7 +329,11 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
             hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
         pvalues = values[:5]/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
 
-        val, AIJ = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True)
+        if parametrizedX17:
+            val, AIJ, TI = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True, Kstart=1)
+        else:
+            val, AIJ, TI = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True)
+        TI = TI.reshape((dthnBins, esumnBins))
 
         print(val)
 
@@ -324,10 +361,11 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
                 bottom = np.sum(hBestFit[1:], axis=0)
                 bottomMC = hMX[1] * pvalues[1] + hMX[2] * pvalues[2] + hMX[3] * pvalues[3] + hMX[4] * pvalues[4] 
                 
-                plt.imshow(((bottom - bottomMC)/bottom).transpose()[::-1], cmap=cm.coolwarm, extent=[binsdatax.min(), binsdatax.max(), binsdatay.min(), binsdatay.max()], aspect='auto')
+                #plt.imshow(((bottom - bottomMC)/bottom).transpose()[::-1], cmap=cm.coolwarm, extent=[binsdatax.min(), binsdatax.max(), binsdatay.min(), binsdatay.max()], aspect='auto')
+                plt.imshow((TI).transpose()[::-1], cmap=cm.coolwarm, extent=[binsdatax.min(), binsdatax.max(), binsdatay.min(), binsdatay.max()], aspect='auto')
                 plt.grid()
                 cbar = plt.colorbar(orientation='horizontal')
-                cbar.set_label('(Aji - aji)/Aji')
+                cbar.set_label('ti')
                 #cbar.set_ticks(np.linspace(0, 2, num=10))
 
                 
@@ -443,6 +481,7 @@ if __name__ == '__main__':
     hdata, binsdatax, binsdatay = loadData(dataFile, workDir)
     startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
     H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True)
+    startingPs = np.array([0, 37500, 27500, 135000, 50000, 17])
     H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True)
     computeSignificance(H0[2], H1[2], 2)
     #doProfileLL(startingPs, hdata, hMX, plotFigure = True)
