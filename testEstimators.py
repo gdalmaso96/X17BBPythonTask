@@ -20,10 +20,10 @@ def argparser():
     parser.add_argument('-rMC', '--reuseMC', type=bool, default=False, help='Reuse ToyMC produced previously')
     parser.add_argument('-pX17', '--parametrizeX17', type=bool, default=False, help='Use parametrized X17 template')
     parser.add_argument('-v', '--varyReference', type=bool, default=False, help='Sample reference MC at each iteration')
-    parser.add_argument('-ts', '--ToySample', type=bool, default=False, help='Produced ToyMC sample')
+    parser.add_argument('-ts', '--ToySample', type=bool, default=False, help='Produce ToyMC sample')
     parser.add_argument('-nt', '--numberToys', type=int, default=1000, help='Number of toys to produce')
-    parser.add_argument('-nX17', '--numberX17', type=int, default=450, help='Number of X17 events to produce in ToyMC')
-    parser.add_argument('-mX17', '--massX17', type=int, default=17, help='Mass of X17 events to produce in ToyMC')
+    parser.add_argument('-nX17', '--numberX17', type=float, default=450, help='Number of X17 events to produce in ToyMC')
+    parser.add_argument('-mX17', '--massX17', type=float, default=17, help='Mass of X17 events to produce in ToyMC')
     parser.add_argument('-pFC', '--posterioriFC', type=bool, default=False, help='Use a posteriori FC')
     parser.add_argument('-rFC', '--resetFC', type=bool, default=False, help='Replace FC file')
     parser.add_argument('-st', '--saveToy', type=bool, default=False, help='Save ToyMC')
@@ -51,15 +51,15 @@ if __name__ == '__main__':
         dataFile = f'{dataF}.root'
         MCFile = f'{referenceFile}'
         hMX, binsXMCx, binsXMCy = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
+        hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
         
-        binsdatax = np.linspace(BB2DLLFiniteMC.dthMin, BB2DLLFiniteMC.dthMax, BB2DLLFiniteMC.dthnBins + 1)
-        binsdatay = np.linspace(BB2DLLFiniteMC.esumMin, BB2DLLFiniteMC.esumMax, BB2DLLFiniteMC.esumnBins + 1)
+        #binsdatax = np.linspace(BB2DLLFiniteMC.dthMin, BB2DLLFiniteMC.dthMax, BB2DLLFiniteMC.dthnBins + 1)
+        #binsdatay = np.linspace(BB2DLLFiniteMC.esumMin, BB2DLLFiniteMC.esumMax, BB2DLLFiniteMC.esumnBins + 1)
         X, Y = np.meshgrid((binsdatax[:-1] + binsdatax[1:])/2, (binsdatay[:-1] + binsdatay[1:])/2)
         hMX[0] = BB2DLLFiniteMC.nMCXtotParametrized*SigLikX17.AngleVSEnergySum(X, Y, massX17Toy, BB2DLLFiniteMC.dthMin, BB2DLLFiniteMC.dthMax, BB2DLLFiniteMC.dthnBins, BB2DLLFiniteMC.esumMin, BB2DLLFiniteMC.esumMax, BB2DLLFiniteMC.esumnBins, dthRes = 9.5, esumRes = 1.15)
         startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
         
         if posterioriFC:
-            hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
             values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = True, parametrizedX17 = args.parametrizeX17)
             # Get Aji
             startingPs = values
@@ -75,13 +75,26 @@ if __name__ == '__main__':
         p = np.array([nX17Toy/nMCXtot, startingPs[1]/nMCXe15, startingPs[2]/nMCXi15, startingPs[3]/nMCXe18, startingPs[4]/nMCXi18])
         
         # Check if file to store laratio of Toys exists
-        my_file = Path(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}.txt')
+        my_file = Path(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}_nX17{nX17Toy}_mX17{massX17Toy}.txt')
         if args.resetFC or not my_file.is_file():
             # Create file to store lratio of Toys
-            with open(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}.txt', 'w') as f:
+            with open(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}_nX17{nX17Toy}_mX17{massX17Toy}.txt', 'w') as f:
                 f.write('#lratio\n')
         
         startTime = time()
+        # Do Data point
+        if SEED == 0:
+            values, errors, fval, accurateH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = args.plotToy, parametrizedX17 = args.parametrizeX17, doNullHyphotesis = True)
+            lratio = fval
+            values[0] = nX17Toy
+            values[5] = massX17Toy
+            values, errors, fval, accurateH1 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, values, plotFigure = args.plotToy, parametrizedX17 = args.parametrizeX17)
+            lratio -= fval
+            
+            # Store nX17Toy, massX17Toy, accurateH1, accurateH0, SEED, lratio
+            with open(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}_nX17{nX17Toy}_mX17{massX17Toy}.txt', 'a') as f:
+                f.write(f'{nX17Toy} {massX17Toy} {accurateH1} {accurateH0} {True} {SEED} {lratio}\n')
+
         for i in range(numberToys):
             # Sample data ToyMC
             htemp = hMX[0]*p[0] + hMX[1]*p[1] + hMX[2]*p[2] + hMX[3]*p[3] + hMX[4]*p[4]
@@ -103,8 +116,8 @@ if __name__ == '__main__':
             lratio -= fval
             
             # Store nX17Toy, massX17Toy, accurateH1, accurateH0, SEED, lratio
-            with open(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}.txt', 'a') as f:
-                f.write(f'{nX17Toy} {massX17Toy} {accurateH1} {accurateH0} {SEED+i} {lratio}\n')
+            with open(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}_nX17{nX17Toy}_mX17{massX17Toy}.txt', 'a') as f:
+                f.write(f'{nX17Toy} {massX17Toy} {accurateH1} {accurateH0} {False} {SEED+i} {lratio}\n')
             
             print('Toy MC elapsed time: ', time() - startTime)
     
