@@ -242,6 +242,7 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
             p4 = nI18/nMCXi18
             return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False)
         
+        startingPs = startingPs[:5]
         logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4])
         #logL.tol = 1e-18
         logL.limits[0] = (0, None)
@@ -296,6 +297,7 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         if parametrizedX17:
             res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), maxiter = 1000, tol=1e-6, popsize=20*(I+1), disp=True)
         else:
+            bounds = bounds[:5]
             res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), maxiter = 1000, tol=1e-6, popsize=20*(I+1), disp=True)
         print('Elapsed time: ' + str(time.time() - startTime))
         print('Found starting point:', res.x, res.fun)

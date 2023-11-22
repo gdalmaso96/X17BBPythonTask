@@ -56,7 +56,7 @@ if __name__ == '__main__':
         
         startTime = time()
         startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
-        values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = True, parametrizedX17 = args.parametrizeX17)
+        values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = args.parametrizeX17)
         bestNX17 = values[0]
         bestMass = values[5]
         fBest = fval
@@ -122,7 +122,7 @@ if __name__ == '__main__':
         startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
         
         if posterioriFC:
-            values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = True, parametrizedX17 = args.parametrizeX17)
+            values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = args.parametrizeX17)
             # Get Aji
             startingPs = values
         
@@ -218,7 +218,7 @@ if __name__ == '__main__':
             hMX, binsXMCx, binsXMCy = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
             hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
             startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
-            values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = True, parametrizedX17 = args.parametrizeX17)
+            values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = args.parametrizeX17)
             execTime = time() - startTime
             startingPs = np.array([0, 37500, 27500, 135000, 50000, 17])
             valuesH0, errorsH0, fvalH0, accurateH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = args.parametrizeX17)
