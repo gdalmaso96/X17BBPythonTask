@@ -53,14 +53,16 @@ if __name__ == '__main__':
     plotToy = args.plotToy
     
     # Test Toy
-    ToySample = True
-    SEED = 0
-    numberToys = 1
-    nX17Toy = 391.5
-    massX17Toy = 16.825024277990128
-    parametrizeX17 = True
-    plotToy = True
-    posterioriFC = True
+    #ToySample = True
+    #SEED = 0
+    #numberToys = 1
+    #nX17Toy = 391.5
+    #massX17Toy = 16.825024277990128
+    #parametrizeX17 = True
+    #plotToy = True
+    #posterioriFC = False
+    #dataF = 'X17MC2021'
+    #referenceFile = 'X17reference.root'
     
     if args.profileLikelihood:
         startTime = time()

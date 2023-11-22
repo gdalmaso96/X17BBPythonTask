@@ -144,6 +144,7 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
                     doNormalBB = True
                 else:
                     doNormalBB = False
+                    ti = [-1/p[K[0]]]
             
             if doNormalBB:
                 ti = brentq(solveTi, -1/p[K[0]], 1, args=(Di, p, np.array(ai)), full_output=True)
