@@ -125,6 +125,36 @@ if __name__ == '__main__':
             values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = True, parametrizedX17 = args.parametrizeX17)
             # Get Aji
             startingPs = values
+            nMCXtot = hMX[0].sum()
+            nMCXe15 = hMX[1].sum()
+            nMCXi15 = hMX[2].sum()
+            nMCXe18 = hMX[3].sum()
+            nMCXi18 = hMX[4].sum()
+            if args.parametrizeX17:
+                nMCXtot = BB2DLLFiniteMC.nMCXtotParametrized
+            pvalues = values[:5]/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
+            
+            if args.parametrizeX17:
+                val, AIJ, TI = BB2DLLFiniteMC.LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True, Kstart=1)
+            else:
+                val, AIJ, TI = BB2DLLFiniteMC.LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True)
+            
+            hBestFit = []
+            for j in range(len(hMX)):
+                hj = []
+                for I in range(BB2DLLFiniteMC.dthnBins):
+                    htemp = []
+                    for J in range(BB2DLLFiniteMC.esumnBins):
+                        htemp.append(AIJ[I*BB2DLLFiniteMC.esumnBins + J][j]*pvalues[j])
+                    
+                    hj.append(np.array(htemp))
+                    
+                hBestFit.append(np.array(hj))
+
+            # Reshape
+            hBestFit = np.array(hBestFit)
+            hMX = hBestFit
+
         
         startingPs[0] = nX17Toy
         startingPs[5] = massX17Toy
