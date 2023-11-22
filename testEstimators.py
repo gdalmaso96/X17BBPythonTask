@@ -53,14 +53,14 @@ if __name__ == '__main__':
     plotToy = args.plotToy
     
     # Test Toy
-    #ToySample = True
-    #SEED = 0
-    #numberToys = 1
-    #nX17Toy = 391.5
-    #massX17Toy = 16.825024277990128
-    #parametrizeX17 = True
-    #plotToy = True
-    #posterioriFC = True
+    ToySample = True
+    SEED = 0
+    numberToys = 1
+    nX17Toy = 391.5
+    massX17Toy = 16.825024277990128
+    parametrizeX17 = True
+    plotToy = True
+    posterioriFC = True
     
     if args.profileLikelihood:
         startTime = time()
@@ -160,7 +160,7 @@ if __name__ == '__main__':
                 for I in range(BB2DLLFiniteMC.dthnBins):
                     htemp = []
                     for J in range(BB2DLLFiniteMC.esumnBins):
-                        htemp.append(AIJ[I*BB2DLLFiniteMC.esumnBins + J][j]*pvalues[j])
+                        htemp.append(AIJ[I*BB2DLLFiniteMC.esumnBins + J][j])
                     
                     hj.append(np.array(htemp))
                     
