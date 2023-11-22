@@ -202,7 +202,7 @@ def sampleToyMC(hMXtemp, SEED = 0):
 ########################################################################
 # Maximize likelihood
 
-def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False):
+def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False, doDEConvergenceOnly = False):
     nMCXtot = hMX[0].sum()
     nMCXe15 = hMX[1].sum()
     nMCXi15 = hMX[2].sum()
@@ -254,7 +254,11 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     
 
     startTime = time.time()
-
+    DEtolerance = 1e-6
+    DEpopsize = 20
+    if doDEConvergenceOnly:
+        DEtolerance = 1e-7
+        DEpopsize = 20
     # Find starting point with differential evolution
     bounds = []
     for sp,fix in zip(startingPs, logL.fixed):
@@ -265,24 +269,38 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         else:
             bounds.append((sp*0.9, sp*1.1))
     if parametrizedX17:
-        res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), x0=startingPs, popsize=20, updating='immediate', tol=1e-6, disp=True)
+        res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), x0=startingPs, popsize=DEpopsize, updating='immediate', tol=DEtolerance, disp=True)
     else:
-        res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), x0=startingPs, popsize=20, updating='immediate', tol=1e-6, disp=True)
+        res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), x0=startingPs, popsize=DEpopsize, updating='immediate', tol=DEtolerance, disp=True)
     logL.values = res.x
-    if parametrizedX17:
-        logL.values[0] = startingPs[0]
-        logL.values[5] = startingPs[5]
+    #if parametrizedX17 and not doNullHyphotesis:
+    #    logL.values[0] = startingPs[0]
+    #    logL.values[5] = startingPs[5]
     print('Found starting point:', res.x, res.fun)
     # Solve
     #logL.simplex()
-    logL.strategy = 2
-    logL.tol = 1e-18
-    logL.migrad()
+    #logL.strategy = 2
+    #logL.tol = 1e-18
+    #logL.errors = res.x*0.1
+    logL.migrad(ncall=100000)
+    logL.hesse()
     print(logL.fval)
     print(logL.accurate)
     initialFval = res.fun
     I = 0
-    while (((not logL.accurate) or logL.fval - initialFval > 1e-3) and I < 10):
+    if doDEConvergenceOnly and logL.fval - initialFval > 1e-3:
+        logL.values = res.x
+        logL.hesse()
+    
+    reFit = not logL.accurate
+    #if logL.accurate == False:
+    #    reFit = True
+    #    for val, limits in zip(logL.values, logL.limits):
+    #        if val == limits[0] or val == limits[1]:
+    #            reFit = False
+    #            break
+    
+    while ((reFit or logL.fval - initialFval > 1e-3) and I < 5 and not doDEConvergenceOnly):
         print('Elapsed time: ' + str(time.time() - startTime))
         print('Trying again')
         # Find starting point with differential evolution
@@ -295,16 +313,16 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
             else:
                 bounds.append((sp*0.5, sp*1.5))
         if parametrizedX17:
-            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), maxiter = 1000, tol=1e-6, popsize=20*(I+1), disp=True)
+            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), maxiter = 1000, tol=DEtolerance, popsize=DEpopsize*(I+1), disp=True)
         else:
             bounds = bounds[:5]
-            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), maxiter = 1000, tol=1e-6, popsize=20*(I+1), disp=True)
+            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), maxiter = 1000, tol=DEtolerance, popsize=DEpopsize*(I+1), disp=True)
         print('Elapsed time: ' + str(time.time() - startTime))
         print('Found starting point:', res.x, res.fun)
         logL.values = res.x
         #logL.simplex()
-        logL.strategy = 2
-        logL.tol = 1e-18
+        #logL.strategy = 2
+        #logL.tol = 1e-18
         logL.migrad(ncall = 1000000)
         print(logL.fval)
         print(logL.accurate)
@@ -450,7 +468,7 @@ def doProfileLL(startingPs, hdata, hMX, plotFigure = False):
 
         # Solve
         logL.simplex()
-        logL.strategy = 2
+        #logL.strategy = 2
         logL.migrad()
         logL.hesse()
         
