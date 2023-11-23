@@ -102,6 +102,10 @@ def Aji(aji, pj, ti):
 # -- p: array of pj
 # -- ai: array of aji
 def solveTi(ti, di, p, ai):
+    if ti == 1:
+        return np.inf
+    elif (ti == -1/p).any():
+        return -np.inf
     A = di/(1 - ti)
     B = p*ai/(1 + ti*p)
     B = B.sum()
@@ -145,7 +149,9 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
                 else:
                     doNormalBB = False
                     ti = [-1/p[K[0]]]
-            
+            #for i in range(len(Ai)):
+            #    if Ai[i] == 0:
+            #        Ai[i] = 1/hMX[i].sum()
             if doNormalBB:
                 ti = brentq(solveTi, -1/p[K[0]], 1, args=(Di, p, np.array(ai)), full_output=True)
                 if ti[1].converged != True:
@@ -261,76 +267,98 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         DEtolerance = 1e-7
         DEpopsize = 20
     # Find starting point with differential evolution
-    bounds = []
-    for sp,fix in zip(startingPs, logL.fixed):
-        if fix:
-            bounds.append((sp, sp))
-        elif sp == 0:
-            bounds.append((0, 100))
-        else:
-            bounds.append((sp*0.9, sp*1.1))
-    if parametrizedX17:
-        res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), x0=startingPs, popsize=DEpopsize, updating='immediate', tol=DEtolerance, disp=True)
-    else:
-        res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), x0=startingPs, popsize=DEpopsize, updating='immediate', tol=DEtolerance, disp=True)
-    logL.values = res.x
-    #if parametrizedX17 and not doNullHyphotesis:
-    #    logL.values[0] = startingPs[0]
-    #    logL.values[5] = startingPs[5]
-    print('Found starting point:', res.x, res.fun)
+    #bounds = []
+    #for sp,fix in zip(startingPs, logL.fixed):
+    #    if fix:
+    #        bounds.append((sp, sp))
+    #    elif sp == 0:
+    #        bounds.append((0, 100))
+    #    else:
+    #        bounds.append((sp*0.9, sp*1.1))
+    #if parametrizedX17:
+    #    res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), x0=startingPs, popsize=DEpopsize, updating='immediate', tol=DEtolerance, disp=True)
+    #else:
+    #    res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), x0=startingPs, popsize=DEpopsize, updating='immediate', tol=DEtolerance, disp=True)
+    #logL.values = res.x
+    ##if parametrizedX17 and not doNullHyphotesis:
+    ##    logL.values[0] = startingPs[0]
+    ##    logL.values[5] = startingPs[5]
+    #print('Found starting point:', res.x, res.fun)
     # Solve
+    logL.hesse()
+    if parametrizedX17 and not doNullHyphotesis:
+        logL.fixed[0] = True
+        logL.migrad(ncall=100000, iterate=10)
+        logL.fixed[0] = False
+        logL.fixed[5] = True
+        logL.migrad(ncall=100000, iterate=10)
+        logL.fixed[5] = False
+        logL.fixed[0] = True
+        logL.migrad(ncall=100000, iterate=10)
+        logL.fixed[0] = False
+        logL.fixed[5] = True
+        logL.migrad(ncall=100000, iterate=10)
+        logL.fixed[5] = False
+    elif not doNullHyphotesis:
+        logL.fixed[0] = True
+        logL.migrad(ncall=100000, iterate=10)
+        logL.fixed[0] = False
+    print(logL.values)
+    initialFval = logL.fval
     #logL.simplex()
-    #logL.strategy = 2
+    logL.strategy = 1
     #logL.tol = 1e-18
     #logL.errors = res.x*0.1
-    logL.migrad(ncall=100000)
+    logL.migrad(ncall=100000, iterate=10)
     logL.hesse()
+    print(initialFval)
     print(logL.fval)
-    print(logL.accurate)
-    initialFval = res.fun
+    print(logL.valid)
     I = 0
-    if doDEConvergenceOnly and logL.fval - initialFval > 1e-3:
-        logL.values = res.x
-        logL.hesse()
+    #if doDEConvergenceOnly and logL.fval - initialFval > 1e-3:
+    #    logL.values = res.x
+    #    logL.hesse()
     
-    reFit = not logL.accurate
-    #if logL.accurate == False:
+    reFit = not logL.valid
+    #if logL.valid == False:
     #    reFit = True
     #    for val, limits in zip(logL.values, logL.limits):
     #        if val == limits[0] or val == limits[1]:
     #            reFit = False
     #            break
-    
+    print('\n',reFit)
+    print((reFit or logL.fval - initialFval > 1e-3) and I < 5 and not doDEConvergenceOnly)
+    print(doDEConvergenceOnly)
     while ((reFit or logL.fval - initialFval > 1e-3) and I < 5 and not doDEConvergenceOnly):
         print('Elapsed time: ' + str(time.time() - startTime))
         print('Trying again')
         # Find starting point with differential evolution
-        bounds = []
-        for sp, fix in zip(startingPs, logL.fixed):
-            if fix:
-                bounds.append((sp, sp))
-            elif sp == 0:
-                bounds.append((0, 100))
-            else:
-                bounds.append((sp*0.5, sp*1.5))
-        if parametrizedX17:
-            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), maxiter = 1000, tol=DEtolerance, popsize=DEpopsize*(I+1), disp=True)
-        else:
-            bounds = bounds[:5]
-            res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), maxiter = 1000, tol=DEtolerance, popsize=DEpopsize*(I+1), disp=True)
-        print('Elapsed time: ' + str(time.time() - startTime))
-        print('Found starting point:', res.x, res.fun)
-        logL.values = res.x
-        #logL.simplex()
-        #logL.strategy = 2
-        #logL.tol = 1e-18
-        logL.migrad(ncall = 1000000)
+        #bounds = []
+        #for sp, fix in zip(startingPs, logL.fixed):
+        #    if fix:
+        #        bounds.append((sp, sp))
+        #    elif sp == 0:
+        #        bounds.append((0, 100))
+        #    else:
+        #        bounds.append((sp*0.5, sp*1.5))
+        #if parametrizedX17:
+        #    res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4], x[5]), bounds, seed = int(time.time()), maxiter = 1000, tol=DEtolerance, popsize=DEpopsize*(I+1), disp=True)
+        #else:
+        #    bounds = bounds[:5]
+        #    res = differential_evolution(lambda x: ll(x[0], x[1], x[2], x[3], x[4]), bounds, seed = int(time.time()), maxiter = 1000, tol=DEtolerance, popsize=DEpopsize*(I+1), disp=True)
+        #print('Elapsed time: ' + str(time.time() - startTime))
+        #print('Found starting point:', res.x, res.fun)
+        #logL.values = res.x
+        logL.simplex()
+        logL.strategy = 2
+        logL.tol = 1e-18
+        logL.migrad(ncall = 1000000, iterate = 100)
         print(logL.fval)
-        print(logL.accurate)
+        print(logL.valid)
         I += 1
         if I > 10:
             break
-        if logL.fval < initialFval and logL.accurate:
+        if logL.fval < initialFval and logL.valid:
             break
     logL.hesse()
 
@@ -396,7 +424,7 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
                 bottomMC = np.sum(bottomMC, axis=1)
                 #plt.plot(binsdatax[:-1], (bottom - np.sum(hdata, axis=1))/np.sqrt(np.sum(hdata, axis=1)), 'k--')
 
-        plt.subplot(132)
+        ax = plt.subplot(132)
         # make bar step
         plt.stairs( np.sum(hdata, axis=1), binsdatax,label='data', linewidth=8, color='k')
         # Stack MC fit
@@ -411,10 +439,24 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         plt.ylim(0, 3000*20/dthnBins)
         plt.legend()
         plt.xlabel('Relative angle [deg]')
+        ax.set_xticklabels([])
         plt.grid()
+        
+        bounds = [0.3775, 0.05, 0.2925, 0.125]
+        bottom = np.sum(hBestFit[:], axis=0)
+        bottom = np.sum(bottom, axis=1)
+        pull = (np.sum(hdata, axis=1) - bottom)/np.sqrt(bottom)
+        bottom = np.sqrt(bottom)
+        plt.gcf().add_axes(bounds)
+        plt.bar(binsdatax[:-1], pull, width=(binsdatax[1] - binsdatax[0]), alpha=0.5, label='MC X17', align='edge', color=cm.coolwarm(0.99))
+        plt.xlim(100, 180)
+        plt.grid()
+        plt.xlabel('Relative angle [deg]')
+        plt.ylabel('Pull')
+        plt.ylim(-3, 3)
 
 
-        plt.subplot(133)
+        ax = plt.subplot(133)
         # make bar step
         plt.stairs(np.sum(hdata, axis=0), binsdatay, label='data', linewidth=8, color='k')
         # Stack MC fit
@@ -425,15 +467,31 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         plt.bar(binsdatay[:-1], np.sum(hBestFit[0], axis=0), width=(binsdatay[1] - binsdatay[0]),bottom=bottom, alpha=0.5, label='MC X17', align='edge', color=cm.coolwarm(0.99))
         plt.stairs(np.sum(hBestFit[0], axis=0), binsdatay, linewidth=8, color=cm.coolwarm(0.99))
         plt.yscale('log')
-        plt.xlabel('Energy sum [MeV]')
+        ax.set_xticklabels([])
         plt.grid()
+        
+        
+        bounds = [0.70625, 0.05, 0.2925, 0.125]
+        bottom = np.sum(hBestFit[:], axis=0)
+        bottom = np.sum(bottom, axis=0)
+        pull = (np.sum(hdata, axis=0) - bottom)/np.sqrt(bottom)
+        bottom = np.sqrt(bottom)
+        plt.gcf().add_axes(bounds)
+        plt.bar(binsdatay[:-1], pull, width=(binsdatay[1] - binsdatay[0]), alpha=0.5, label='MC X17', align='edge', color=cm.coolwarm(0.99))
+        #plt.bar(binsdatay[:-1], 2*bottom, width=(binsdatay[1] - binsdatay[0]),bottom=-bottom, alpha=0.5, label='MC X17', align='edge', color=cm.coolwarm(0.99))
+        plt.grid()
+        plt.xlabel('Energy sum [MeV]')
+        #plt.ylabel('Pull')
+        plt.ylim(-3, 3)
+        
+        
         if not doNullHyphotesis:
             plt.savefig('X17Fit.png', bbox_inches='tight')
         else:
             plt.savefig('X17FitNull.png', bbox_inches='tight')
     
     
-    return values, logL.errors, logL.fval, logL.accurate
+    return values, logL.errors, logL.fval, logL.valid
 
 ########################################################################
 # Profile likelihood
@@ -470,7 +528,7 @@ def doProfileLL(startingPs, hdata, hMX, plotFigure = False):
         # Solve
         logL.simplex()
         #logL.strategy = 2
-        logL.migrad()
+        logL.migrad(ncall=100000)
         logL.hesse()
         
         Y.append(logL.fval)

@@ -117,7 +117,7 @@ def mergeFiles(prefix, plot=False):
         z = f(x, y).transpose()
         
         
-        plt.contour(x, y, z, colors='black', alpha=0.5, levels=[0.9])
+        plt.contour(x, y, z, colors='black', alpha=0.5, levels=[0.1])
         
         plt.ylabel('Mass [MeV]')
         plt.xlabel('nX17')

@@ -33,9 +33,9 @@ if __name__ == '__main__':
     nIpc18 = []
     nIpc18Err = []
     fval = []
-    accurate = []
+    valid = []
     fvalH0 = []
-    accurateH0 = []
+    validH0 = []
     lratio = []
     pvalue = []
     sigma = []
@@ -63,9 +63,9 @@ if __name__ == '__main__':
                     nIpc18.append(float(values[8]))
                     nIpc18Err.append(float(values[9]))
                     fval.append(float(values[10]))
-                    accurate.append(bool(values[11]))
+                    valid.append(bool(values[11]))
                     fvalH0.append(float(values[12]))
-                    accurateH0.append(bool(values[13]))
+                    validH0.append(bool(values[13]))
                     lratio.append(float(values[14]))
                     pvalue.append(float(values[15]))
                     sigma.append(float(values[16]))
@@ -86,9 +86,9 @@ if __name__ == '__main__':
     nIpc18 = np.array(nIpc18)
     nIpc18Err = np.array(nIpc18Err)
     fval = np.array(fval)
-    accurate = np.array(accurate)
+    valid = np.array(valid)
     fvalH0 = np.array(fvalH0)
-    accurateH0 = np.array(accurateH0)
+    validH0 = np.array(validH0)
     lratio = np.array(lratio)
     pvalue = np.array(pvalue)
     sigma = np.array(sigma)
@@ -130,8 +130,8 @@ if __name__ == '__main__':
     plt.grid()
     
     plt.subplot(2, 4, 6)
-    plt.bar(['True', 'False'], [np.sum(accurate), np.sum(accurate == False)])
-    plt.xlabel('accurate')
+    plt.bar(['True', 'False'], [np.sum(valid), np.sum(valid == False)])
+    plt.xlabel('valid')
     plt.yscale('log')
     plt.grid()
     

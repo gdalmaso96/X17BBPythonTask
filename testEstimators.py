@@ -32,11 +32,13 @@ def argparser():
     parser.add_argument('-pT', '--plotToy', type=bool, default=False, help='Plot ToyMC')
     parser.add_argument('-pLL', '--profileLikelihood', type=bool, default=False, help='Use profile likelihood')
     parser.add_argument('-DE', '--doDEconvergence', type=bool, default=False, help='Use DE convergence only')
-    return parser.parse_known_args()
+    #return parser.parse_known_args()
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    args, unknown = argparser()
+    #args, unknown = argparser()
+    args = argparser()
     SEED = args.seed
     workDir = args.workDir
     reset = args.reset
@@ -61,7 +63,7 @@ if __name__ == '__main__':
     #parametrizeX17 = True
     #plotToy = True
     #posterioriFC = False
-    #dataF = 'X17MC2021'
+    #dataF = 'X17MC2021_s1'
     #referenceFile = 'X17reference.root'
     
     if args.profileLikelihood:
@@ -73,9 +75,11 @@ if __name__ == '__main__':
         
         startTime = time()
         startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype=float)
-        values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+        values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
         bestNX17 = values[0]
-        bestMass = values[5]
+        bestMass = 17
+        if parametrizeX17:
+            bestMass = values[5]
         fBest = fval
         
         # Create grid to scan profile likelihood
@@ -102,7 +106,7 @@ if __name__ == '__main__':
         for i in range(len(nX17Scan)):
             if nX17Scan[i] != bestNX17:
                 startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, bestMass], dtype=float)
-                values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+                values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
 
                 pScan.append(fval)
                 # append to file
@@ -117,7 +121,7 @@ if __name__ == '__main__':
             for i in range(len(massX17Scan)):
                 if massX17Scan[i] != bestMass:
                     startingPs = np.array([bestNX17, 37500, 27500, 135000, 50000, massX17Scan[i]], dtype=float)
-                    values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+                    values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
 
                     pScan.append(fval)
                     with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
@@ -139,7 +143,7 @@ if __name__ == '__main__':
         startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype=float)
         
         if posterioriFC:
-            values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
             # Get Aji
             startingPs = values
             nMCXtot = hMX[0].sum()
@@ -194,16 +198,16 @@ if __name__ == '__main__':
         # Do Data point
         if SEED == 0:
             print(startingPs)
-            values, errors, fval, accurateH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doNullHyphotesis = True, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doNullHyphotesis = True, doDEConvergenceOnly = args.doDEconvergence)
             lratio = fval
             values[0] = 450
             values[5] = 17
-            values, errors, fval, accurateH1 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, values, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, validH1 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, values, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
             lratio -= fval
             
-            # Store nX17Toy, massX17Toy, accurateH1, accurateH0, SEED, lratio
+            # Store nX17Toy, massX17Toy, validH1, validH0, SEED, lratio
             with open(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}_nX17{nX17Toy}_mX17{massX17Toy}.txt', 'a') as f:
-                f.write(f'{nX17Toy} {massX17Toy} {accurateH1} {accurateH0} {True} {SEED} {lratio}\n')
+                f.write(f'{nX17Toy} {massX17Toy} {validH1} {validH0} {True} {SEED} {lratio}\n')
 
         for i in range(numberToys):
             # Sample data ToyMC
@@ -218,16 +222,16 @@ if __name__ == '__main__':
                     hToyMC.append(hMX[j])
                 else:
                     hToyMC.append(BB2DLLFiniteMC.sampleToyMC(hMX[j], SEED + i))
-            values, errors, fval, accurateH0 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doNullHyphotesis = True, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doNullHyphotesis = True, doDEConvergenceOnly = args.doDEconvergence)
             lratio = fval
             values[0] = nX17Toy
             values[5] = massX17Toy
-            values, errors, fval, accurateH1 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, values, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, validH1 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, values, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
             lratio -= fval
             
-            # Store nX17Toy, massX17Toy, accurateH1, accurateH0, SEED, lratio
+            # Store nX17Toy, massX17Toy, validH1, validH0, SEED, lratio
             with open(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}_nX17{nX17Toy}_mX17{massX17Toy}.txt', 'a') as f:
-                f.write(f'{nX17Toy} {massX17Toy} {accurateH1} {accurateH0} {False} {SEED+i} {lratio}\n')
+                f.write(f'{nX17Toy} {massX17Toy} {validH1} {validH0} {False} {SEED+i} {lratio}\n')
             
             print('Toy MC elapsed time: ', time() - startTime)
     
@@ -266,10 +270,10 @@ if __name__ == '__main__':
             hMX, binsXMCx, binsXMCy = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
             hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
             startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype = float)
-            values, errors, fval, accurate = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
             execTime = time() - startTime
             startingPs = np.array([0, 37500, 27500, 135000, 50000, 17], dtype = float)
-            valuesH0, errorsH0, fvalH0, accurateH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            valuesH0, errorsH0, fvalH0, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
             
             DOF = 1
             if parametrizeX17:
@@ -282,18 +286,18 @@ if __name__ == '__main__':
             if parametrizeX17:
                 if i == 0 and reset:
                     with open(workDir + f'{prefix}_results_SEED{SEED}.txt', 'w') as f:
-                        f.write('#nSig nSigErr nEpc15 nEpc15Err nIpc15 nIpc15Err nEpc18 nEpc18Err nIpc18 nIpc18Err fval accurate fvalH0 accurateH0 lratio pvalue sigma ExecTime ExecTimeH0 mX17\n')
-                        f.write(f'{values[0]} {errors[0]} {values[1]} {errors[1]} {values[2]} {errors[2]} {values[3]} {errors[3]} {values[4]} {errors[4]} {fval} {accurate} {fvalH0} {accurateH0} {lratio} {pvalue} {sigma} {execTime} {execTime2} {values[5]}\n')
+                        f.write('#nSig nSigErr nEpc15 nEpc15Err nIpc15 nIpc15Err nEpc18 nEpc18Err nIpc18 nIpc18Err fval valid fvalH0 validH0 lratio pvalue sigma ExecTime ExecTimeH0 mX17\n')
+                        f.write(f'{values[0]} {errors[0]} {values[1]} {errors[1]} {values[2]} {errors[2]} {values[3]} {errors[3]} {values[4]} {errors[4]} {fval} {valid} {fvalH0} {validH0} {lratio} {pvalue} {sigma} {execTime} {execTime2} {values[5]}\n')
                 else:
                     with open(workDir + f'{prefix}_results_SEED{SEED}.txt', 'a') as f:
-                        f.write(f'{values[0]} {errors[0]} {values[1]} {errors[1]} {values[2]} {errors[2]} {values[3]} {errors[3]} {values[4]} {errors[4]} {fval} {accurate} {fvalH0} {accurateH0} {lratio} {pvalue} {sigma} {execTime} {execTime2} {values[5]}\n')
+                        f.write(f'{values[0]} {errors[0]} {values[1]} {errors[1]} {values[2]} {errors[2]} {values[3]} {errors[3]} {values[4]} {errors[4]} {fval} {valid} {fvalH0} {validH0} {lratio} {pvalue} {sigma} {execTime} {execTime2} {values[5]}\n')
             else:
                 if i == 0 and reset:
                     with open(workDir + f'{prefix}_results_SEED{SEED}.txt', 'w') as f:
-                        f.write('#nSig nSigErr nEpc15 nEpc15Err nIpc15 nIpc15Err nEpc18 nEpc18Err nIpc18 nIpc18Err fval accurate fvalH0 accurateH0 lratio pvalue sigma ExecTime ExecTimeH0\n')
-                        f.write(f'{values[0]} {errors[0]} {values[1]} {errors[1]} {values[2]} {errors[2]} {values[3]} {errors[3]} {values[4]} {errors[4]} {fval} {accurate} {fvalH0} {accurateH0} {lratio} {pvalue} {sigma} {execTime} {execTime2}\n')
+                        f.write('#nSig nSigErr nEpc15 nEpc15Err nIpc15 nIpc15Err nEpc18 nEpc18Err nIpc18 nIpc18Err fval valid fvalH0 validH0 lratio pvalue sigma ExecTime ExecTimeH0\n')
+                        f.write(f'{values[0]} {errors[0]} {values[1]} {errors[1]} {values[2]} {errors[2]} {values[3]} {errors[3]} {values[4]} {errors[4]} {fval} {valid} {fvalH0} {validH0} {lratio} {pvalue} {sigma} {execTime} {execTime2}\n')
                 else:
                     with open(workDir + f'{prefix}_results_SEED{SEED}.txt', 'a') as f:
-                        f.write(f'{values[0]} {errors[0]} {values[1]} {errors[1]} {values[2]} {errors[2]} {values[3]} {errors[3]} {values[4]} {errors[4]} {fval} {accurate} {fvalH0} {accurateH0} {lratio} {pvalue} {sigma} {execTime} {execTime2}\n')
+                        f.write(f'{values[0]} {errors[0]} {values[1]} {errors[1]} {values[2]} {errors[2]} {values[3]} {errors[3]} {values[4]} {errors[4]} {fval} {valid} {fvalH0} {validH0} {lratio} {pvalue} {sigma} {execTime} {execTime2}\n')
         
         

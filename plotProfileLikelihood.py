@@ -21,7 +21,13 @@ with open(fileName, 'r') as f:
 
 if nHeaderLines == 1:
     nX17, nLL = np.loadtxt(fileName, unpack=True, skiprows=1)
+    
+    nX17 = np.array(nX17)
+    nLL = np.array(nLL)
+    nX17 = nX17[nLL < 1e7]
+    nLL = nLL[nLL < 1e7]
     index = np.argsort(nX17)
+    
     bestnX17 = nX17[0]
     bestnLL = nLL[0]
     nLL = nLL[index]
@@ -58,6 +64,11 @@ elif nHeaderLines == 2:
                 line = line.split()
                 mX17.append(float(line[0]))
                 mLL.append(float(line[1]))
+    
+    nX17 = np.array(nX17)
+    nLL = np.array(nLL)
+    nX17 = nX17[nLL < 0.5]
+    nLL = nLL[nLL < 0.5]
     
     index = np.argsort(nX17)
     bestnX17 = nX17[0]
