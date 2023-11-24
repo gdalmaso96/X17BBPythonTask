@@ -1,8 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, RectBivariateSpline
 from matplotlib import cm
 import matplotlib
+from scipy.stats import norm, chi2
 
 matplotlib.rcParams.update({'font.size': 35})
 
@@ -20,31 +21,100 @@ with open(fileName, 'r') as f:
 
 
 if nHeaderLines == 1:
-    nX17, nLL = np.loadtxt(fileName, unpack=True, skiprows=1)
-    
-    nX17 = np.array(nX17)
-    nLL = np.array(nLL)
-    nX17 = nX17[nLL < 1e7]
-    nLL = nLL[nLL < 1e7]
-    index = np.argsort(nX17)
-    
-    bestnX17 = nX17[0]
-    bestnLL = nLL[0]
-    nLL = nLL[index]
-    nX17 = nX17[index]
-    
-    plt.figure(figsize=(14, 14), dpi=100)
-    plt.title('Profile likelihood')
-    plt.plot(nX17, nLL - np.min(nLL), 'o', linewidth=5, markersize=20, color = cm.coolwarm(0.))
-    if len(nX17) > 4:
-        x = np.linspace(nX17[0], nX17[-1], 1000)
-        f = interp1d(nX17, nLL - np.min(nLL), kind='cubic')
-        plt.plot(x, f(x), linewidth=5, color = cm.coolwarm(0.))
-    plt.plot(bestnX17, bestnLL -np.min(nLL), 'o', linewidth=5, markersize=20, color = 'black', label='Best fit')
-    plt.xlabel(f'number of signal events')
-    plt.legend()
-    #plt.ylim(0, None)
-    plt.grid()
+    # Check number of columns
+    nColumns = len(np.loadtxt(fileName, unpack=True, skiprows=1))
+    if nColumns == 2:
+        nX17, nLL = np.loadtxt(fileName, unpack=True, skiprows=1)
+        
+        nX17 = np.array(nX17)
+        nLL = np.array(nLL)
+        nX17 = nX17[nLL < 1e7]
+        nLL = nLL[nLL < 1e7]
+        index = np.argsort(nX17)
+        
+        bestnX17 = nX17[0]
+        bestnLL = nLL[0]
+        nLL = nLL[index]
+        nX17 = nX17[index]
+        
+        plt.figure(figsize=(14, 14), dpi=100)
+        plt.title('Profile likelihood')
+        plt.plot(nX17, nLL - np.min(nLL), 'o', linewidth=5, markersize=20, color = cm.coolwarm(0.))
+        if len(nX17) > 4:
+            x = np.linspace(nX17[0], nX17[-1], 1000)
+            f = interp1d(nX17, nLL - np.min(nLL), kind='cubic')
+            plt.plot(x, f(x), linewidth=5, color = cm.coolwarm(0.))
+        plt.plot(bestnX17, bestnLL -np.min(nLL), 'o', linewidth=5, markersize=20, color = 'black', label='Best fit')
+        plt.xlabel(f'number of signal events')
+        plt.legend()
+        #plt.ylim(0, None)
+        plt.grid()
+    else:
+        nX17, mX17, LL = np.loadtxt(fileName, unpack=True, skiprows=1)
+        
+        print(nX17)
+        bestLL = LL[0]
+        bestnX17 = nX17[0]
+        bestmX17 = mX17[0]
+        nX17 = np.array(nX17)[1:]
+        mX17 = np.array(mX17)[1:]
+        LL = np.array(LL)[1:]
+        print(nX17)
+        
+        # Round to 2 decimals
+        #nX17 = np.round(nX17, 2)
+        #mX17 = np.round(mX17, 2)
+        LL = np.array(LL)
+        
+        nX17 = nX17[LL < 1e7]
+        mX17 = mX17[LL < 1e7]
+        LL = LL[LL < 1e7]
+        
+        # Get unique values
+        nX17u = np.unique(nX17)
+        mX17u = np.unique(mX17)
+        
+        # Create 2D array
+        LL2D = np.zeros((len(nX17u), len(mX17u)))
+        
+        # Fill 2D array
+        for j in range(len(nX17u)):
+            for i in range(len(mX17u)):
+                print(nX17u[i], mX17u[j])
+                print(nX17 == nX17u[i], mX17 == mX17u[j])
+                index = np.logical_and(nX17 == nX17u[i], mX17 == mX17u[j])
+                print(LL[index])
+                LL2D[i][j] = LL[index]
+        
+        pvalue = 1 - chi2.sf(LL2D - bestLL, 2)
+        
+        # Interpolate
+        f = RectBivariateSpline(nX17u, mX17u, pvalue)
+        f1 = RectBivariateSpline(nX17u, mX17u, LL2D)
+        nX17u = np.linspace(nX17u[0], nX17u[-1], 1000)
+        mX17u = np.linspace(mX17u[0], mX17u[-1], 1000)
+        pvalueT = f(nX17u, mX17u)
+        LLT = f1(nX17u, mX17u)
+        
+        # Plot 2D array
+        plt.figure(figsize=(28, 14), dpi=100)
+        
+        plt.subplot(121)
+        plt.title('Profile likelihood ratio')
+        plt.imshow(LL2D.transpose()[::-1] - bestLL, origin='lower', aspect='auto', extent=[nX17u[0], nX17u[-1], mX17u[0], mX17u[-1]], cmap='coolwarm')
+        plt.colorbar()
+        plt.contour(nX17u, mX17u, LLT, levels=10, colors='black', linewidths=5, linestyles='dashed')
+        
+        plt.plot(bestnX17, bestmX17, '+', linewidth=5, markersize=20, color = 'black', label='Best fit')
+        
+        plt.subplot(122)
+        plt.title('Local p-value')
+        plt.imshow(pvalue, origin='lower', aspect='auto', extent=[nX17u[0], nX17u[-1], mX17u[0], mX17u[-1]], cmap='coolwarm')
+        plt.colorbar()
+        plt.contour(nX17u, mX17u, pvalueT, levels=[0.9], colors='black', linewidths=5)
+        plt.contour(nX17u, mX17u, pvalueT, levels=[0.68], colors='black', linewidths=5, linestyles='dashed')
+        plt.plot(bestnX17, bestmX17, '+', linewidth=5, markersize=20, color = 'black', label='Best fit')
+        
     
 elif nHeaderLines == 2:
     header = 0
