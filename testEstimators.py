@@ -8,6 +8,8 @@ from time import time
 from pathlib import Path
 import SigLikX17
 import matplotlib 
+from matplotlib import pyplot as plt
+from matplotlib import cm
 matplotlib.rcParams.update({'font.size': 35})
 
 def argparser():
@@ -34,13 +36,13 @@ def argparser():
     parser.add_argument('-pLL2D', '--profileLikelihood2D', type=bool, default=False, help='Use profile likelihood')
     parser.add_argument('-DE', '--doDEconvergence', type=bool, default=False, help='Use DE convergence only')
     parser.add_argument('-nPL', '--numberPL', type=int, default=11, help='Number of points to scan profile likelihood')
-    #return parser.parse_known_args()
-    return parser.parse_args()
+    return parser.parse_known_args()
+    #return parser.parse_args()
 
 
 if __name__ == '__main__':
-    #args, unknown = argparser()
-    args = argparser()
+    args, unknown = argparser()
+    #args = argparser()
     SEED = args.seed
     workDir = args.workDir
     reset = args.reset
@@ -59,17 +61,21 @@ if __name__ == '__main__':
     
     # Test Toy
     #ToySample = True
-    #SEED = 3
-    #numberToys = 1
+    #SEED = 0
+    #numberToys = 2
     #nX17Toy = 391.5
     #nX17Toy = 0
+    #nX17Toy = 2000
     #massX17Toy = 16.825024277990128
     #massX17Toy = 16.
+    #massX17Toy = 18.
     #parametrizeX17 = True
     #plotToy = True
     #posterioriFC = False
-    #dataF = 'X17MC2021_s1'
+    #dataF = 'X17MC2021'
     #referenceFile = 'X17referenceRealistic.root'
+    #referenceFile = 'X17reference.root'
+    #prefix = 'TEST'
     #resetFC = True
     
     if args.profileLikelihood:
@@ -160,6 +166,7 @@ if __name__ == '__main__':
         #binsdatax = np.linspace(BB2DLLFiniteMC.dthMin, BB2DLLFiniteMC.dthMax, BB2DLLFiniteMC.dthnBins + 1)
         #binsdatay = np.linspace(BB2DLLFiniteMC.esumMin, BB2DLLFiniteMC.esumMax, BB2DLLFiniteMC.esumnBins + 1)
         X, Y = np.meshgrid((binsdatax[:-1] + binsdatax[1:])/2, (binsdatay[:-1] + binsdatay[1:])/2)
+        print(massX17Toy)
         hMX[0] = BB2DLLFiniteMC.nMCXtotParametrized*SigLikX17.AngleVSEnergySum(X, Y, massX17Toy, BB2DLLFiniteMC.dthMin, BB2DLLFiniteMC.dthMax, BB2DLLFiniteMC.dthnBins, BB2DLLFiniteMC.esumMin, BB2DLLFiniteMC.esumMax, BB2DLLFiniteMC.esumnBins, dthRes = 9.5, esumRes = 1.15)
         startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype=float)
         
@@ -196,7 +203,6 @@ if __name__ == '__main__':
             # Reshape
             hBestFit = np.array(hBestFit)
             hMX = hBestFit
-
         
         startingPs[0] = nX17Toy
         startingPs[5] = massX17Toy
@@ -229,8 +235,9 @@ if __name__ == '__main__':
             # Store nX17Toy, massX17Toy, validH1, validH0, SEED, lratio
             with open(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}_nX17{nX17Toy}_mX17{massX17Toy}.txt', 'a') as f:
                 f.write(f'{nX17Toy} {massX17Toy} {validH1} {validH0} {True} {SEED} {lratio}\n')
-
+        
         for i in range(numberToys):
+            hMX[0] = BB2DLLFiniteMC.nMCXtotParametrized*SigLikX17.AngleVSEnergySum(X, Y, massX17Toy, BB2DLLFiniteMC.dthMin, BB2DLLFiniteMC.dthMax, BB2DLLFiniteMC.dthnBins, BB2DLLFiniteMC.esumMin, BB2DLLFiniteMC.esumMax, BB2DLLFiniteMC.esumnBins, dthRes = 9.5, esumRes = 1.15)
             # Sample data ToyMC
             htemp = hMX[0]*p[0] + hMX[1]*p[1] + hMX[2]*p[2] + hMX[3]*p[3] + hMX[4]*p[4]
             hToyData = BB2DLLFiniteMC.sampleToyMC(htemp, SEED + i)
