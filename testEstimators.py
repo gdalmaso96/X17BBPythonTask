@@ -31,7 +31,9 @@ def argparser():
     parser.add_argument('-st', '--saveToy', type=bool, default=False, help='Save ToyMC')
     parser.add_argument('-pT', '--plotToy', type=bool, default=False, help='Plot ToyMC')
     parser.add_argument('-pLL', '--profileLikelihood', type=bool, default=False, help='Use profile likelihood')
+    parser.add_argument('-pLL2D', '--profileLikelihood2D', type=bool, default=False, help='Use profile likelihood')
     parser.add_argument('-DE', '--doDEconvergence', type=bool, default=False, help='Use DE convergence only')
+    parser.add_argument('-nPL', '--numberPL', type=int, default=11, help='Number of points to scan profile likelihood')
     #return parser.parse_known_args()
     return parser.parse_args()
 
@@ -53,18 +55,22 @@ if __name__ == '__main__':
     posterioriFC = args.posterioriFC
     parametrizeX17 = args.parametrizeX17
     plotToy = args.plotToy
+    resetFC = args.resetFC
     
     # Test Toy
     #ToySample = True
-    #SEED = 0
+    #SEED = 3
     #numberToys = 1
     #nX17Toy = 391.5
+    #nX17Toy = 0
     #massX17Toy = 16.825024277990128
+    #massX17Toy = 16.
     #parametrizeX17 = True
     #plotToy = True
     #posterioriFC = False
     #dataF = 'X17MC2021_s1'
-    #referenceFile = 'X17reference.root'
+    #referenceFile = 'X17referenceRealistic.root'
+    #resetFC = True
     
     if args.profileLikelihood:
         startTime = time()
@@ -83,9 +89,9 @@ if __name__ == '__main__':
         fBest = fval
         
         # Create grid to scan profile likelihood
-        nX17Scan = np.linspace(values[0] - 5*errors[0], values[0] + 5*errors[0], 11)
+        nX17Scan = np.linspace(values[0] - 5*errors[0], values[0] + 5*errors[0], args.numberPL)
         if nX17Scan[0] < 0:
-            nX17Scan = np.linspace(0, values[0] + 5*errors[0], 11)
+            nX17Scan = np.linspace(0, values[0] + 5*errors[0], args.numberPL)
         
         massX17Scan = []
         
@@ -93,39 +99,54 @@ if __name__ == '__main__':
         if parametrizeX17:
             MIN = values[5] - 5*errors[5]
             MAX = values[5] + 5*errors[5]
-            if MIN < 16:
-                MIN = 16
+            if MIN < 15:
+                MIN = 15
             if MAX > 18:
                 MAX = 18
-            massX17Scan = np.linspace(MIN, MAX, 11)
+            massX17Scan = np.linspace(MIN, MAX, args.numberPL)
         
-        # Create file
-        with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'w') as f:
-            f.write('#nX17 fval\n')
-            f.write(f'{bestNX17} {fBest}\n')
-        for i in range(len(nX17Scan)):
-            if nX17Scan[i] != bestNX17:
-                startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, bestMass], dtype=float)
-                values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
-
-                pScan.append(fval)
-                # append to file
-                with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
-                    f.write(f'{nX17Scan[i]} {fval}\n')
-            
-        
-        if len(massX17Scan) > 1:
-            with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
-                f.write('#mX17 fval\n')
-                f.write(f'{bestMass} {fBest}\n')
-            for i in range(len(massX17Scan)):
-                if massX17Scan[i] != bestMass:
-                    startingPs = np.array([bestNX17, 37500, 27500, 135000, 50000, massX17Scan[i]], dtype=float)
+        if args.profileLikelihood2D and len(massX17Scan) > 1:
+            # Create file
+            with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'w') as f:
+                f.write('#nX17 fval\n')
+                f.write(f'{bestNX17} {bestMass} {fBest}\n')
+            for i in range(len(nX17Scan)):
+                for j in range(len(massX17Scan)):
+                    startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, massX17Scan[j]], dtype=float)
                     values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
 
                     pScan.append(fval)
+                    # append to file
                     with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
-                        f.write(f'{massX17Scan[i]} {fval}\n')
+                        f.write(f'{nX17Scan[i]} {massX17Scan[j]} {fval}\n')
+        else:
+            # Create file
+            with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'w') as f:
+                f.write('#nX17 fval\n')
+                f.write(f'{bestNX17} {fBest}\n')
+            for i in range(len(nX17Scan)):
+                if nX17Scan[i] != bestNX17:
+                    startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, bestMass], dtype=float)
+                    values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+
+                    pScan.append(fval)
+                    # append to file
+                    with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
+                        f.write(f'{nX17Scan[i]} {fval}\n')
+                
+            
+            if len(massX17Scan) > 1:
+                with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
+                    f.write('#mX17 fval\n')
+                    f.write(f'{bestMass} {fBest}\n')
+                for i in range(len(massX17Scan)):
+                    if massX17Scan[i] != bestMass:
+                        startingPs = np.array([bestNX17, 37500, 27500, 135000, 50000, massX17Scan[i]], dtype=float)
+                        values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+
+                        pScan.append(fval)
+                        with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
+                            f.write(f'{massX17Scan[i]} {fval}\n')
         print('Profile likelihood elapsed time: ', time() - startTime)
         
         
@@ -189,7 +210,7 @@ if __name__ == '__main__':
         
         # Check if file to store laratio of Toys exists
         my_file = Path(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}_nX17{nX17Toy}_mX17{massX17Toy}.txt')
-        if args.resetFC or not my_file.is_file():
+        if resetFC or not my_file.is_file():
             # Create file to store lratio of Toys
             with open(workDir + f'../fcAnalysis/{prefix}_lratio_SEED{SEED}_nX17{nX17Toy}_mX17{massX17Toy}.txt', 'w') as f:
                 f.write('#lratio\n')
@@ -225,7 +246,8 @@ if __name__ == '__main__':
             values, errors, fval, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doNullHyphotesis = True, doDEConvergenceOnly = args.doDEconvergence)
             lratio = fval
             values[0] = nX17Toy
-            values[5] = massX17Toy
+            if parametrizeX17:
+                values[5] = massX17Toy
             values, errors, fval, validH1 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, values, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
             lratio -= fval
             
