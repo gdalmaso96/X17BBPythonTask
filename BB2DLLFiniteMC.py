@@ -125,6 +125,7 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
         nBins = imasnBins
     for I in range(nBins):
         for J in range(esumnBins):
+            ti = [0]
             Di = hdata[I][J]
             
             ai = []
@@ -151,6 +152,7 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
                     ti = [-1/p[K[0]]]
             #for i in range(len(Ai)):
             #    if Ai[i] == 0:
+            #        ai[i] = 1/hMX[i].sum()
             #        Ai[i] = 1/hMX[i].sum()
             if doNormalBB:
                 ti = brentq(solveTi, -1/p[K[0]], 1, args=(Di, p, np.array(ai)), full_output=True)
@@ -209,7 +211,7 @@ def sampleToyMC(hMXtemp, SEED = 0):
 ########################################################################
 # Maximize likelihood
 
-def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False, doDEConvergenceOnly = False):
+def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False, doDEConvergenceOnly = False, DoMINOS = False):
     nMCXtot = hMX[0].sum()
     nMCXe15 = hMX[1].sum()
     nMCXi15 = hMX[2].sum()
@@ -292,7 +294,6 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         logL.fixed[0] = False
         logL.fixed[5] = True
         logL.migrad(ncall=100000, iterate=10)
-        logL.fixed[5] = False
         logL.fixed[0] = True
         logL.migrad(ncall=100000, iterate=10)
         logL.fixed[0] = False
@@ -303,11 +304,12 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         logL.fixed[0] = True
         logL.migrad(ncall=100000, iterate=10)
         logL.fixed[0] = False
+    
     print(logL.values)
+    #logL.print_level = 2
     initialFval = logL.fval
-    #logL.simplex()
+    logL.simplex(ncall=100000)
     logL.strategy = 1
-    #logL.tol = 1e-18
     #logL.errors = res.x*0.1
     logL.migrad(ncall=100000, iterate=10)
     logL.hesse()
@@ -329,6 +331,7 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     print('\n',reFit)
     print((reFit or logL.fval - initialFval > 1e-3) and I < 5 and not doDEConvergenceOnly)
     print(doDEConvergenceOnly)
+    previousFval = logL.fval
     while ((reFit or logL.fval - initialFval > 1e-3) and I < 5 and not doDEConvergenceOnly):
         print('Elapsed time: ' + str(time.time() - startTime))
         print('Trying again')
@@ -349,10 +352,32 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         #print('Elapsed time: ' + str(time.time() - startTime))
         #print('Found starting point:', res.x, res.fun)
         #logL.values = res.x
-        logL.simplex()
-        logL.strategy = 2
-        logL.tol = 1e-18
-        logL.migrad(ncall = 1000000, iterate = 100)
+        #logL.simplex()
+        #logL.strategy = 2
+        #logL.tol = 1e-18
+        #logL.migrad(ncall = 1000000, iterate = 100)
+        #print(logL.fval)
+        #print(logL.valid)
+        print('Start scan')
+        for i in range(5):
+            logL.limits[i] = (logL.values[i] - 5*np.sqrt(logL.values[i]), logL.values[i] + 5*np.sqrt(logL.values[i]))
+            if logL.limits[i][0] < 0:
+                logL.limits[i] = (0, logL.limits[i][1])
+            if logL.limits[i][1] < 0:
+                logL.limits[i] = (logL.limits[i][0], 1000)
+        logL.scan(ncall = 10*(I + 2))
+        logL.hesse()
+        print(logL.fval)
+        print(logL.valid)
+        print(logL.values)
+        logL.limits[0] = (0, None)
+        logL.limits[1] = (0, None)
+        logL.limits[2] = (0, None)
+        logL.limits[3] = (0, None)
+        logL.limits[4] = (0, None)
+        #logL.simplex(ncall=10000)
+        logL.errors = np.array(logL.errors)*0.01
+        logL.migrad(ncall = 1000000, iterate = 10)
         print(logL.fval)
         print(logL.valid)
         I += 1
@@ -360,6 +385,10 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
             break
         if logL.fval < initialFval and logL.valid:
             break
+        if logL.fval == previousFval:
+            break
+        previousFval = logL.fval
+        reFit = not logL.valid
     logL.hesse()
 
     values = logL.values
@@ -476,11 +505,12 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         bottom = np.sum(bottom, axis=0)
         pull = (np.sum(hdata, axis=0) - bottom)/np.sqrt(bottom)
         bottom = np.sqrt(bottom)
-        plt.gcf().add_axes(bounds)
+        ax = plt.gcf().add_axes(bounds)
         plt.bar(binsdatay[:-1], pull, width=(binsdatay[1] - binsdatay[0]), alpha=0.5, label='MC X17', align='edge', color=cm.coolwarm(0.99))
         #plt.bar(binsdatay[:-1], 2*bottom, width=(binsdatay[1] - binsdatay[0]),bottom=-bottom, alpha=0.5, label='MC X17', align='edge', color=cm.coolwarm(0.99))
         plt.grid()
         plt.xlabel('Energy sum [MeV]')
+        ax.set_yticklabels([])
         #plt.ylabel('Pull')
         plt.ylim(-3, 3)
         
@@ -489,6 +519,15 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
             plt.savefig('X17Fit.png', bbox_inches='tight')
         else:
             plt.savefig('X17FitNull.png', bbox_inches='tight')
+        
+        # Plot minos matrix
+        if DoMINOS:
+            fig.clf()
+            #fig = plt.figure(figsize=(14, 14), dpi=200)
+            fix, ax = logL.draw_mnmatrix(cl=[0.68, 0.9], figsize=(42, 42))
+            #fig.set_size_inches(42, 42)
+            #fig.set_dpi(100)
+            
     
     
     return values, logL.errors, logL.fval, logL.valid
@@ -559,8 +598,8 @@ if __name__ == '__main__':
     hMX, binsXMCx, binsXMCy = loadMC(MCFile, workDir)
     hdata, binsdatax, binsdatay = loadData(dataFile, workDir)
     startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
-    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True)
+    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True, DoMINOS = False)
     startingPs = np.array([0, 37500, 27500, 135000, 50000, 17])
-    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True)
+    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True, DoMINOS = False)
     computeSignificance(H0[2], H1[2], 2)
     #doProfileLL(startingPs, hdata, hMX, plotFigure = True)
