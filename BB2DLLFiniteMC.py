@@ -12,6 +12,8 @@ import matplotlib
 from scipy.stats import chi2, norm
 import time
 import SigLikX17
+import numba as nb
+from numba import jit
 
 matplotlib.rcParams.update({'font.size': 35})
 plt.rcParams['figure.constrained_layout.use'] = True
@@ -93,6 +95,7 @@ def loadData(fileName, workDir = ''):
 # -- pj: population j weight
 # -- di: data population of bin i
 # -- fi: MC prediction of population of bin i
+@jit(nopython=True)
 def Aji(aji, pj, ti):
     return aji/(1 + ti*pj)
 
@@ -101,6 +104,7 @@ def Aji(aji, pj, ti):
 # -- di: data population of bin i
 # -- p: array of pj
 # -- ai: array of aji
+@jit(nopython=True)
 def solveTi(ti, di, p, ai):
     if ti == 1:
         return np.inf
@@ -123,8 +127,17 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
         nBins = dthnBins
     elif VariableSelection == 1:
         nBins = imasnBins
-    for I in range(nBins):
-        for J in range(esumnBins):
+    
+    r = np.empty(nBins*esumnBins)
+    totNumberOfBins = nBins*esumnBins
+    chunk = totNumberOfBins//len(r)
+    for l in nb.prange(len(r)):
+        for l2 in range(chunk):
+            I = l*chunk + l2
+            J = I%esumnBins
+            I = I//esumnBins
+    #for I in range(nBins):
+    #    for J in range(esumnBins):
             ti = [0]
             Di = hdata[I][J]
             
