@@ -34,7 +34,6 @@ def argparser():
     parser.add_argument('-pT', '--plotToy', type=bool, default=False, help='Plot ToyMC')
     parser.add_argument('-pLL', '--profileLikelihood', type=bool, default=False, help='Use profile likelihood')
     parser.add_argument('-pLL2D', '--profileLikelihood2D', type=bool, default=False, help='Use profile likelihood')
-    parser.add_argument('-DE', '--doDEconvergence', type=bool, default=False, help='Use DE convergence only')
     parser.add_argument('-nPL', '--numberPL', type=int, default=11, help='Number of points to scan profile likelihood')
     return parser.parse_known_args()
     #return parser.parse_args()
@@ -60,23 +59,23 @@ if __name__ == '__main__':
     resetFC = args.resetFC
     
     # Test Toy
-    #ToySample = True
-    #SEED = 0
-    #numberToys = 2
-    #nX17Toy = 391.5
-    #nX17Toy = 0
-    #nX17Toy = 2000
-    #massX17Toy = 16.825024277990128
-    #massX17Toy = 16.
-    #massX17Toy = 18.
-    #parametrizeX17 = True
-    #plotToy = True
-    #posterioriFC = False
-    #dataF = 'X17MC2021'
-    #referenceFile = 'X17referenceRealistic.root'
-    #referenceFile = 'X17reference.root'
-    #prefix = 'TEST'
-    #resetFC = True
+    ToySample = True
+    SEED = 0
+    numberToys = 2
+    nX17Toy = 391.5
+    nX17Toy = 0
+    nX17Toy = 2000
+    massX17Toy = 16.825024277990128
+    massX17Toy = 16.
+    massX17Toy = 18.
+    parametrizeX17 = True
+    plotToy = True
+    posterioriFC = False
+    dataF = 'X17MC2021'
+    referenceFile = 'X17referenceRealistic.root'
+    referenceFile = 'X17reference.root'
+    prefix = 'TEST'
+    resetFC = True
     
     if args.profileLikelihood:
         startTime = time()
@@ -87,7 +86,7 @@ if __name__ == '__main__':
         
         startTime = time()
         startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype=float)
-        values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+        values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17)
         bestNX17 = values[0]
         bestMass = 17
         if parametrizeX17:
@@ -119,7 +118,7 @@ if __name__ == '__main__':
             for i in range(len(nX17Scan)):
                 for j in range(len(massX17Scan)):
                     startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, massX17Scan[j]], dtype=float)
-                    values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+                    values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
 
                     pScan.append(fval)
                     # append to file
@@ -133,7 +132,7 @@ if __name__ == '__main__':
             for i in range(len(nX17Scan)):
                 if nX17Scan[i] != bestNX17:
                     startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, bestMass], dtype=float)
-                    values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+                    values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
 
                     pScan.append(fval)
                     # append to file
@@ -148,7 +147,7 @@ if __name__ == '__main__':
                 for i in range(len(massX17Scan)):
                     if massX17Scan[i] != bestMass:
                         startingPs = np.array([bestNX17, 37500, 27500, 135000, 50000, massX17Scan[i]], dtype=float)
-                        values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+                        values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
 
                         pScan.append(fval)
                         with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
@@ -171,7 +170,7 @@ if __name__ == '__main__':
         startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype=float)
         
         if posterioriFC:
-            values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17)
             # Get Aji
             startingPs = values
             nMCXtot = hMX[0].sum()
@@ -225,11 +224,11 @@ if __name__ == '__main__':
         # Do Data point
         if SEED == 0:
             print(startingPs)
-            values, errors, fval, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doNullHyphotesis = True, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doNullHyphotesis = True)
             lratio = fval
             values[0] = 450
             values[5] = 17
-            values, errors, fval, validH1 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, values, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, validH1 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, values, plotFigure = plotToy, parametrizedX17 = parametrizeX17)
             lratio -= fval
             
             # Store nX17Toy, massX17Toy, validH1, validH0, SEED, lratio
@@ -250,12 +249,12 @@ if __name__ == '__main__':
                     hToyMC.append(hMX[j])
                 else:
                     hToyMC.append(BB2DLLFiniteMC.sampleToyMC(hMX[j], SEED + i))
-            values, errors, fval, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doNullHyphotesis = True, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doNullHyphotesis = True)
             lratio = fval
             values[0] = nX17Toy
             if parametrizeX17:
                 values[5] = massX17Toy
-            values, errors, fval, validH1 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, values, plotFigure = plotToy, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, validH1 = BB2DLLFiniteMC.getMaxLikelihood(hToyData, hToyMC, binsdatax, binsdatay, values, plotFigure = plotToy, parametrizedX17 = parametrizeX17)
             lratio -= fval
             
             # Store nX17Toy, massX17Toy, validH1, validH0, SEED, lratio
@@ -299,10 +298,10 @@ if __name__ == '__main__':
             hMX, binsXMCx, binsXMCy = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
             hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
             startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype = float)
-            values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17)
             execTime = time() - startTime
             startingPs = np.array([0, 37500, 27500, 135000, 50000, 17], dtype = float)
-            valuesH0, errorsH0, fvalH0, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, doDEConvergenceOnly = args.doDEconvergence)
+            valuesH0, errorsH0, fvalH0, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
             
             DOF = 1
             if parametrizeX17:
