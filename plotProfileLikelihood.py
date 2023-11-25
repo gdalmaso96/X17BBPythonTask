@@ -9,6 +9,7 @@ matplotlib.rcParams.update({'font.size': 35})
 
 # Load the data
 fileName = 'results/BBstandard_profileLikelihood_SEED0.txt'
+fileName = 'results/bins16x10CurrentStatisticsParametrized_profileLikelihood_SEED0.txt'
 
 # Check number #
 nHeaderLines = 0
@@ -52,14 +53,13 @@ if nHeaderLines == 1:
     else:
         nX17, mX17, LL = np.loadtxt(fileName, unpack=True, skiprows=1)
         
-        print(nX17)
         bestLL = LL[0]
         bestnX17 = nX17[0]
         bestmX17 = mX17[0]
         nX17 = np.array(nX17)[1:]
         mX17 = np.array(mX17)[1:]
         LL = np.array(LL)[1:]
-        print(nX17)
+        print(bestnX17, bestmX17, bestLL)
         
         # Round to 2 decimals
         #nX17 = np.round(nX17, 2)
@@ -93,8 +93,8 @@ if nHeaderLines == 1:
         f1 = RectBivariateSpline(nX17u, mX17u, LL2D)
         nX17u = np.linspace(nX17u[0], nX17u[-1], 1000)
         mX17u = np.linspace(mX17u[0], mX17u[-1], 1000)
-        pvalueT = f(nX17u, mX17u)
-        LLT = f1(nX17u, mX17u)
+        pvalueT = f(nX17u, mX17u).transpose()
+        LLT = f1(nX17u, mX17u).transpose()
         
         # Plot 2D array
         plt.figure(figsize=(28, 14), dpi=100)
@@ -102,18 +102,23 @@ if nHeaderLines == 1:
         plt.subplot(121)
         plt.title('Profile likelihood ratio')
         plt.imshow(LL2D.transpose()[::-1] - bestLL, origin='lower', aspect='auto', extent=[nX17u[0], nX17u[-1], mX17u[0], mX17u[-1]], cmap='coolwarm')
-        plt.colorbar()
+        #plt.colorbar()
         plt.contour(nX17u, mX17u, LLT, levels=10, colors='black', linewidths=5, linestyles='dashed')
         
-        plt.plot(bestnX17, bestmX17, '+', linewidth=5, markersize=20, color = 'black', label='Best fit')
+        plt.plot(bestnX17, bestmX17, '+', markeredgewidth=10, markersize=50, color = 'black', label='Best fit')
+        plt.xlabel(f'number of signal events')
+        plt.ylabel(f'X17 mass [MeV/c$^2$]')
         
         plt.subplot(122)
         plt.title('Local p-value')
-        plt.imshow(pvalue, origin='lower', aspect='auto', extent=[nX17u[0], nX17u[-1], mX17u[0], mX17u[-1]], cmap='coolwarm')
+        plt.imshow(pvalue.transpose()[::-1], origin='lower', aspect='auto', extent=[nX17u[0], nX17u[-1], mX17u[0], mX17u[-1]], cmap='coolwarm')
         plt.colorbar()
-        plt.contour(nX17u, mX17u, pvalueT, levels=[0.9], colors='black', linewidths=5)
-        plt.contour(nX17u, mX17u, pvalueT, levels=[0.68], colors='black', linewidths=5, linestyles='dashed')
-        plt.plot(bestnX17, bestmX17, '+', linewidth=5, markersize=20, color = 'black', label='Best fit')
+        plt.contour(nX17u, mX17u, pvalueT, levels=[0.68], colors='black', linewidths=5, linestyles='dashed', label='1$\sigma$')
+        plt.contour(nX17u, mX17u, pvalueT, levels=[0.9], colors='black', linewidths=5, label='90 %')
+        plt.plot(bestnX17, bestmX17, '+', markeredgewidth=10, markersize=50, color = 'black', label='Best fit')
+        plt.legend()
+        plt.xlabel(f'number of signal events')
+        plt.ylabel(f'X17 mass [MeV/c$^2$]')
         
     
 elif nHeaderLines == 2:
