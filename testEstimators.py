@@ -268,7 +268,7 @@ if __name__ == '__main__':
             if args.reuseMC:
                 my_file = Path(workDir + f'{dataF}_s{SEED + i}.root')
                 if not my_file.is_file():
-                    sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = 450, year = 2021, SEED = SEED + i, workDir = workDir)
+                    sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = nX17Toy, year = 2021, SEED = SEED + i, workDir = workDir, fileName=dataF)
                 if varyReference:
                     if referenceFile.find('Realistic') < 0:
                         my_file = Path(workDir + f'{referenceFile}_s{SEED + i + 299792458}.root')
@@ -279,7 +279,7 @@ if __name__ == '__main__':
                         if not my_file.is_file():
                             sampleMass(_Nbkg = 220000, _fIPC18 = 0.45454545454545453, _fIPC15 = 0.045454545454545453, _fEPC18 = 0.45454545454545453, _Nx17 = 100000, year = 2021, SEED = SEED + i + 662607015, workDir = workDir, fileName = referenceFile)
             else:
-                sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = 450, year = 2021, SEED = SEED + i, workDir = workDir)
+                sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = nX17Toy, year = 2021, SEED = SEED + i, workDir = workDir, fileName=dataF)
                 if varyReference:
                     if referenceFile.find('Realistic') < 0:
                         sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.25, _fEPC18 = 0.25, _Nx17 = 100000, year = 2021, SEED = SEED + i + 299792458, workDir = workDir, fileName = referenceFile)
@@ -297,7 +297,7 @@ if __name__ == '__main__':
             print(MCFile)
             hMX, binsXMCx, binsXMCy = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
             hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
-            startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype = float)
+            startingPs = np.array([nX17Toy, 37500, 27500, 135000, 50000, 17], dtype = float)
             values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17)
             execTime = time() - startTime
             startingPs = np.array([0, 37500, 27500, 135000, 50000, 17], dtype = float)
