@@ -19,9 +19,9 @@ matplotlib.rcParams.update({'font.size': 35})
 plt.rcParams['figure.constrained_layout.use'] = True
 
 dataFile = 'X17MC2021.root'
-#dataFile = 'X17MC2021_s1.root'
+dataFile = 'X17MC2021_s1.root'
 MCFile = 'X17reference.root'
-#MCFile = 'X17referenceRealistic.root'
+MCFile = 'X17referenceRealistic.root'
 workDir = 'results/'
 
 dthMin = 20
@@ -266,24 +266,24 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     startTime = time.time()
     # Solve
     logL.hesse()
-    if parametrizedX17 and not doNullHyphotesis:
-        logL.fixed[0] = True
-        logL.migrad(ncall=100000, iterate=10)
-        logL.fixed[0] = False
-        logL.fixed[5] = True
-        logL.migrad(ncall=100000, iterate=10)
-        logL.fixed[0] = True
-        logL.migrad(ncall=100000, iterate=10)
-        logL.fixed[0] = False
-        logL.fixed[5] = True
-        logL.migrad(ncall=100000, iterate=10)
-        logL.fixed[5] = False
-    elif not doNullHyphotesis:
-        logL.fixed[0] = True
-        logL.migrad(ncall=100000, iterate=10)
-        logL.fixed[0] = False
+    #if parametrizedX17 and not doNullHyphotesis:
+    #    logL.fixed[0] = True
+    #    logL.migrad(ncall=100000, iterate=10)
+    #    logL.fixed[0] = False
+    #    logL.fixed[5] = True
+    #    logL.migrad(ncall=100000, iterate=10)
+    #    logL.fixed[0] = True
+    #    logL.migrad(ncall=100000, iterate=10)
+    #    logL.fixed[0] = False
+    #    logL.fixed[5] = True
+    #    logL.migrad(ncall=100000, iterate=10)
+    #    logL.fixed[5] = False
+    #elif not doNullHyphotesis:
+    #    logL.fixed[0] = True
+    #    logL.migrad(ncall=100000, iterate=10)
+    #    logL.fixed[0] = False
     
-    print(logL.values)
+    #print(logL.values)
     #logL.print_level = 2
     initialFval = logL.fval
     logL.simplex(ncall=100000)

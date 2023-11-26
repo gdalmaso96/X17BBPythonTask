@@ -35,13 +35,13 @@ def argparser():
     parser.add_argument('-pLL', '--profileLikelihood', type=bool, default=False, help='Use profile likelihood')
     parser.add_argument('-pLL2D', '--profileLikelihood2D', type=bool, default=False, help='Use profile likelihood')
     parser.add_argument('-nPL', '--numberPL', type=int, default=11, help='Number of points to scan profile likelihood')
-    return parser.parse_known_args()
-    #return parser.parse_args()
+    #return parser.parse_known_args()
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
-    args, unknown = argparser()
-    #args = argparser()
+    #args, unknown = argparser()
+    args = argparser()
     SEED = args.seed
     workDir = args.workDir
     reset = args.reset
@@ -59,23 +59,23 @@ if __name__ == '__main__':
     resetFC = args.resetFC
     
     # Test Toy
-    ToySample = True
-    SEED = 0
-    numberToys = 2
-    nX17Toy = 391.5
-    nX17Toy = 0
-    nX17Toy = 2000
-    massX17Toy = 16.825024277990128
-    massX17Toy = 16.
-    massX17Toy = 18.
-    parametrizeX17 = True
-    plotToy = True
-    posterioriFC = False
-    dataF = 'X17MC2021'
-    referenceFile = 'X17referenceRealistic.root'
-    referenceFile = 'X17reference.root'
-    prefix = 'TEST'
-    resetFC = True
+    #ToySample = True
+    #SEED = 0
+    #numberToys = 2
+    #nX17Toy = 391.5
+    #nX17Toy = 0
+    #nX17Toy = 2000
+    #massX17Toy = 16.825024277990128
+    #massX17Toy = 16.
+    #massX17Toy = 18.
+    #parametrizeX17 = True
+    #plotToy = True
+    #posterioriFC = False
+    #dataF = 'X17MC2021'
+    #referenceFile = 'X17referenceRealistic.root'
+    #referenceFile = 'X17reference.root'
+    #prefix = 'TEST'
+    #resetFC = True
     
     if args.profileLikelihood:
         startTime = time()
