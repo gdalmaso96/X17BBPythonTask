@@ -155,6 +155,11 @@ if __name__ == '__main__':
         plt.xlabel('Execution time')
         plt.legend()
         plt.grid()
+
+    # Compute median
+    median = np.median(sigma)
+    print(f'Files: {files}')
+    print(f'Median sigma: {median:.2f}\n')
     
     plt.savefig(f'{prefix}.png', bbox_inches='tight')
 
