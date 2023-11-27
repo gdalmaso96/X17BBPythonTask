@@ -159,7 +159,7 @@ if __name__ == '__main__':
     plt.savefig(f'{prefix}.png', bbox_inches='tight')
 
     plt.figure(figsize=(28, 14), dpi=100)
-    plt.suptitle(f'{prefix}, {len(nSig)} tests'))
+    plt.suptitle(f'{prefix}, {len(nSig)} tests')
     plt.subplot(1, 2, 1)
 
     plt.hist(execTime, bins=50, label=f'mean = {np.mean(execTime):.2f}, std = {np.std(execTime):.2f}')

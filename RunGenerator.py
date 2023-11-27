@@ -35,6 +35,19 @@ for i in range(10):
     command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --reuseMC True --varyReference True --parametrizeX17 True --workDir {workDir} --seed {i*nSamples} --nSamples {nSamples} --reset True --referenceFile X17referenceRealistic.root --prefix VaryReferencebins20x14CurrentStatisticsParametrized \n')
     offset.append(30000 + i)
 
+# Normal run: 1e5 events per ecode 
+# 010xxxx
+for j in range(10):
+    for i in range(10):
+        command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --varyReference True --parametrizeX17 True --workDir {workDir} --seed {i*nSamples} --nSamples {nSamples} --reset True --prefix VaryReferencebins20x14IdealStatisticsParametrized_{100*j} --numberX17 100*j --dataFile X17MC2021_nX17_{100*j} \n')
+        offset.append(100000 + i)
+
+# Normal run: 1e5 events per ecode 
+# 011xxxx
+for j in range(10):
+    for i in range(10):
+        command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --varyReference True --parametrizeX17 True --workDir {workDir} --seed {i*nSamples} --nSamples {nSamples} --reset True --prefix VaryReferencebins20x14CurrentStatisticsParametrized_{100*j} --numberX17 100*j --dataFile X17MC2021_CurnX17_{100*j} --referenceFile X17referenceRealistic.root \n')
+        offset.append(200000 + i)
 
 for i in range(len(command)):
     run = offset[i]

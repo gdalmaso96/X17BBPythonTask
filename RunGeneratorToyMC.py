@@ -1,28 +1,37 @@
-jobs = open('joblist1.txt', 'w')
+jobs = open('joblist.txt', 'w')
 
 # nRuns, offset
 nTrials = 1000
 
 offset = []
 
-nSamplesPerRun = 100
+nSamplesPerRun = 1000
 minnX17 = 0
 maxnX17 = 900
-npX17 = 11
+npX17 = 15
 minMassX17 = 16
 maxMassX17 = 18
-nMassX17 = 11
+nMassX17 = 15
 workDir = '/data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/results/'
 
 command = []
 # Current statistics run: 1e5 IPCs, 1e4 EPCs, 1e5 X17
 # 004xxxx
-for i in range(10):
+for i in range(int(nTrials/nSamplesPerRun)):
     for j in range(npX17):
         for k in range(nMassX17):
             nSamples = nSamplesPerRun
-            command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --parametrizeX17 True --ToySample True --workDir {workDir} --seed {i*nSamples} --numberToys {nSamples} --resetFC True --referenceFile X17referenceRealistic.root --prefix bins20x14CurrentStatisticsParametrized --numberX17 {j*90} --massX17 {0.2*k+16}\n')
+            command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --parametrizeX17 True --ToySample True --workDir {workDir} --seed {i*nSamples} --numberToys {nSamples} --resetFC True --prefix bins20x14IdealStatisticsParametrized --massX17 {j*(maxMassX17 - minMassX17)/(nMassX17 - 1) + minMassX17} --numberX17 {minnX17 + (maxnX17 - minnX17)/(npX17 - 1)}\n')
             offset.append(40000 + i*npX17*nMassX17 + j*nMassX17 + k)
+
+# Ideal statistics run: 1e5 IPCs, 1e4 EPCs, 1e5 X17
+# 005xxxx
+for i in range(int(nTrials/nSamplesPerRun)):
+    for j in range(npX17):
+        for k in range(nMassX17):
+            nSamples = nSamplesPerRun
+            command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --parametrizeX17 True --ToySample True --workDir {workDir} --seed {i*nSamples} --numberToys {nSamples} --resetFC True --referenceFile X17referenceRealistic.root --prefix bins20x14CurrentStatisticsParametrized --massX17 {j*(maxMassX17 - minMassX17)/(nMassX17 - 1) + minMassX17} --numberX17 {minnX17 + (maxnX17 - minnX17)/(npX17 - 1)}\n')
+            offset.append(50000 + i*npX17*nMassX17 + j*nMassX17 + k)
 
 
 for i in range(len(command)):
