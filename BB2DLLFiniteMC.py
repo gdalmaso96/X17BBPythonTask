@@ -525,9 +525,9 @@ def computeSignificance(H0, H1, DOF, Ncrossing = 0.44, c0 = 0.1, parametrizedX17
         #pvalue += Ncrossing*chi2.sf(lratio, DOF + 1) 
     pvalue = pvalue*(pvalue < 1) + 1*(pvalue >= 1)
     sigma = norm.isf(pvalue*0.5)
-    print('Likelihood ratio: ' + str(lratio))
-    print('p-value: ' + str(pvalue))
-    print('Significance: ' + str(sigma))
+    #print('Likelihood ratio: ' + str(lratio))
+    #print('p-value: ' + str(pvalue))
+    #print('Significance: ' + str(sigma))
     return lratio, pvalue, sigma
 
 ########################################################################

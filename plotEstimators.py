@@ -144,9 +144,9 @@ if __name__ == '__main__':
     # Compute median
     median = np.median(sigma)
     print(f'Files: {files}')
-    print(f'Median sigma: {median:.2f}\n')
+    print(f'Local median sigma: {median:.2f}\n')
     plt.hist(sigma, bins=50, label=f'mean = {np.mean(sigma):.2f}, std = {np.std(sigma):.2f}')
-    plt.xlabel('Local sigma')
+    plt.xlabel(r'Local significance [$\sigma$]')
     plt.legend()
     plt.grid()
     
@@ -157,14 +157,14 @@ if __name__ == '__main__':
         print('WARNING: lr < 0:', len(lr[lr < 0]), 'tests')
     sigma = sigma[lr > 0]
     plt.hist(sigma, bins=50, label=f'mean = {np.mean(sigma):.2f}, std = {np.std(sigma):.2f}')
-    plt.xlabel('Global sigma')
+    plt.xlabel(r'Global significance [$\sigma$]')
     plt.legend()
     plt.grid()
     
     # Compute median
     median = np.median(sigma)
     print(f'Files: {files}')
-    print(f'Median sigma: {median:.2f}\n')
+    print(f'Global median sigma: {median:.2f}\n')
     
     plt.subplot(2, 4, 8)
     if len(mX17) > 0:
