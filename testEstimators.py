@@ -11,7 +11,6 @@ from scipy.interpolate import interp1d
 import matplotlib 
 from matplotlib import pyplot as plt
 from matplotlib import cm
-from concurrent.futures import ThreadPoolExecutor
 matplotlib.rcParams.update({'font.size': 35})
 
 def argparser():
@@ -70,12 +69,6 @@ def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, M
         else:
             hToyMC.append(BB2DLLFiniteMC.sampleToyMC(hMX[j], SEED + i))
     
-    ## Get Maximum Likelihood
-    #values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17)
-    #bestNX17 = values[0]
-    #bestMass = values[5]
-    #fBest = fval
-    
     # Get null hypothesis
     startingPs = np.array([0, 37500, 27500, 135000, 50000, 17], dtype=float)
     valuesH0, errorsH0, fvalH0, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
@@ -106,12 +99,10 @@ def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, M
             nCrossings += 1
     with open(workDir + f'{prefix}_upperCrossing_SEED{SEED}.txt', 'a') as f:
         f.write(f'{SEED + i} {nCrossings}\n')
-    #globalpvalue = nCrossing*np.exp(-)
     plt.figure(figsize=(28, 14), dpi=100)
     plt.title('Profile likelihood - peak hunt')
     plt.plot(x, y, linewidth=5, color = cm.coolwarm(0.), label='Number of crossings: ' + str(nCrossings))
     plt.plot(massX17Scan, -mLL + fvalH0, 'o', linewidth=5, markersize=20, color = cm.coolwarm(0.))
-    #plt.plot(bestMass, -fBest + fvalH0, 'o', linewidth=5, markersize=20, color = 'black', label='Best fit')
     plt.plot(x, np.ones(len(x))*threshold, linewidth=5, color = 'black', label='c0')
     plt.legend()
     plt.ylabel('q(m)')
@@ -166,15 +157,15 @@ if __name__ == '__main__':
     #prefix = 'TEST'
     #resetFC = True
     
-    # Test global p-value
-    globalPValue = True
-    pvalueMin = 15
-    pvalueMax = 18.15
-    pvalueC0 = 1
-    parametrizeX17 = True
-    dataF = 'X17MC2021_s0'
-    numberToys = 100
-    SEED = 0
+    ## Test global p-value
+    #globalPValue = True
+    #pvalueMin = 15
+    #pvalueMax = 18.15
+    #pvalueC0 = 1
+    #parametrizeX17 = True
+    #dataF = 'X17MC2021_s0'
+    #numberToys = 100
+    #SEED = 0
     
     if args.profileLikelihood:
         startTime = time()
@@ -270,16 +261,8 @@ if __name__ == '__main__':
         with open(workDir + f'{prefix}_upperCrossing_SEED{SEED}.txt', 'w') as f:
             f.write('#SEED nCrossings\n')
         
-        #with ThreadPoolExecutor(max_workers=2) as executor:
-        #    args = [(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime) for i in range(numberToys)]
-        #    executor.map(globalPvalue, *zip(*args))
         for i in range(numberToys):
             globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime)
-        #for i in range(numberToys):
-        #    p = Process(target=globalPvalue, args=(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime))
-        #    threading.Thread(target=globalPvalue, args=(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime)).start()
-        #    
-            #globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime)
     
     elif ToySample:
         dataFile = f'{dataF}.root'
@@ -287,8 +270,6 @@ if __name__ == '__main__':
         hMX, binsXMCx, binsXMCy = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
         hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
         
-        #binsdatax = np.linspace(BB2DLLFiniteMC.dthMin, BB2DLLFiniteMC.dthMax, BB2DLLFiniteMC.dthnBins + 1)
-        #binsdatay = np.linspace(BB2DLLFiniteMC.esumMin, BB2DLLFiniteMC.esumMax, BB2DLLFiniteMC.esumnBins + 1)
         X, Y = np.meshgrid((binsdatax[:-1] + binsdatax[1:])/2, (binsdatay[:-1] + binsdatay[1:])/2)
         print(massX17Toy)
         hMX[0] = BB2DLLFiniteMC.nMCXtotParametrized*SigLikX17.AngleVSEnergySum(X, Y, massX17Toy, BB2DLLFiniteMC.dthMin, BB2DLLFiniteMC.dthMax, BB2DLLFiniteMC.dthnBins, BB2DLLFiniteMC.esumMin, BB2DLLFiniteMC.esumMax, BB2DLLFiniteMC.esumnBins, dthRes = 9.5, esumRes = 1.15)

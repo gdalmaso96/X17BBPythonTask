@@ -266,22 +266,6 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     startTime = time.time()
     # Solve
     logL.hesse()
-    #if parametrizedX17 and not doNullHyphotesis:
-    #    logL.fixed[0] = True
-    #    logL.migrad(ncall=100000, iterate=10)
-    #    logL.fixed[0] = False
-    #    logL.fixed[5] = True
-    #    logL.migrad(ncall=100000, iterate=10)
-    #    logL.fixed[0] = True
-    #    logL.migrad(ncall=100000, iterate=10)
-    #    logL.fixed[0] = False
-    #    logL.fixed[5] = True
-    #    logL.migrad(ncall=100000, iterate=10)
-    #    logL.fixed[5] = False
-    #elif not doNullHyphotesis:
-    #    logL.fixed[0] = True
-    #    logL.migrad(ncall=100000, iterate=10)
-    #    logL.fixed[0] = False
     
     #print(logL.values)
     #logL.print_level = 2
@@ -299,10 +283,42 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     print('\n',reFit)
     print((reFit or logL.fval - initialFval > 1e-3) and I < 5)
     previousFval = logL.fval
+    if (reFit or logL.fval - initialFval > 1e-3):
+        if parametrizedX17 and not doNullHyphotesis:
+            logL.fixed[0] = True
+            logL.migrad(ncall=100000, iterate=10)
+            logL.fixed[0] = False
+            logL.fixed[5] = True
+            logL.migrad(ncall=100000, iterate=10)
+            logL.fixed[0] = True
+            logL.migrad(ncall=100000, iterate=10)
+            logL.fixed[0] = False
+            logL.fixed[5] = True
+            logL.migrad(ncall=100000, iterate=10)
+            logL.fixed[5] = False
+        elif not doNullHyphotesis:
+            logL.fixed[0] = True
+            logL.migrad(ncall=100000, iterate=10)
+            logL.fixed[0] = False
+        logL.simplex(ncall=100000)
+        logL.strategy = 1
+        logL.migrad(ncall=100000, iterate=10)
+        logL.hesse()
+        print(initialFval)
+        print(logL.fval)
+        print(logL.valid)
+        I = 0
+        
+        reFit = not logL.valid
+        print('\n',reFit)
+        print((reFit or logL.fval - initialFval > 1e-3) and I < 5)
+        previousFval = logL.fval
+    
     while ((reFit or logL.fval - initialFval > 1e-3) and I < 5):
         print('Elapsed time: ' + str(time.time() - startTime))
         print('Trying again')
         print('Start scan')
+    
         for i in range(5):
             logL.limits[i] = (logL.values[i] - 5*np.sqrt(logL.values[i]), logL.values[i] + 5*np.sqrt(logL.values[i]))
             if logL.limits[i][0] < 0:
