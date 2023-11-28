@@ -19,9 +19,9 @@ matplotlib.rcParams.update({'font.size': 35})
 plt.rcParams['figure.constrained_layout.use'] = True
 
 dataFile = 'X17MC2021.root'
-dataFile = 'X17MC2021_s1.root'
+#dataFile = 'X17MC2021_s0.root'
 MCFile = 'X17reference.root'
-MCFile = 'X17referenceRealistic.root'
+#MCFile = 'X17referenceRealistic.root'
 workDir = 'results/'
 
 dthMin = 20
@@ -213,7 +213,7 @@ def sampleToyMC(hMXtemp, SEED = 0):
 
 ########################################################################
 # Maximize likelihood
-def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False, DoMINOS = False):
+def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False, DoMINOS = False, FixMass = False):
     nMCXtot = hMX[0].sum()
     nMCXe15 = hMX[1].sum()
     nMCXi15 = hMX[2].sum()
@@ -243,7 +243,7 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         logL.limits[4] = (0, None)
         logL.limits[5] = (15, 18.15)
         logL.fixed[0] = doNullHyphotesis
-        logL.fixed[5] = doNullHyphotesis
+        logL.fixed[5] = doNullHyphotesis + FixMass
     else:
         def ll(nX, nE15, nI15, nE18, nI18):
             p0 = nX/nMCXtot
@@ -516,9 +516,14 @@ def doProfileLL(startingPs, hdata, hMX, plotFigure = False):
 
 ########################################################################
 # Significance
-def computeSignificance(H0, H1, DOF):
+def computeSignificance(H0, H1, DOF, Ncrossing = 0.44, c0 = 0.1, parametrizedX17 = False):
     lratio = H0 - H1
+    lratio = lratio*(lratio > 0) + lratio*(lratio < -1e-3)
     pvalue = chi2.sf(lratio, DOF)
+    if parametrizedX17:
+        pvalue += Ncrossing*np.exp(-0.5*(lratio - c0))*(lratio/c0)**((DOF - 1)*0.5)
+        #pvalue += Ncrossing*chi2.sf(lratio, DOF + 1) 
+    pvalue = pvalue*(pvalue < 1) + 1*(pvalue >= 1)
     sigma = norm.isf(pvalue*0.5)
     print('Likelihood ratio: ' + str(lratio))
     print('p-value: ' + str(pvalue))
@@ -532,8 +537,8 @@ if __name__ == '__main__':
     hMX, binsXMCx, binsXMCy = loadMC(MCFile, workDir)
     hdata, binsdatax, binsdatay = loadData(dataFile, workDir)
     startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
-    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True, DoMINOS = False)
+    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = False, DoMINOS = False)
     startingPs = np.array([0, 37500, 27500, 135000, 50000, 17])
-    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True, DoMINOS = False)
-    computeSignificance(H0[2], H1[2], 2)
+    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = False, DoMINOS = False)
+    computeSignificance(H0[2], H1[2], 2, parametrizedX17=False)
     #doProfileLL(startingPs, hdata, hMX, plotFigure = True)

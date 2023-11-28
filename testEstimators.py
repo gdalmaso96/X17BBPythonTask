@@ -7,9 +7,11 @@ import argparse
 from time import time
 from pathlib import Path
 import SigLikX17
+from scipy.interpolate import interp1d
 import matplotlib 
 from matplotlib import pyplot as plt
 from matplotlib import cm
+from concurrent.futures import ThreadPoolExecutor
 matplotlib.rcParams.update({'font.size': 35})
 
 def argparser():
@@ -35,13 +37,95 @@ def argparser():
     parser.add_argument('-pLL', '--profileLikelihood', type=bool, default=False, help='Use profile likelihood')
     parser.add_argument('-pLL2D', '--profileLikelihood2D', type=bool, default=False, help='Use profile likelihood')
     parser.add_argument('-nPL', '--numberPL', type=int, default=11, help='Number of points to scan profile likelihood')
-    #return parser.parse_known_args()
-    return parser.parse_args()
+    parser.add_argument('-pG', '--globalPValue', type=bool, default=False, help='Compute global p-value')
+    parser.add_argument('-pGmin', '--pvalueMin', type=float, default=15, help='Minimum mass to scan')
+    parser.add_argument('-pGmax', '--pvalueMax', type=float, default=18, help='Maximum mass to scan')
+    parser.add_argument('-pGc0', '--pvalueC0', type=float, default=0.05, help='Threshold for global p-value')
+    return parser.parse_known_args()
+    #return parser.parse_args()
+
+def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime):
+    # Get template
+    MCFile = f'{referenceFile}'
+    hMX, binsdatax, binsdatay = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
+    
+    nMCXtot = hMX[0].sum()
+    nMCXe15 = hMX[1].sum()
+    nMCXi15 = hMX[2].sum()
+    nMCXe18 = hMX[3].sum()
+    nMCXi18 = hMX[4].sum()
+    startingPs = np.array([0, 37500, 27500, 135000, 50000, 17], dtype=float)
+    p = np.array([nX17Toy/nMCXtot, startingPs[1]/nMCXe15, startingPs[2]/nMCXi15, startingPs[3]/nMCXe18, startingPs[4]/nMCXi18])
+    htemp = hMX[1]*p[1] + hMX[2]*p[2] + hMX[3]*p[3] + hMX[4]*p[4]
+    print('Toy number: ', i)
+    # Sample data ToyMC
+    hdata = BB2DLLFiniteMC.sampleToyMC(htemp, SEED + i)
+
+    # Sample reference ToyMCs
+    hToyMC = []
+    for j in range(len(hMX)):
+        # Do not sample X17 if parametrized
+        if j == 0 and parametrizeX17:
+            hToyMC.append(0*hMX[j])
+        else:
+            hToyMC.append(BB2DLLFiniteMC.sampleToyMC(hMX[j], SEED + i))
+    
+    ## Get Maximum Likelihood
+    #values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17)
+    #bestNX17 = values[0]
+    #bestMass = values[5]
+    #fBest = fval
+    
+    # Get null hypothesis
+    startingPs = np.array([0, 37500, 27500, 135000, 50000, 17], dtype=float)
+    valuesH0, errorsH0, fvalH0, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
+    
+    # Create grid to scan profile likelihood
+    massX17Scan = np.linspace(MIN, MAX, args.numberPL)
+    mLL = []
+    for mX17 in massX17Scan:
+        startingPs = np.array([0, 37500, 27500, 135000, 50000, mX17], dtype=float)
+        values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17, FixMass = True)
+        with open(workDir + f'{prefix}_globalPValue_SEED{SEED}.txt', 'a') as f:
+            f.write(f'{SEED + i} {mX17} {fval}\n')
+        mLL.append(fval)
+    
+    # Interpolate
+    mLL = np.array(mLL)
+    f = interp1d(massX17Scan, -mLL + fvalH0, kind='cubic')
+    
+    # Compute the number of crossings
+    threshold = pvalueC0
+    
+    # How many times does the function go above threshold?
+    x = np.linspace(massX17Scan[0], massX17Scan[-1], 1000)
+    y = f(x)
+    nCrossings = 0
+    for I in range(len(y) - 1):
+        if y[I] < threshold and y[I+1] > threshold:
+            nCrossings += 1
+    with open(workDir + f'{prefix}_upperCrossing_SEED{SEED}.txt', 'a') as f:
+        f.write(f'{SEED + i} {nCrossings}\n')
+    #globalpvalue = nCrossing*np.exp(-)
+    plt.figure(figsize=(28, 14), dpi=100)
+    plt.title('Profile likelihood - peak hunt')
+    plt.plot(x, y, linewidth=5, color = cm.coolwarm(0.), label='Number of crossings: ' + str(nCrossings))
+    plt.plot(massX17Scan, -mLL + fvalH0, 'o', linewidth=5, markersize=20, color = cm.coolwarm(0.))
+    #plt.plot(bestMass, -fBest + fvalH0, 'o', linewidth=5, markersize=20, color = 'black', label='Best fit')
+    plt.plot(x, np.ones(len(x))*threshold, linewidth=5, color = 'black', label='c0')
+    plt.legend()
+    plt.ylabel('q(m)')
+    plt.xlabel('X17 mass [MeV/c$^2$]')
+    plt.grid()
+    plt.savefig(workDir + f'{prefix}_profileLikelihood_SEED{SEED}_toy{i}.png', bbox_inches='tight')
+    
+    print('Global p-value elapsed time: ', time() - startTime)
+    return
 
 
 if __name__ == '__main__':
-    #args, unknown = argparser()
-    args = argparser()
+    args, unknown = argparser()
+    #args = argparser()
     SEED = args.seed
     workDir = args.workDir
     reset = args.reset
@@ -57,6 +141,11 @@ if __name__ == '__main__':
     parametrizeX17 = args.parametrizeX17
     plotToy = args.plotToy
     resetFC = args.resetFC
+    globalPValue = args.globalPValue
+    pvalueMin = args.pvalueMin
+    pvalueMax = args.pvalueMax
+    pvalueC0 = args.pvalueC0
+    numberPL = args.numberPL
     
     # Test Toy
     #ToySample = True
@@ -76,6 +165,16 @@ if __name__ == '__main__':
     #referenceFile = 'X17reference.root'
     #prefix = 'TEST'
     #resetFC = True
+    
+    # Test global p-value
+    globalPValue = True
+    pvalueMin = 15
+    pvalueMax = 18.15
+    pvalueC0 = 1
+    parametrizeX17 = True
+    dataF = 'X17MC2021_s0'
+    numberToys = 100
+    SEED = 0
     
     if args.profileLikelihood:
         startTime = time()
@@ -153,8 +252,34 @@ if __name__ == '__main__':
                         with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
                             f.write(f'{massX17Scan[i]} {fval}\n')
         print('Profile likelihood elapsed time: ', time() - startTime)
+    
+    elif globalPValue and parametrizeX17:
+        # Profile the likelihood while scanning the mass
+        MIN = pvalueMin
+        MAX = pvalueMax
+        if MIN < 15:
+            MIN = 15
+        if MAX > 18.15:
+            MAX = 18.15
+            massX17Scan = np.linspace(MIN, MAX, numberPL)
+        startTime = time()
         
+        with open(workDir + f'{prefix}_globalPValue_SEED{SEED}.txt', 'w') as f:
+            f.write('#SEED mX17 fval\n')
         
+        with open(workDir + f'{prefix}_upperCrossing_SEED{SEED}.txt', 'w') as f:
+            f.write('#SEED nCrossings\n')
+        
+        #with ThreadPoolExecutor(max_workers=2) as executor:
+        #    args = [(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime) for i in range(numberToys)]
+        #    executor.map(globalPvalue, *zip(*args))
+        for i in range(numberToys):
+            globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime)
+        #for i in range(numberToys):
+        #    p = Process(target=globalPvalue, args=(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime))
+        #    threading.Thread(target=globalPvalue, args=(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime)).start()
+        #    
+            #globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime)
     
     elif ToySample:
         dataFile = f'{dataF}.root'
