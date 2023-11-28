@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from glob import glob
 import matplotlib
 from scipy.stats import chi2, norm
+import BB2DLLFiniteMC
 import argparse
 
 def argparser():
@@ -100,49 +101,70 @@ if __name__ == '__main__':
     plt.figure(figsize=(4*14, 2*14), dpi=100)
     plt.suptitle(f'{prefix}, {len(nSig)} tests')
     plt.subplot(2, 4, 1)
-    plt.hist(nSig, bins=50, label=f'mean = {np.mean(nSig):.2f}, std = {np.std(nSig):.2f}')
-    plt.xlabel('nSig')
+    plt.hist(nSig/np.mean(nSig), bins=50, label=f'mean = {np.mean(nSig):.2f}, std = {np.std(nSig):.2f}')
+    plt.xlabel(r'nSig/$\hat{\mathrm{nSig}}$')
     plt.legend()
     plt.grid()
     
     plt.subplot(2, 4, 2)
-    plt.hist(nEpc15, bins=50, label=f'mean = {np.mean(nEpc15):.2f}, std = {np.std(nEpc15):.2f}')
-    plt.xlabel('nEpc15')
+    plt.hist(nEpc15/np.mean(nEpc15), bins=50, label=f'mean = {np.mean(nEpc15):.2f}, std = {np.std(nEpc15):.2f}')
+    plt.xlabel(r'nEpc15/$\hat{\mathrm{nEpc15}}$')
     plt.legend()
     plt.grid()
     
     plt.subplot(2, 4, 3)
-    plt.hist(nIpc15, bins=50, label=f'mean = {np.mean(nIpc15):.2f}, std = {np.std(nIpc15):.2f}')
-    plt.xlabel('nIpc15')
+    plt.hist(nIpc15/np.mean(nIpc15), bins=50, label=f'mean = {np.mean(nIpc15):.2f}, std = {np.std(nIpc15):.2f}')
+    plt.xlabel(r'nIpc15/$\hat{\mathrm{nIpc15}}$')
     plt.legend()
     plt.grid()
     
     plt.subplot(2, 4, 4)
-    plt.hist(nEpc18, bins=50, label=f'mean = {np.mean(nEpc18):.2f}, std = {np.std(nEpc18):.2f}')
-    plt.xlabel('nEpc18')
+    plt.hist(nEpc18/np.mean(nEpc18), bins=50, label=f'mean = {np.mean(nEpc18):.2f}, std = {np.std(nEpc18):.2f}')
+    plt.xlabel(r'nEpc18/$\hat{\mathrm{nEpc18}}$')
     plt.legend()
     plt.grid()
     
     plt.subplot(2, 4, 5)
-    plt.hist(nIpc18, bins=50, label=f'mean = {np.mean(nIpc18):.2f}, std = {np.std(nIpc18):.2f}')
-    plt.xlabel('nIpc18')
+    plt.hist(nIpc18/np.mean(nIpc18), bins=50, label=f'mean = {np.mean(nIpc18):.2f}, std = {np.std(nIpc18):.2f}')
+    plt.xlabel(r'nIpc18/$\hat{\mathrm{nIpc18}}$')
     plt.legend()
     plt.grid()
     
     plt.subplot(2, 4, 6)
-    plt.bar(['True', 'False'], [np.sum(valid), np.sum(valid == False)])
-    plt.xlabel('valid')
-    plt.yscale('log')
+    #plt.bar(['True', 'False'], [np.sum(valid), np.sum(valid == False)])
+    #plt.xlabel('valid')
+    #plt.yscale('log')
+    #plt.grid()
+    lr = fvalH0 - fval
+    a, b, sigma = np.array(BB2DLLFiniteMC.computeSignificance(fvalH0, fval, 2, parametrizedX17=True, Ncrossing=0))
+    if (lr < -1e-3).any():
+        print('WARNING: lr < 0:', len(lr[lr < 0]), 'tests')
+    sigma = sigma[lr > 0]
+    
+    # Compute median
+    median = np.median(sigma)
+    print(f'Files: {files}')
+    print(f'Median sigma: {median:.2f}\n')
+    plt.hist(sigma, bins=50, label=f'mean = {np.mean(sigma):.2f}, std = {np.std(sigma):.2f}')
+    plt.xlabel('Local sigma')
+    plt.legend()
     plt.grid()
     
     plt.subplot(2, 4, 7)
     lr = fvalH0 - fval
-    sigma = chi2.sf(lr, 1)
-    sigma = norm.isf(sigma*0.5)
+    a, b, sigma = np.array(BB2DLLFiniteMC.computeSignificance(fvalH0, fval, 2, parametrizedX17=True))
+    if (lr < -1e-3).any():
+        print('WARNING: lr < 0:', len(lr[lr < 0]), 'tests')
+    sigma = sigma[lr > 0]
     plt.hist(sigma, bins=50, label=f'mean = {np.mean(sigma):.2f}, std = {np.std(sigma):.2f}')
-    plt.xlabel('sigma')
+    plt.xlabel('Global sigma')
     plt.legend()
     plt.grid()
+    
+    # Compute median
+    median = np.median(sigma)
+    print(f'Files: {files}')
+    print(f'Median sigma: {median:.2f}\n')
     
     plt.subplot(2, 4, 8)
     if len(mX17) > 0:
@@ -156,10 +178,6 @@ if __name__ == '__main__':
         plt.legend()
         plt.grid()
 
-    # Compute median
-    median = np.median(sigma)
-    print(f'Files: {files}')
-    print(f'Median sigma: {median:.2f}\n')
     
     plt.savefig(f'{prefix}.png', bbox_inches='tight')
 
