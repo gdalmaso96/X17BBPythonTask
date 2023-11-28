@@ -92,7 +92,7 @@ def mergeFiles(prefix, plot=False):
         plt.ylabel('Mass [MeV]')
         plt.xlabel('nX17')
         plt.title('Number of toys per point')
-        plt.show()
+        #plt.show()
         plt.savefig(prefix + 'nToys.png')
         
     print(data)
@@ -111,17 +111,22 @@ def mergeFiles(prefix, plot=False):
     
     if plot:
         # Plot the CLs values
-        plt.figure(figsize=(28, 14), dpi=100)
-        plt.subplot(1, 2, 1)
+        plt.figure(figsize=(32, 14), dpi=100)
+        ax = plt.subplot(1, 2, 1)
         plt.title('Feldmann-Cousins')
         plt.imshow(CLs.transpose()[::-1], cmap=cm.coolwarm, extent=[N.min(), N.max(), M.min(), M.max()], aspect='auto')
         plt.colorbar()
-        plt.ylim(16, 18)
+        # Minor ticks
+        for i in range(len(N+1)):
+            plt.plot([N.min() + i*(N.max() - N.min()) / (len(N)), N.min() + i*(N.max() - N.min()) / (len(N))], [M.min(), M.max()], color='white', linewidth=2)
+        for i in range(len(M+1)):
+            plt.plot([N.min(), N.max()], [M.min() + i*(M.max() - M.min()) / (len(M)), M.min() + i*(M.max() - M.min()) / (len(M))], color='white', linewidth=2)
+        plt.grid(which='minor', color='w', linestyle='-', linewidth=2)
         plt.ylabel('Mass [MeV]')
         plt.xlabel('nX17')
         
         # Draw 90% CL line
-        plt.subplot(1, 2, 2)
+        ax = plt.subplot(1, 2, 2)
         f = RectBivariateSpline(N, M, CLs)
         x = np.linspace(N.min(), N.max(), 100)
         y = np.linspace(M.min(), M.max(), 100)
@@ -130,14 +135,22 @@ def mergeFiles(prefix, plot=False):
         
         plt.imshow(z[::-1], cmap=cm.coolwarm, extent=[N.min(), N.max(), M.min(), M.max()], aspect='auto')
         plt.colorbar()
-        plt.contour(x, y, z, colors='black', linewidths=5, levels=[0.9])
+        cs = plt.contour(x, y, z, colors='black', linewidths=5, levels=[0.9])
         plt.ylim(16, 18)
-        
+        p = cs.collections[0].get_paths()[0]
+        v = p.vertices
+        x = v[:,0]
+        y = v[:,1]
+        h, _ = cs.legend_elements()
+        textstr = r'CL 90%% on $\mathcal{N}_{\mathrm{Sig}}$: (%.1f, %.1f)' %(x.min(), x.max())
+        textstr = textstr + '\nCL 90%% on mass: (%.1f, %.1f) MeV/c' %(y.min(), y.max()) + r'$^{2}$'
+        props = dict(boxstyle='round', facecolor='white', edgecolor='grey', alpha=0.7)
+        ax.legend(h, [textstr], loc='lower right', fontsize=35)
         plt.ylabel('Mass [MeV]')
         plt.xlabel('nX17')
         plt.title('Cubic interpolation')
         plt.savefig(prefix + 'CLs.png')
-        plt.show()
+        #plt.show()
     
     # Save the data
     np.savetxt(prefix + 'CLs.txt', CLs)

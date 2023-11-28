@@ -6,10 +6,11 @@ import matplotlib
 from scipy.stats import norm, chi2
 
 matplotlib.rcParams.update({'font.size': 35})
+plt.rcParams['figure.constrained_layout.use'] = True
 
 # Load the data
 fileName = 'results/BBstandard_profileLikelihood_SEED0.txt'
-fileName = 'results/bins16x10CurrentStatisticsParametrized_profileLikelihood_SEED0.txt'
+#fileName = 'results/bins16x10CurrentStatisticsParametrized_profileLikelihood_SEED0.txt'
 
 # Check number #
 nHeaderLines = 0
