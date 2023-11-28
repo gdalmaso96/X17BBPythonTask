@@ -1,4 +1,4 @@
-jobs = open('joblist1.txt', 'w')
+jobs = open('joblist2.txt', 'w')
 
 # nRuns, offset
 nTrials = 1000
@@ -38,16 +38,17 @@ for i in range(10):
 # Normal run: 1e5 events per ecode 
 # 010xxxx
 for j in range(10):
+    print(j)
     for i in range(10):
-        command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --varyReference True --parametrizeX17 True --workDir {workDir} --seed {i*nSamples} --nSamples {nSamples} --reset True --prefix VaryReferencebins20x14IdealStatisticsParametrized_{100*j} --numberX17 100*j --dataFile X17MC2021_nX17_{100*j} \n')
-        offset.append(100000 + i)
+        command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --varyReference True --parametrizeX17 True --workDir {workDir} --seed {i*nSamples} --nSamples {nSamples} --reset True --prefix VaryReferencebins20x14IdealStatisticsParametrized_{100*j} --numberX17 {100*j} --dataFile X17MC2021_nX17_{100*j} \n')
+        offset.append(100000 + j*10 + i)
 
 # Normal run: 1e5 events per ecode 
 # 011xxxx
 for j in range(10):
     for i in range(10):
-        command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --varyReference True --parametrizeX17 True --workDir {workDir} --seed {i*nSamples} --nSamples {nSamples} --reset True --prefix VaryReferencebins20x14CurrentStatisticsParametrized_{100*j} --numberX17 100*j --dataFile X17MC2021_CurnX17_{100*j} --referenceFile X17referenceRealistic.root \n')
-        offset.append(200000 + i)
+        command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --varyReference True --parametrizeX17 True --workDir {workDir} --seed {i*nSamples} --nSamples {nSamples} --reset True --prefix VaryReferencebins20x14CurrentStatisticsParametrized_{100*j} --numberX17 {100*j} --dataFile X17MC2021_CurnX17_{100*j} --referenceFile X17referenceRealistic.root \n')
+        offset.append(200000 + j*10 + i)
 
 for i in range(len(command)):
     run = offset[i]

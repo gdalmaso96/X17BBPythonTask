@@ -21,7 +21,7 @@ for i in range(int(nTrials/nSamplesPerRun)):
     for j in range(npX17):
         for k in range(nMassX17):
             nSamples = nSamplesPerRun
-            command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --parametrizeX17 True --ToySample True --workDir {workDir} --seed {i*nSamples} --numberToys {nSamples} --resetFC True --prefix bins20x14IdealStatisticsParametrized --massX17 {j*(maxMassX17 - minMassX17)/(nMassX17 - 1) + minMassX17} --numberX17 {minnX17 + (maxnX17 - minnX17)/(npX17 - 1)}\n')
+            command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --parametrizeX17 True --ToySample True --workDir {workDir} --seed {i*nSamples} --numberToys {nSamples} --resetFC True --prefix bins20x14IdealStatisticsParametrized --massX17 {j*(maxMassX17 - minMassX17)/(nMassX17 - 1) + minMassX17} --numberX17 {minnX17 + (maxnX17 - minnX17)/(npX17 - 1)*k}\n')
             offset.append(40000 + i*npX17*nMassX17 + j*nMassX17 + k)
 
 # Ideal statistics run: 1e5 IPCs, 1e4 EPCs, 1e5 X17
@@ -30,7 +30,7 @@ for i in range(int(nTrials/nSamplesPerRun)):
     for j in range(npX17):
         for k in range(nMassX17):
             nSamples = nSamplesPerRun
-            command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --parametrizeX17 True --ToySample True --workDir {workDir} --seed {i*nSamples} --numberToys {nSamples} --resetFC True --referenceFile X17referenceRealistic.root --prefix bins20x14CurrentStatisticsParametrized --massX17 {j*(maxMassX17 - minMassX17)/(nMassX17 - 1) + minMassX17} --numberX17 {minnX17 + (maxnX17 - minnX17)/(npX17 - 1)}\n')
+            command.append(f'python3 -u /data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/testEstimators.py --parametrizeX17 True --ToySample True --workDir {workDir} --seed {i*nSamples} --numberToys {nSamples} --resetFC True --referenceFile X17referenceRealistic.root --prefix bins20x14CurrentStatisticsParametrized --massX17 {j*(maxMassX17 - minMassX17)/(nMassX17 - 1) + minMassX17} --numberX17 {minnX17 + (maxnX17 - minnX17)/(npX17 - 1)*k}\n')
             offset.append(50000 + i*npX17*nMassX17 + j*nMassX17 + k)
 
 
