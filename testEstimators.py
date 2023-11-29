@@ -13,6 +13,8 @@ from matplotlib import pyplot as plt
 from matplotlib import cm
 matplotlib.rcParams.update({'font.size': 35})
 
+# Null signal profile python3 testEstimators.py --seed 0 --referenceFile X17referenceRealistic.root --profileLikelihood True --profileLikelihood2D True --prefix bins20x14CurrentStatisticsParametrizedNullSig --parametrizeX17 True --dataFile X17MC2021_s0 --mX17plMin 15 --numberPL 15
+
 def argparser():
     parser = argparse.ArgumentParser(description='Test estimators from 2DLLFiniteMC.py')
     parser.add_argument('-n', '--nSamples', type=int, default=1000, help='Number of samples to draw')
@@ -35,13 +37,17 @@ def argparser():
     parser.add_argument('-pT', '--plotToy', type=bool, default=False, help='Plot ToyMC')
     parser.add_argument('-pLL', '--profileLikelihood', type=bool, default=False, help='Use profile likelihood')
     parser.add_argument('-pLL2D', '--profileLikelihood2D', type=bool, default=False, help='Use profile likelihood')
+    parser.add_argument('--nX17plMin', type=float, default=0, help='Minimum number of X17 events to scan')
+    parser.add_argument('--nX17plMax', type=float, default=900, help='Maximum number of X17 events to scan')
+    parser.add_argument('--mX17plMin', type=float, default=16, help='Minimum mass of X17 events to scan')
+    parser.add_argument('--mX17plMax', type=float, default=18, help='Maximum mass of X17 events to scan')
     parser.add_argument('-nPL', '--numberPL', type=int, default=11, help='Number of points to scan profile likelihood')
     parser.add_argument('-pG', '--globalPValue', type=bool, default=False, help='Compute global p-value')
     parser.add_argument('-pGmin', '--pvalueMin', type=float, default=15, help='Minimum mass to scan')
-    parser.add_argument('-pGmax', '--pvalueMax', type=float, default=18, help='Maximum mass to scan')
+    parser.add_argument('-pGmax', '--pvalueMax', type=float, default=18.15, help='Maximum mass to scan')
     parser.add_argument('-pGc0', '--pvalueC0', type=float, default=0.05, help='Threshold for global p-value')
-    return parser.parse_known_args()
-    #return parser.parse_args()
+    #return parser.parse_known_args()
+    return parser.parse_args()
 
 def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime):
     # Get template
@@ -115,8 +121,8 @@ def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, M
 
 
 if __name__ == '__main__':
-    args, unknown = argparser()
-    #args = argparser()
+    #args, unknown = argparser()
+    args = argparser()
     SEED = args.seed
     workDir = args.workDir
     reset = args.reset
@@ -168,81 +174,78 @@ if __name__ == '__main__':
     #SEED = 0
     
     if args.profileLikelihood:
-        startTime = time()
-        dataFile = f'{dataF}.root'
-        MCFile = f'{referenceFile}'
-        hMX, binsXMCx, binsXMCy = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
-        hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
-        
-        startTime = time()
-        startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype=float)
-        values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17)
-        bestNX17 = values[0]
-        bestMass = 17
-        if parametrizeX17:
-            bestMass = values[5]
-        fBest = fval
-        
-        # Create grid to scan profile likelihood
-        nX17Scan = np.linspace(values[0] - 5*errors[0], values[0] + 5*errors[0], args.numberPL)
-        if nX17Scan[0] < 0:
-            nX17Scan = np.linspace(0, values[0] + 5*errors[0], args.numberPL)
-        
-        massX17Scan = []
-        
-        pScan = []
-        if parametrizeX17:
-            MIN = values[5] - 5*errors[5]
-            MAX = values[5] + 5*errors[5]
-            if MIN < 15:
-                MIN = 15
-            if MAX > 18:
-                MAX = 18
-            massX17Scan = np.linspace(MIN, MAX, args.numberPL)
-        
-        if args.profileLikelihood2D and len(massX17Scan) > 1:
-            # Create file
-            with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'w') as f:
-                f.write('#nX17 fval\n')
-                f.write(f'{bestNX17} {bestMass} {fBest}\n')
-            for i in range(len(nX17Scan)):
-                for j in range(len(massX17Scan)):
-                    startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, massX17Scan[j]], dtype=float)
-                    values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
-
-                    pScan.append(fval)
-                    # append to file
-                    with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
-                        f.write(f'{nX17Scan[i]} {massX17Scan[j]} {fval}\n')
-        else:
-            # Create file
-            with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'w') as f:
-                f.write('#nX17 fval\n')
-                f.write(f'{bestNX17} {fBest}\n')
-            for i in range(len(nX17Scan)):
-                if nX17Scan[i] != bestNX17:
-                    startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, bestMass], dtype=float)
-                    values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
-
-                    pScan.append(fval)
-                    # append to file
-                    with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
-                        f.write(f'{nX17Scan[i]} {fval}\n')
-                
+        for i in range(numberToys):
+            sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = nX17Toy, year = 2021, SEED = SEED + i, workDir = workDir, fileName=dataF)
             
-            if len(massX17Scan) > 1:
-                with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
-                    f.write('#mX17 fval\n')
-                    f.write(f'{bestMass} {fBest}\n')
-                for i in range(len(massX17Scan)):
-                    if massX17Scan[i] != bestMass:
-                        startingPs = np.array([bestNX17, 37500, 27500, 135000, 50000, massX17Scan[i]], dtype=float)
+            startTime = time()
+            dataFile = f'{dataF}_s{SEED + i}.root'
+            MCFile = f'{referenceFile}'
+            hMX, binsXMCx, binsXMCy = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
+            hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
+            
+            startTime = time()
+            startingPs = np.array([450, 37500, 27500, 135000, 50000, 17], dtype=float)
+            values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, parametrizedX17 = parametrizeX17)
+            bestNX17 = values[0]
+            bestMass = 17
+            if parametrizeX17:
+                bestMass = values[5]
+            fBest = fval
+            
+            # Create grid to scan profile likelihood
+            nX17Scan = np.linspace(args.nX17plMin, args.nX17plMax, args.numberPL)
+            
+            massX17Scan = []
+            
+            pScan = []
+            if parametrizeX17:
+                MIN = args.mX17plMin
+                MAX = args.mX17plMax
+                massX17Scan = np.linspace(MIN, MAX, args.numberPL)
+            
+            if args.profileLikelihood2D and len(massX17Scan) > 1:
+                # Create file
+                with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'w') as f:
+                    f.write('#nX17 fval\n')
+                    f.write(f'{bestNX17} {bestMass} {fBest} {fBest}\n')
+                for i in range(len(nX17Scan)):
+                    for j in range(len(massX17Scan)):
+                        startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, massX17Scan[j]], dtype=float)
                         values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
 
                         pScan.append(fval)
-                        with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED}.txt', 'a') as f:
-                            f.write(f'{massX17Scan[i]} {fval}\n')
-        print('Profile likelihood elapsed time: ', time() - startTime)
+                        # append to file
+                        with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'a') as f:
+                            f.write(f'{nX17Scan[i]} {massX17Scan[j]} {fval} {fBest}\n')
+            else:
+                # Create file
+                with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'w') as f:
+                    f.write('#nX17 fval\n')
+                    f.write(f'{bestNX17} {fBest}\n')
+                for i in range(len(nX17Scan)):
+                    if nX17Scan[i] != bestNX17:
+                        startingPs = np.array([nX17Scan[i], 37500, 27500, 135000, 50000, bestMass], dtype=float)
+                        values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
+
+                        pScan.append(fval)
+                        # append to file
+                        with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'a') as f:
+                            f.write(f'{nX17Scan[i]} {fval} {fBest}\n')
+                    
+                
+                if len(massX17Scan) > 1:
+                    with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'a') as f:
+                        f.write('#mX17 fval\n')
+                        f.write(f'{bestMass} {fBest} {fBest}\n')
+                    for i in range(len(massX17Scan)):
+                        if massX17Scan[i] != bestMass:
+                            startingPs = np.array([bestNX17, 37500, 27500, 135000, 50000, massX17Scan[i]], dtype=float)
+                            values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
+
+                            pScan.append(fval)
+                            with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'a') as f:
+                                f.write(f'{massX17Scan[i]} {fval} {fBest}\n')
+            print('Profile likelihood elapsed time: ', time() - startTime)
     
     elif globalPValue and parametrizeX17:
         # Profile the likelihood while scanning the mass

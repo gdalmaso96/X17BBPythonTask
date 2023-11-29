@@ -9,13 +9,16 @@ import argparse
 matplotlib.rcParams.update({'font.size': 35})
 plt.rcParams['figure.constrained_layout.use'] = True
 
+dataFile = 'results/bins20x14CurrentStatisticsParametrizedNullSig_profileLikelihood_SEED0.txt'
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--prefix', type=str, help='Prefix of the files to merge', default='fcAnalysis/bins20x14CurrentStatisticsParametrized_lratio_')
+    parser.add_argument('-d', '--data', type=str, help='Path to the data file', default='')
     parser.add_argument('-pl', '--plot', type=bool, help='Plot the number of toys per point', default=True)
     return parser.parse_args()
 
-def mergeFiles(prefix, plot=False):
+def mergeFiles(prefix, plot=False, dataFile=''):
     listOfFiles = glob(prefix + '*.txt')
     listOfFiles.sort()
     listOfFiles = [file for file in listOfFiles if not file.endswith('CLs.txt') and not file.endswith('nToys.txt')]
@@ -48,6 +51,40 @@ def mergeFiles(prefix, plot=False):
     SEED = np.array(SEED)
     lratio = np.array(lratio)
     
+    # If external data is provided, add it to the lists and remove the previous data
+    if dataFile != '':
+        # Remove previous data
+        nX17Toy = nX17Toy[data == False]
+        massX17Toy = massX17Toy[data == False]
+        accurateH1 = accurateH1[data == False]
+        accurateH0 = accurateH0[data == False]
+        SEED = SEED[data == False]
+        lratio = lratio[data == False]
+        data = data[data == False]
+        # Check number #
+        nHeaderLines = 0
+        with open(dataFile, 'r') as f:
+            for line in f:
+                if line.startswith('#'):
+                    nHeaderLines += 1
+                else:
+                    continue
+        if nHeaderLines > 1:
+            print('Data file has more than one header line. Please check the file.')
+            exit()
+        
+        tnSig, tmX17, tlr, tbest = np.loadtxt(dataFile, unpack=True, skiprows=2)
+        print(tnSig, tmX17, tlr-tbest)
+        for (n, m, l) in zip(tnSig, tmX17, tlr):
+            nX17Toy = np.append(nX17Toy, n)
+            massX17Toy = np.append(massX17Toy, m)
+            accurateH1 = np.append(accurateH1, True)
+            accurateH0 = np.append(accurateH0, True)
+            data = np.append(data, True)
+            SEED = np.append(SEED, -1)
+            lratio = np.append(lratio, l - tbest[0])
+            print(n, m, l - tbest[0])
+    #print(data)
     # Check how many were not accurate
     print('Number of inaccurate H1: ', len(accurateH1[accurateH1 == False]))
     print('Number of inaccurate H0: ', len(accurateH0[accurateH0 == False]))
@@ -99,10 +136,11 @@ def mergeFiles(prefix, plot=False):
     # Compute the CLs values
     for i in range(len(N)):
         for j in range(len(M)):
-            tempLR = lratio[(nX17Toy == N[i]) & (massX17Toy == M[j])]
-            tempDATA = data[(nX17Toy == N[i]) & (massX17Toy == M[j])]
+            tempLR = lratio[(abs(nX17Toy - N[i]) < 1e-3) & (abs(massX17Toy - M[j]) < 1e-4)]
+            tempDATA = data[(abs(nX17Toy - N[i]) < 1e-3) & (abs(massX17Toy - M[j]) < 1e-4)]
             # Arg sort and find the data index in the sorted array
             if len(tempLR) <= 1:
+                print('WARNING: less than 2 toys for point (%.1f, %.2f)' %(N[i], M[j]))
                 continue
             idx = np.argsort(tempLR)
             idx = np.where(tempDATA[idx] == True)[0][0]
@@ -136,26 +174,33 @@ def mergeFiles(prefix, plot=False):
         plt.imshow(z[::-1], cmap=cm.coolwarm, extent=[N.min(), N.max(), M.min(), M.max()], aspect='auto')
         plt.colorbar()
         cs = plt.contour(x, y, z, colors='black', linewidths=5, levels=[0.9])
-        plt.ylim(16, 18)
+        plt.ylim(15, 18)
         p = cs.collections[0].get_paths()[0]
         v = p.vertices
         x = v[:,0]
         y = v[:,1]
         h, _ = cs.legend_elements()
         textstr = r'CL 90%% on $\mathcal{N}_{\mathrm{Sig}}$: (%.1f, %.1f)' %(x.min(), x.max())
-        textstr = textstr + '\nCL 90%% on mass: (%.1f, %.1f) MeV/c' %(y.min(), y.max()) + r'$^{2}$'
+        textstr = textstr + '\nCL 90%% on mass: (%.2f, %.2f) MeV/c' %(y.min(), y.max()) + r'$^{2}$'
         props = dict(boxstyle='round', facecolor='white', edgecolor='grey', alpha=0.7)
         ax.legend(h, [textstr], loc='lower right', fontsize=35)
         plt.ylabel('Mass [MeV]')
         plt.xlabel('nX17')
         plt.title('Cubic interpolation')
-        plt.savefig(prefix + 'CLs.png')
+        if dataFile != '':
+            plt.savefig(prefix + dataFile[dataFile.find('Null'):] + 'CLs.png')
+        else:
+            plt.savefig(prefix + 'CLs.png')
         #plt.show()
     
     # Save the data
-    np.savetxt(prefix + 'CLs.txt', CLs)
-    np.savetxt(prefix + 'nToys.txt', nToys)
+    if dataFile != '':
+        np.savetxt(prefix + dataFile[dataFile.find('Null'):] + 'CLs.txt', CLs)
+        np.savetxt(prefix + dataFile[dataFile.find('Null'):] + 'nToys.txt', nToys)
+    else:
+        np.savetxt(prefix + 'CLs.txt', CLs)
+        np.savetxt(prefix + 'nToys.txt', nToys)
 
 if __name__ == '__main__':
     args = parse_args()
-    mergeFiles(args.prefix, args.plot)
+    mergeFiles(args.prefix, args.plot, dataFile=args.data)
