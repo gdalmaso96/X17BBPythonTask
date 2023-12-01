@@ -217,6 +217,7 @@ if __name__ == '__main__':
                         # append to file
                         with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'a') as f:
                             f.write(f'{nX17Scan[i]} {massX17Scan[j]} {fval} {fBest}\n')
+                print('Profile likelihood elapsed time: ', time() - startTime)
             else:
                 # Create file
                 with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'w') as f:
