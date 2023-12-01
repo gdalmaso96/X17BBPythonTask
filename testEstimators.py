@@ -174,11 +174,12 @@ if __name__ == '__main__':
     #SEED = 0
     
     if args.profileLikelihood:
-        for i in range(numberToys):
-            sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = nX17Toy, year = 2021, SEED = SEED + i, workDir = workDir, fileName=dataF)
+        for I in range(numberToys):
+            sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = nX17Toy, year = 2021, SEED = SEED + I, workDir = workDir, fileName=dataF)
+            print(args.numberPL)
             
             startTime = time()
-            dataFile = f'{dataF}_s{SEED + i}.root'
+            dataFile = f'{dataF}_s{SEED + I}.root'
             MCFile = f'{referenceFile}'
             hMX, binsXMCx, binsXMCy = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
             hdata, binsdatax, binsdatay = BB2DLLFiniteMC.loadData(dataFile, workDir = workDir)
@@ -203,9 +204,10 @@ if __name__ == '__main__':
                 MAX = args.mX17plMax
                 massX17Scan = np.linspace(MIN, MAX, args.numberPL)
             
+            print(nX17Scan, massX17Scan)
             if args.profileLikelihood2D and len(massX17Scan) > 1:
                 # Create file
-                with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'w') as f:
+                with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + I}.txt', 'w') as f:
                     f.write('#nX17 fval\n')
                     f.write(f'{bestNX17} {bestMass} {fBest} {fBest}\n')
                 for i in range(len(nX17Scan)):
@@ -215,12 +217,12 @@ if __name__ == '__main__':
 
                         pScan.append(fval)
                         # append to file
-                        with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'a') as f:
+                        with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + I}.txt', 'a') as f:
                             f.write(f'{nX17Scan[i]} {massX17Scan[j]} {fval} {fBest}\n')
                 print('Profile likelihood elapsed time: ', time() - startTime)
             else:
                 # Create file
-                with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'w') as f:
+                with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + I}.txt', 'w') as f:
                     f.write('#nX17 fval\n')
                     f.write(f'{bestNX17} {fBest}\n')
                 for i in range(len(nX17Scan)):
@@ -230,12 +232,12 @@ if __name__ == '__main__':
 
                         pScan.append(fval)
                         # append to file
-                        with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'a') as f:
+                        with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + I}.txt', 'a') as f:
                             f.write(f'{nX17Scan[i]} {fval} {fBest}\n')
                     
                 
                 if len(massX17Scan) > 1:
-                    with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'a') as f:
+                    with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + I}.txt', 'a') as f:
                         f.write('#mX17 fval\n')
                         f.write(f'{bestMass} {fBest} {fBest}\n')
                     for i in range(len(massX17Scan)):
@@ -244,7 +246,7 @@ if __name__ == '__main__':
                             values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
 
                             pScan.append(fval)
-                            with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + i}.txt', 'a') as f:
+                            with open(workDir + f'{prefix}_profileLikelihood_SEED{SEED + I}.txt', 'a') as f:
                                 f.write(f'{massX17Scan[i]} {fval} {fBest}\n')
             print('Profile likelihood elapsed time: ', time() - startTime)
     
