@@ -11,9 +11,10 @@ from iminuit import Minuit
 import matplotlib
 from scipy.stats import chi2, norm
 import time
-import SigLikX17
+import SigLikX17, Ipc15LikX17, Ipc18LikX17, Epc15LikX17, Epc18LikX17
 import numba as nb
 from numba import jit
+
 
 matplotlib.rcParams.update({'font.size': 35})
 plt.rcParams['figure.constrained_layout.use'] = True
@@ -143,28 +144,29 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
             Ai = np.array(Ai)
             
             # Do null bins a la Beeston-Barlow
-            doNormalBB = True
-            if (ai[K[0]] == 0):
-                Ai[K[0]] = Di/(1 + p[K[0]])
-            
-                for k in K[1:]:
-                    Ai[K[0]] += -p[k]*ai[k]/(p[K[0]] - p[k])
-                    Ai[k] = ai[k]/(1 - p[k]/p[K[0]])
-                if Ai[K[0]] <= 0:
-                    Ai[K[0]] = 0
-                    doNormalBB = True
-                else:
-                    doNormalBB = False
-                    ti = [-1/p[K[0]]]
-            
-            if doNormalBB:
-                ti = brentq(solveTi, -1/p[K[0]], 1, args=(Di, p, np.array(ai)), full_output=True)
-                if ti[1].converged != True:
-                    print('Oh no!')
+            if Kstart < len(K):
+                doNormalBB = True
+                if (ai[K[0]] == 0):
+                    Ai[K[0]] = Di/(1 + p[K[0]])
                 
-                # Compute Ai
-                for k in K:
-                    Ai[k] = Aji(ai[k], p[k], ti[0])
+                    for k in K[1:]:
+                        Ai[K[0]] += -p[k]*ai[k]/(p[K[0]] - p[k])
+                        Ai[k] = ai[k]/(1 - p[k]/p[K[0]])
+                    if Ai[K[0]] <= 0:
+                        Ai[K[0]] = 0
+                        doNormalBB = True
+                    else:
+                        doNormalBB = False
+                        ti = [-1/p[K[0]]]
+                
+                if doNormalBB:
+                    ti = brentq(solveTi, -1/p[K[0]], 1, args=(Di, p, np.array(ai)), full_output=True)
+                    if ti[1].converged != True:
+                        print('Oh no!')
+                    
+                    # Compute Ai
+                    for k in K:
+                        Ai[k] = Aji(ai[k], p[k], ti[0])
             
             f = []
             for i in range(len(K)):
@@ -177,11 +179,12 @@ def LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, getA=False, Kstart = 0):
             elif Di > 0:
                 LL+= -Di*1e7
             
-            for k in range(Kstart, len(K)):
-                if Ai[k] > 0:
-                    LL += ai[k]*np.log(Ai[k]) - Ai[k]
-                elif ai[k] > 0:
-                    LL += -ai[k]*1e7
+            if Kstart < len(K):
+                for k in range(Kstart, len(K)):
+                    if Ai[k] > 0:
+                        LL += ai[k]*np.log(Ai[k]) - Ai[k]
+                    elif ai[k] > 0:
+                        LL += -ai[k]*1e7
             
             if getA:
                 AIJ.append(Ai)
@@ -213,7 +216,7 @@ def sampleToyMC(hMXtemp, SEED = 0):
 
 ########################################################################
 # Maximize likelihood
-def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False, DoMINOS = False, FixMass = False):
+def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False, DoMINOS = False, FixMass = False, fullParametrized = False):
     nMCXtot = hMX[0].sum()
     nMCXe15 = hMX[1].sum()
     nMCXi15 = hMX[2].sum()
@@ -224,7 +227,36 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     X, Y = np.meshgrid((binsdatax[:-1] + binsdatax[1:])/2, (binsdatay[:-1] + binsdatay[1:])/2)
 
     # Set up Minuit
-    if parametrizedX17:
+    if fullParametrized:
+        fEpc15 = Epc15LikX17.AngleVSEnergySum(dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins)
+        fIpc15 = Ipc15LikX17.AngleVSEnergySum(dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins)
+        fEpc18 = Epc18LikX17.AngleVSEnergySum(dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins)
+        fIpc18 = Ipc18LikX17.AngleVSEnergySum(dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins)
+        hMX[1] = fEpc15.pdf(X, Y)*nMCXe15
+        hMX[2] = fIpc15.pdf(X, Y)*nMCXi15
+        hMX[3] = fEpc18.pdf(X, Y)*nMCXe18
+        hMX[4] = fIpc18.pdf(X, Y)*nMCXi18
+        def ll(nX, nE15, nI15, nE18, nI18, mX17):
+            nMCXtot = nMCXtotParametrized
+            hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+            p0 = nX/nMCXtot
+            p1 = nE15/nMCXe15
+            p2 = nI15/nMCXi15
+            p3 = nE18/nMCXe18
+            p4 = nI18/nMCXi18
+            return LogLikelihood(p0, p1, p2, p3, p4, hdata, hMX, False, Kstart = 10)
+        
+        logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4], startingPs[5])
+        logL.limits[0] = (0, None)
+        logL.limits[1] = (0, None)
+        logL.limits[2] = (0, None)
+        logL.limits[3] = (0, None)
+        logL.limits[4] = (0, None)
+        logL.limits[5] = (15, 18.15)
+        logL.fixed[0] = doNullHyphotesis
+        logL.fixed[5] = doNullHyphotesis + FixMass
+        
+    elif parametrizedX17:
         def ll(nX, nE15, nI15, nE18, nI18, mX17):
             nMCXtot = nMCXtotParametrized
             hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
@@ -360,13 +392,23 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
     print('Elapsed time: ' + str(time.time() - startTime))
 
     if plotFigure:
-        if parametrizedX17:
+        if fullParametrized:
+            mX17 = values[5]
+            nMCXtot = nMCXtotParametrized
+            hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+            hMX[1] = fEpc15.pdf(X, Y)*nMCXe15
+            hMX[2] = fIpc15.pdf(X, Y)*nMCXi15
+            hMX[3] = fEpc18.pdf(X, Y)*nMCXe18
+            hMX[4] = fIpc18.pdf(X, Y)*nMCXi18
+        elif parametrizedX17:
             mX17 = values[5]
             nMCXtot = nMCXtotParametrized
             hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
         pvalues = values[:5]/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
 
-        if parametrizedX17:
+        if fullParametrized:
+            val, AIJ, TI = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True, Kstart=10)
+        elif parametrizedX17:
             val, AIJ, TI = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True, Kstart=1)
         else:
             val, AIJ, TI = LogLikelihood(pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], hdata, hMX, True)
@@ -553,8 +595,8 @@ if __name__ == '__main__':
     hMX, binsXMCx, binsXMCy = loadMC(MCFile, workDir)
     hdata, binsdatax, binsdatay = loadData(dataFile, workDir)
     startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
-    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = False, DoMINOS = False)
+    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True, DoMINOS = False, fullParametrized = True, FixMass = False)
     startingPs = np.array([0, 37500, 27500, 135000, 50000, 17])
-    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = False, DoMINOS = False)
-    computeSignificance(H0[2], H1[2], 2, parametrizedX17=False)
+    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True, DoMINOS = False, fullParametrized = True)
+    print(computeSignificance(H0[2], H1[2], 2, parametrizedX17=False))
     #doProfileLL(startingPs, hdata, hMX, plotFigure = True)
