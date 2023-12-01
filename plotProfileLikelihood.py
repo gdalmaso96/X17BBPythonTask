@@ -11,6 +11,8 @@ plt.rcParams['figure.constrained_layout.use'] = True
 # Load the data
 fileName = 'results/BBstandard_profileLikelihood_SEED0.txt'
 #fileName = 'results/bins16x10CurrentStatisticsParametrized_profileLikelihood_SEED0.txt'
+fileName = 'results/bins20x14IdealStatisticsParametrized_profileLikelihood_SEED0.txt'
+fileName = 'results/bins20x14CurrentStatisticsParametrizedNullSig_profileLikelihood_SEED0.txt'
 
 # Check number #
 nHeaderLines = 0
@@ -52,7 +54,10 @@ if nHeaderLines == 1:
         #plt.ylim(0, None)
         plt.grid()
     else:
-        nX17, mX17, LL = np.loadtxt(fileName, unpack=True, skiprows=1)
+        try:
+            nX17, mX17, LL, LLbest = np.loadtxt(fileName, unpack=True, skiprows=1)
+        except:
+            nX17, mX17, LL = np.loadtxt(fileName, unpack=True, skiprows=1)
         
         bestLL = LL[0]
         bestnX17 = nX17[0]
@@ -60,7 +65,7 @@ if nHeaderLines == 1:
         nX17 = np.array(nX17)[1:]
         mX17 = np.array(mX17)[1:]
         LL = np.array(LL)[1:]
-        print(bestnX17, bestmX17, bestLL)
+        #print(bestnX17, bestmX17, bestLL)
         
         # Round to 2 decimals
         #nX17 = np.round(nX17, 2)
@@ -81,10 +86,10 @@ if nHeaderLines == 1:
         # Fill 2D array
         for j in range(len(nX17u)):
             for i in range(len(mX17u)):
-                print(nX17u[i], mX17u[j])
-                print(nX17 == nX17u[i], mX17 == mX17u[j])
+                #print(nX17u[i], mX17u[j])
+                #print(nX17 == nX17u[i], mX17 == mX17u[j])
                 index = np.logical_and(nX17 == nX17u[i], mX17 == mX17u[j])
-                print(LL[index])
+                #print(LL[index])
                 LL2D[i][j] = LL[index]
         
         pvalue = 1 - chi2.sf(LL2D - bestLL, 2)
@@ -102,7 +107,7 @@ if nHeaderLines == 1:
         
         plt.subplot(121)
         plt.title('Profile likelihood ratio')
-        plt.imshow(LL2D.transpose()[::-1] - bestLL, origin='lower', aspect='auto', extent=[nX17u[0], nX17u[-1], mX17u[0], mX17u[-1]], cmap='coolwarm')
+        plt.imshow(LL2D.transpose() - bestLL, origin='lower', aspect='auto', extent=[nX17u[0], nX17u[-1], mX17u[0], mX17u[-1]], cmap='coolwarm')
         #plt.colorbar()
         plt.contour(nX17u, mX17u, LLT, levels=10, colors='black', linewidths=5, linestyles='dashed')
         
@@ -112,14 +117,17 @@ if nHeaderLines == 1:
         
         plt.subplot(122)
         plt.title('Local p-value')
-        plt.imshow(pvalue.transpose()[::-1], origin='lower', aspect='auto', extent=[nX17u[0], nX17u[-1], mX17u[0], mX17u[-1]], cmap='coolwarm')
+        plt.imshow(pvalue.transpose(), origin='lower', aspect='auto', extent=[nX17u[0], nX17u[-1], mX17u[0], mX17u[-1]], cmap='coolwarm')
         plt.colorbar()
-        plt.contour(nX17u, mX17u, pvalueT, levels=[0.68], colors='black', linewidths=5, linestyles='dashed', label='1$\sigma$')
-        plt.contour(nX17u, mX17u, pvalueT, levels=[0.9], colors='black', linewidths=5, label='90 %')
+        plt.contour(nX17u, mX17u, pvalueT, levels=[0.68], colors='black', linewidths=5, linestyles='dashed') #, label='1$\sigma$')
+        plt.contour(nX17u, mX17u, pvalueT, levels=[0.9], colors='black', linewidths=5) #, label='90 %')
         plt.plot(bestnX17, bestmX17, '+', markeredgewidth=10, markersize=50, color = 'black', label='Best fit')
         plt.legend()
         plt.xlabel(f'number of signal events')
         plt.ylabel(f'X17 mass [MeV/c$^2$]')
+        
+    
+        plt.savefig(fileName[:fileName.find('.txt')] + '.png', bbox_inches='tight')
         
     
 elif nHeaderLines == 2:
@@ -180,3 +188,5 @@ elif nHeaderLines == 2:
     plt.ylim(0, None)
     plt.xlabel(f'X17 mass [MeV/c$^2$]')
     plt.grid()
+    
+    plt.savefig(fileName[:fileName.find('.txt')] + '.png', bbox_inches='tight')
