@@ -139,6 +139,7 @@ def mergeFiles(prefix, plot=False, dataFile=''):
         for j in range(len(M)):
             tempLR = lratio[(abs(nX17Toy - N[i]) < 1e-3) & (abs(massX17Toy - M[j]) < 1e-4)]
             tempDATA = data[(abs(nX17Toy - N[i]) < 1e-3) & (abs(massX17Toy - M[j]) < 1e-4)]
+            #print(tempLR, tempDATA, N[i], M[j])
             # Arg sort and find the data index in the sorted array
             if len(tempLR) <= 1:
                 print('WARNING: less than 2 toys for point (%.1f, %.2f)' %(N[i], M[j]))
@@ -235,17 +236,32 @@ if __name__ == '__main__':
             except:
                 continue
         plt.figure(figsize=(28, 28), dpi=100)
+        prefix = args.prefix
+        plt.suptitle(f'Binning {prefix[prefix.find("bins") + 4:prefix.find("bins") + 9]}, {prefix[prefix.find("bins") + 9:prefix.find("Statistics")]} statistics, ' + r'$\mathcal{N}_{\mathrm{Sig}}$' +  f' =  {dataList[0][dataList[0].find("Null") + 4: dataList[0].find("_prof")]}, {len(nCLmin)} toy MCs')
+    
         plt.subplot(2, 2, 1)
-        plt.hist(nCLmin, bins=50)
+        plt.hist(nCLmin, bins=50, label='median = %.2f' %np.median(nCLmin), color=cm.coolwarm(0.))
+        plt.xlabel(r'Lower limit on $\mathcal{N}_{\mathrm{Sig}}$')
+        plt.grid()
+        plt.legend()
         
         plt.subplot(2, 2, 2)
-        plt.hist(nCLmax, bins=50)
+        plt.hist(nCLmax, bins=50, label='median = %.2f' %np.median(nCLmax), color=cm.coolwarm(0.))
+        plt.xlabel(r'Upper limit on $\mathcal{N}_{\mathrm{Sig}}$')
+        plt.grid()
+        plt.legend()
         
         plt.subplot(2, 2, 3)
-        plt.hist(mCLmin, bins=50)
+        plt.hist(mCLmin, bins=50, label='median = %.2f' %np.median(mCLmin), color=cm.coolwarm(0.))
+        plt.xlabel('Lower limit on Mass [MeV/c$^2$]')
+        plt.grid()
+        plt.legend()
         
         plt.subplot(2, 2, 4)
-        plt.hist(mCLmax, bins=50)
-        plt.savefig(args.prefix + 'CLsHist.png', bbox_inches='tight')
+        plt.hist(mCLmax, bins=50, label='median = %.2f' %np.median(mCLmax), color=cm.coolwarm(0.))
+        plt.xlabel('Upper limit on Mass [MeV/c$^2$]')
+        plt.grid()
+        plt.legend()
+        plt.savefig(args.prefix + dataList[0][dataList[0].find("Null"): dataList[0].find("_prof")] +'CLsHist.png', bbox_inches='tight')
     else:
         print(mergeFiles(args.prefix, args.plot, dataFile=args.data))
