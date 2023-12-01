@@ -201,7 +201,7 @@ def mergeFiles(prefix, plot=False, dataFile=''):
             plt.savefig(prefix + dataFile[dataFile.find('Null'):] + 'CLs.png')
         else:
             plt.savefig(prefix + 'CLs.png')
-        plt.show()
+        #plt.show()
     
     # Save the data
     if dataFile != '':
@@ -228,14 +228,12 @@ if __name__ == '__main__':
             try:
                 print(data)
                 nCLmin_, nCLmax_, mCLmin_, mCLmax_ = mergeFiles(args.prefix, args.plot, dataFile=data)
-                print(nCLmin_, nCLmax_, mCLmin_, mCLmax_)
                 nCLmin.append(nCLmin_)
                 nCLmax.append(nCLmax_)
                 mCLmin.append(mCLmin_)
                 mCLmax.append(mCLmax_)
             except:
                 continue
-        print(nCLmin, nCLmax, mCLmin, mCLmax)
         plt.figure(figsize=(28, 28), dpi=100)
         plt.subplot(2, 2, 1)
         plt.hist(nCLmin, bins=50)
@@ -248,6 +246,6 @@ if __name__ == '__main__':
         
         plt.subplot(2, 2, 4)
         plt.hist(mCLmax, bins=50)
-        plt.show()
+        plt.savefig(args.prefix + 'CLsHist.png', bbox_inches='tight')
     else:
         print(mergeFiles(args.prefix, args.plot, dataFile=args.data))
