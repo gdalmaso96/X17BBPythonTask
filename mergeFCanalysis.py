@@ -15,7 +15,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p', '--prefix', type=str, help='Prefix of the files to merge', default='fcAnalysis/bins20x14CurrentStatisticsParametrized_lratio_')
     parser.add_argument('-d', '--data', type=str, help='Path to the data file', default='')
-    parser.add_argument('-pl', '--plot', type=bool, help='Plot the number of toys per point', default=True)
+    parser.add_argument('-ds', '--dataFiles', type=str, help='Path to list of data files', default='')
+    parser.add_argument('-pl', '--plot', type=bool, help='Plot the number of toys per point', default=False)
     return parser.parse_args()
 
 def mergeFiles(prefix, plot=False, dataFile=''):
@@ -74,7 +75,7 @@ def mergeFiles(prefix, plot=False, dataFile=''):
             exit()
         
         tnSig, tmX17, tlr, tbest = np.loadtxt(dataFile, unpack=True, skiprows=2)
-        print(tnSig, tmX17, tlr-tbest)
+        #print(tnSig, tmX17, tlr-tbest)
         for (n, m, l) in zip(tnSig, tmX17, tlr):
             nX17Toy = np.append(nX17Toy, n)
             massX17Toy = np.append(massX17Toy, m)
@@ -83,7 +84,7 @@ def mergeFiles(prefix, plot=False, dataFile=''):
             data = np.append(data, True)
             SEED = np.append(SEED, -1)
             lratio = np.append(lratio, l - tbest[0])
-            print(n, m, l - tbest[0])
+            #print(n, m, l - tbest[0])
     #print(data)
     # Check how many were not accurate
     print('Number of inaccurate H1: ', len(accurateH1[accurateH1 == False]))
@@ -108,9 +109,9 @@ def mergeFiles(prefix, plot=False, dataFile=''):
     
     # Compute grid points
     N = np.unique(nX17Toy)
-    print(N)
+    #print(N)
     M = np.unique(massX17Toy)
-    print(M)
+    #print(M)
     
     # Create a 2D array to store the data
     CLs = np.ones((len(N), len(M)))
@@ -132,12 +133,13 @@ def mergeFiles(prefix, plot=False, dataFile=''):
         #plt.show()
         plt.savefig(prefix + 'nToys.png')
         
-    print(data)
+    #print(data)
     # Compute the CLs values
     for i in range(len(N)):
         for j in range(len(M)):
             tempLR = lratio[(abs(nX17Toy - N[i]) < 1e-3) & (abs(massX17Toy - M[j]) < 1e-4)]
             tempDATA = data[(abs(nX17Toy - N[i]) < 1e-3) & (abs(massX17Toy - M[j]) < 1e-4)]
+            #print(tempLR, tempDATA, N[i], M[j])
             # Arg sort and find the data index in the sorted array
             if len(tempLR) <= 1:
                 print('WARNING: less than 2 toys for point (%.1f, %.2f)' %(N[i], M[j]))
@@ -175,12 +177,21 @@ def mergeFiles(prefix, plot=False, dataFile=''):
         plt.colorbar()
         cs = plt.contour(x, y, z, colors='black', linewidths=5, levels=[0.9])
         plt.ylim(15, 18)
-        p = cs.collections[0].get_paths()[0]
-        v = p.vertices
+        v = [cs.collections[0].get_paths()[i].vertices for i in range(len(cs.collections[0].get_paths()))]
+        v = np.concatenate(v)
         x = v[:,0]
         y = v[:,1]
+        
+        nCLmin = x.min()
+        nCLmax = x.max()
+        mCLmin = y.min()
+        mCLmax = y.max()
+        print(nCLmin, nCLmax, mCLmin, mCLmax)
+        if (f(0, y[np.argsort(y)]) < f(x.min(), y[np.argsort(y)])).any():
+            nCLmin = 0
+        
         h, _ = cs.legend_elements()
-        textstr = r'CL 90%% on $\mathcal{N}_{\mathrm{Sig}}$: (%.1f, %.1f)' %(x.min(), x.max())
+        textstr = r'CL 90%% on $\mathcal{N}_{\mathrm{Sig}}$: (%.1f, %.1f)' %(nCLmin, x.max())
         textstr = textstr + '\nCL 90%% on mass: (%.2f, %.2f) MeV/c' %(y.min(), y.max()) + r'$^{2}$'
         props = dict(boxstyle='round', facecolor='white', edgecolor='grey', alpha=0.7)
         ax.legend(h, [textstr], loc='lower right', fontsize=35)
@@ -200,7 +211,57 @@ def mergeFiles(prefix, plot=False, dataFile=''):
     else:
         np.savetxt(prefix + 'CLs.txt', CLs)
         np.savetxt(prefix + 'nToys.txt', nToys)
+    
+    return nCLmin, nCLmax, mCLmin, mCLmax
 
 if __name__ == '__main__':
     args = parse_args()
-    mergeFiles(args.prefix, args.plot, dataFile=args.data)
+    
+    print(args.dataFiles)
+    if args.dataFiles != '':
+        dataList = glob(args.dataFiles)
+        dataList.sort()
+        nCLmin = []
+        nCLmax = []
+        mCLmin = []
+        mCLmax = []
+        for data in dataList:
+            try:
+                print(data)
+                nCLmin_, nCLmax_, mCLmin_, mCLmax_ = mergeFiles(args.prefix, args.plot, dataFile=data)
+                nCLmin.append(nCLmin_)
+                nCLmax.append(nCLmax_)
+                mCLmin.append(mCLmin_)
+                mCLmax.append(mCLmax_)
+            except:
+                continue
+        plt.figure(figsize=(28, 28), dpi=100)
+        prefix = args.prefix
+        plt.suptitle(f'Binning {prefix[prefix.find("bins") + 4:prefix.find("bins") + 9]}, {prefix[prefix.find("bins") + 9:prefix.find("Statistics")]} statistics, ' + r'$\mathcal{N}_{\mathrm{Sig}}$' +  f' =  {dataList[0][dataList[0].find("Null") + 4: dataList[0].find("_prof")]}, {len(nCLmin)} toy MCs')
+    
+        plt.subplot(2, 2, 1)
+        plt.hist(nCLmin, bins=50, label='median = %.2f' %np.median(nCLmin), color=cm.coolwarm(0.))
+        plt.xlabel(r'Lower limit on $\mathcal{N}_{\mathrm{Sig}}$')
+        plt.grid()
+        plt.legend()
+        
+        plt.subplot(2, 2, 2)
+        plt.hist(nCLmax, bins=50, label='median = %.2f' %np.median(nCLmax), color=cm.coolwarm(0.))
+        plt.xlabel(r'Upper limit on $\mathcal{N}_{\mathrm{Sig}}$')
+        plt.grid()
+        plt.legend()
+        
+        plt.subplot(2, 2, 3)
+        plt.hist(mCLmin, bins=50, label='median = %.2f' %np.median(mCLmin), color=cm.coolwarm(0.))
+        plt.xlabel('Lower limit on Mass [MeV/c$^2$]')
+        plt.grid()
+        plt.legend()
+        
+        plt.subplot(2, 2, 4)
+        plt.hist(mCLmax, bins=50, label='median = %.2f' %np.median(mCLmax), color=cm.coolwarm(0.))
+        plt.xlabel('Upper limit on Mass [MeV/c$^2$]')
+        plt.grid()
+        plt.legend()
+        plt.savefig(args.prefix + dataList[0][dataList[0].find("Null"): dataList[0].find("_prof")] +'CLsHist.png', bbox_inches='tight')
+    else:
+        print(mergeFiles(args.prefix, args.plot, dataFile=args.data))
