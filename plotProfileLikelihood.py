@@ -14,6 +14,16 @@ fileName = 'results/BBstandard_profileLikelihood_SEED0.txt'
 fileName = 'results/bins20x14IdealStatisticsParametrized_profileLikelihood_SEED0.txt'
 fileName = 'results/bins20x14CurrentStatisticsParametrizedNullSig_profileLikelihood_SEED0.txt'
 
+fileName = 'results/bins20x14CurrentStatisticsParametrizedNull500.0_profileLikelihood_SEED0.txt'
+
+fileName = 'results/bins20x14IdealStatisticsParametrizedNull500.0_profileLikelihood_SEED0.txt'
+
+
+fileName = 'results/bins20x14CurrentStatisticsParametrized_profileLikelihood_SEED0.txt'
+
+fileName = 'results/bins20x14Ideal0StatisticsParametrizedNull500.0_profileLikelihood_SEED0.txt'
+
+
 # Check number #
 nHeaderLines = 0
 with open(fileName, 'r') as f:

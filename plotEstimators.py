@@ -105,7 +105,7 @@ if __name__ == '__main__':
     plt.suptitle(f'Binning {prefix[prefix.find("bins") + 4:prefix.find("bins") + 9]}, {prefix[prefix.find("bins") + 9:prefix.find("Statistics")]} statistics, ' + r'$\mathcal{N}_{\mathrm{Sig}}$' +  f' =  {prefix[prefix.find("_") + 1: prefix.find("_results")]}, {len(nSig)} toy MCs')
     plt.subplot(2, 4, 1)
     H = plt.hist(nSig/np.mean(nSig), bins=50, label=f'mean = {np.mean(nSig):.2f}, std = {np.std(nSig):.2f},\n relative std = {1e2*np.std(nSig)/np.mean(nSig):.2f} %', color=cm.coolwarm(0.))
-    print(H)
+    #print(H)
     plt.stairs(H[0], H[1], color=cm.coolwarm(0.), linewidth=8)
     plt.xlabel(r'$\mathcal{N}_{\mathrm{Sig}}/\hat{\mathcal{N}}_{\mathrm{Sig}}$')
     plt.legend()
@@ -162,7 +162,8 @@ if __name__ == '__main__':
     
     plt.subplot(2, 4, 7)
     lr = fvalH0 - fval
-    a, b, sigma = np.array(BB2DLLFiniteMC.computeSignificance(fvalH0, fval, 2, parametrizedX17=True))
+    #a, b, sigma = np.array(BB2DLLFiniteMC.computeSignificance(fvalH0, fval, 2, parametrizedX17=True, Ncrossing = 0.44, c0=1))
+    a, b, sigma = np.array(BB2DLLFiniteMC.computeSignificance(fvalH0, fval, 2, parametrizedX17=True, Ncrossing = 0.21, c0=1))
     if (lr < -1e-3).any():
         print('WARNING: lr < 0:', len(lr[lr < 0]), 'tests')
     sigma = sigma[lr > 0]

@@ -9,7 +9,7 @@ import argparse
 matplotlib.rcParams.update({'font.size': 35})
 plt.rcParams['figure.constrained_layout.use'] = True
 
-dataFile = 'results/bins20x14CurrentStatisticsParametrizedNullSig_profileLikelihood_SEED0.txt'
+#dataFile = 'results/bins20x14CurrentStatisticsParametrizedNullSig_profileLikelihood_SEED0.txt'
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -73,7 +73,9 @@ def mergeFiles(prefix, plot=False, dataFile=''):
         if nHeaderLines > 1:
             print('Data file has more than one header line. Please check the file.')
             exit()
-        
+        tnSig, tmX17, tlr, tbest = np.loadtxt(dataFile, unpack=True, skiprows=1)
+        nBest = tnSig[0]
+        mBest = tmX17[0]
         tnSig, tmX17, tlr, tbest = np.loadtxt(dataFile, unpack=True, skiprows=2)
         #print(tnSig, tmX17, tlr-tbest)
         for (n, m, l) in zip(tnSig, tmX17, tlr):
@@ -87,8 +89,8 @@ def mergeFiles(prefix, plot=False, dataFile=''):
             #print(n, m, l - tbest[0])
     #print(data)
     # Check how many were not accurate
-    print('Number of inaccurate H1: ', len(accurateH1[accurateH1 == False]))
-    print('Number of inaccurate H0: ', len(accurateH0[accurateH0 == False]))
+    #print('Number of inaccurate H1: ', len(accurateH1[accurateH1 == False]))
+    #print('Number of inaccurate H0: ', len(accurateH0[accurateH0 == False]))
     
     # Remove the inaccurate ones
     #nX17Toy = nX17Toy[accurateH1]
@@ -186,7 +188,7 @@ def mergeFiles(prefix, plot=False, dataFile=''):
         nCLmax = x.max()
         mCLmin = y.min()
         mCLmax = y.max()
-        print(nCLmin, nCLmax, mCLmin, mCLmax)
+        #print(nCLmin, nBest, nCLmax, mCLmin, mBest, mCLmax)
         if (f(0, y[np.argsort(y)]) < f(x.min(), y[np.argsort(y)])).any():
             nCLmin = 0
         
@@ -208,60 +210,79 @@ def mergeFiles(prefix, plot=False, dataFile=''):
     if dataFile != '':
         np.savetxt(prefix + dataFile[dataFile.find('Null'):] + 'CLs.txt', CLs)
         np.savetxt(prefix + dataFile[dataFile.find('Null'):] + 'nToys.txt', nToys)
+        return nCLmin, nBest, nCLmax, mCLmin, mBest, mCLmax
     else:
         np.savetxt(prefix + 'CLs.txt', CLs)
         np.savetxt(prefix + 'nToys.txt', nToys)
+        return nCLmin, nCLmax, mCLmin, mCLmax
     
-    return nCLmin, nCLmax, mCLmin, mCLmax
 
 if __name__ == '__main__':
     args = parse_args()
     
-    print(args.dataFiles)
+    #print(args.dataFiles)
     if args.dataFiles != '':
         dataList = glob(args.dataFiles)
+        #print(dataList)
         dataList.sort()
         nCLmin = []
+        nBest = []
         nCLmax = []
         mCLmin = []
+        mBest = []
         mCLmax = []
         for data in dataList:
             try:
                 print(data)
-                nCLmin_, nCLmax_, mCLmin_, mCLmax_ = mergeFiles(args.prefix, args.plot, dataFile=data)
+                nCLmin_, nBest_, nCLmax_, mCLmin_, mBest_, mCLmax_ = mergeFiles(args.prefix, args.plot, dataFile=data)
                 nCLmin.append(nCLmin_)
+                nBest.append(nBest_)
                 nCLmax.append(nCLmax_)
                 mCLmin.append(mCLmin_)
+                mBest.append(mBest_)
                 mCLmax.append(mCLmax_)
             except:
                 continue
-        plt.figure(figsize=(28, 28), dpi=100)
+        plt.figure(figsize=(42, 28), dpi=100)
         prefix = args.prefix
         plt.suptitle(f'Binning {prefix[prefix.find("bins") + 4:prefix.find("bins") + 9]}, {prefix[prefix.find("bins") + 9:prefix.find("Statistics")]} statistics, ' + r'$\mathcal{N}_{\mathrm{Sig}}$' +  f' =  {dataList[0][dataList[0].find("Null") + 4: dataList[0].find("_prof")]}, {len(nCLmin)} toy MCs')
     
-        plt.subplot(2, 2, 1)
+        plt.subplot(2, 3, 1)
         plt.hist(nCLmin, bins=25, label='median = %.2f' %np.median(nCLmin), color=cm.coolwarm(0.))
         plt.xlabel(r'Lower limit on $\mathcal{N}_{\mathrm{Sig}}$')
         plt.grid()
         plt.legend()
         
-        plt.subplot(2, 2, 2)
+        plt.subplot(2, 3, 2)
+        plt.hist(nBest, bins=25, label='median = %.2f' %np.median(nBest), color=cm.coolwarm(0.))
+        plt.xlabel(r'Best fit $\mathcal{N}_{\mathrm{Sig}}$')
+        plt.grid()
+        plt.legend()
+        
+        plt.subplot(2, 3, 3)
         plt.hist(nCLmax, bins=25, label='median = %.2f' %np.median(nCLmax), color=cm.coolwarm(0.))
         plt.xlabel(r'Upper limit on $\mathcal{N}_{\mathrm{Sig}}$')
         plt.grid()
         plt.legend()
         
-        plt.subplot(2, 2, 3)
+        plt.subplot(2, 3, 4)
         plt.hist(mCLmin, bins=25, label='median = %.2f' %np.median(mCLmin), color=cm.coolwarm(0.))
         plt.xlabel('Lower limit on Mass [MeV/c$^2$]')
         plt.grid()
         plt.legend()
         
-        plt.subplot(2, 2, 4)
+        plt.subplot(2, 3, 5)
+        plt.hist(mBest, bins=25, label='median = %.2f' %np.median(mBest), color=cm.coolwarm(0.))
+        plt.xlabel('Best fit Mass [MeV/c$^2$]')
+        plt.grid()
+        plt.legend()
+        
+        plt.subplot(2, 3, 6)
         plt.hist(mCLmax, bins=25, label='median = %.2f' %np.median(mCLmax), color=cm.coolwarm(0.))
         plt.xlabel('Upper limit on Mass [MeV/c$^2$]')
         plt.grid()
         plt.legend()
         plt.savefig(args.prefix + dataList[0][dataList[0].find("Null"): dataList[0].find("_prof")] +'CLsHist.png', bbox_inches='tight')
+        print(np.median(nBest), np.median(nCLmin), np.median(nCLmax), np.median(mBest), np.median(mCLmin), np.median(mCLmax))
     else:
         print(mergeFiles(args.prefix, args.plot, dataFile=args.data))

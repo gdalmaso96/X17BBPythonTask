@@ -7,8 +7,8 @@ from scipy.interpolate import CubicSpline
 matplotlib.rcParams.update({'font.size': 35})
 plt.rcParams['figure.constrained_layout.use'] = True
 
-filaName = 'VaryReferencebins20x14IdealStatisticsParametrized_Significance.txt'
-#filaName = 'VaryReferencebins20x14CurrentStatisticsParametrized_Significance.txt'
+#filaName = 'VaryReferencebins20x14IdealStatisticsParametrized_Significance.txt'
+filaName = 'VaryReferencebins20x14CurrentStatisticsParametrized_Significance.txt'
 
 def plotSignificanceVSyield(filaName):
     # Search lines in file
@@ -52,11 +52,14 @@ def plotSignificanceVSyield(filaName):
     plt.ylim(0, 9.5)
     plt.grid()
     plt.legend()
+    
+    print(f(450))
 
     plt.savefig(prefix[:prefix.find('.txt')] + '.png', bbox_inches='tight')
 
 if __name__ == '__main__':
-    argv = sys.argv[1:]
+    #argv = sys.argv[1:]
+    argv = [filaName]
     
     if len(argv) == 1:
         plotSignificanceVSyield(argv[0])

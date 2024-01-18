@@ -22,7 +22,7 @@ plt.rcParams['figure.constrained_layout.use'] = True
 dataFile = 'X17MC2021.root'
 #dataFile = 'X17MC2021_s0.root'
 MCFile = 'X17reference.root'
-#MCFile = 'X17referenceRealistic.root'
+MCFile = 'X17referenceRealistic.root'
 workDir = 'results/'
 
 dthMin = 20
@@ -574,7 +574,7 @@ def doProfileLL(startingPs, hdata, hMX, plotFigure = False):
 
 ########################################################################
 # Significance
-def computeSignificance(H0, H1, DOF, Ncrossing = 0.44, c0 = 0.1, parametrizedX17 = False):
+def computeSignificance(H0, H1, DOF, Ncrossing = 0.44, c0 = 1, parametrizedX17 = False):
     lratio = H0 - H1
     lratio = lratio*(lratio > 0) + lratio*(lratio < -1e-3)
     pvalue = chi2.sf(lratio, DOF)
@@ -595,8 +595,8 @@ if __name__ == '__main__':
     hMX, binsXMCx, binsXMCy = loadMC(MCFile, workDir)
     hdata, binsdatax, binsdatay = loadData(dataFile, workDir)
     startingPs = np.array([450, 37500, 27500, 135000, 50000, 17])
-    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True, DoMINOS = False, fullParametrized = True, FixMass = False)
+    H1 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = False, parametrizedX17 = True, DoMINOS = False, fullParametrized = False, FixMass = False)
     startingPs = np.array([0, 37500, 27500, 135000, 50000, 17])
-    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True, DoMINOS = False, fullParametrized = True)
+    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = True, DoMINOS = False, fullParametrized = False)
     print(computeSignificance(H0[2], H1[2], 2, parametrizedX17=False))
     #doProfileLL(startingPs, hdata, hMX, plotFigure = True)
