@@ -46,10 +46,10 @@ def argparser():
     parser.add_argument('-pGmin', '--pvalueMin', type=float, default=15, help='Minimum mass to scan')
     parser.add_argument('-pGmax', '--pvalueMax', type=float, default=18.15, help='Maximum mass to scan')
     parser.add_argument('-pGc0', '--pvalueC0', type=float, default=0.05, help='Threshold for global p-value')
-    #return parser.parse_known_args()
-    return parser.parse_args()
+    return parser.parse_known_args()
+    #return parser.parse_args()
 
-def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime):
+def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime, numberPL):
     # Get template
     MCFile = f'{referenceFile}'
     hMX, binsdatax, binsdatay = BB2DLLFiniteMC.loadMC(MCFile, workDir = workDir)
@@ -80,7 +80,7 @@ def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, M
     valuesH0, errorsH0, fvalH0, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hToyMC, binsdatax, binsdatay, startingPs, plotFigure = False, doNullHyphotesis=True, parametrizedX17 = parametrizeX17)
     
     # Create grid to scan profile likelihood
-    massX17Scan = np.linspace(MIN, MAX, args.numberPL)
+    massX17Scan = np.linspace(MIN, MAX, numberPL)
     mLL = []
     for mX17 in massX17Scan:
         startingPs = np.array([0, 37500, 27500, 135000, 50000, mX17], dtype=float)
@@ -106,8 +106,8 @@ def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, M
     with open(workDir + f'{prefix}_upperCrossing_SEED{SEED}.txt', 'a') as f:
         f.write(f'{SEED + i} {nCrossings}\n')
     plt.figure(figsize=(28, 14), dpi=100)
-    plt.title('Profile likelihood - peak hunt')
-    plt.plot(x, y, linewidth=5, color = cm.coolwarm(0.), label='Number of crossings: ' + str(nCrossings))
+    plt.title('Profile likelihood - upcrossings')
+    plt.plot(x, y, linewidth=5, color = cm.coolwarm(0.), label='Number of upcrossings: ' + str(nCrossings))
     plt.plot(massX17Scan, -mLL + fvalH0, 'o', linewidth=5, markersize=20, color = cm.coolwarm(0.))
     plt.plot(x, np.ones(len(x))*threshold, linewidth=5, color = 'black', label='c0')
     plt.legend()
@@ -121,8 +121,8 @@ def globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, M
 
 
 if __name__ == '__main__':
-    #args, unknown = argparser()
-    args = argparser()
+    args, unknown = argparser()
+    #args = argparser()
     SEED = args.seed
     workDir = args.workDir
     reset = args.reset
@@ -158,20 +158,22 @@ if __name__ == '__main__':
     #plotToy = True
     #posterioriFC = False
     #dataF = 'X17MC2021'
-    #referenceFile = 'X17referenceRealistic.root'
+    referenceFile = 'X17referenceRealistic.root'
     #referenceFile = 'X17reference.root'
-    #prefix = 'TEST'
+    prefix = 'CurrentStatistics'
+    #prefix = 'IdealStatistics'
+    numberPL = 15
     #resetFC = True
     
     ## Test global p-value
-    #globalPValue = True
-    #pvalueMin = 15
-    #pvalueMax = 18.15
-    #pvalueC0 = 1
-    #parametrizeX17 = True
+    globalPValue = True
+    pvalueMin = 15
+    pvalueMax = 18.15
+    pvalueC0 = 1
+    parametrizeX17 = True
     #dataF = 'X17MC2021_s0'
-    #numberToys = 100
-    #SEED = 0
+    numberToys = 100
+    SEED = 0
     
     if args.profileLikelihood:
         for I in range(numberToys):
@@ -268,7 +270,7 @@ if __name__ == '__main__':
             f.write('#SEED nCrossings\n')
         
         for i in range(numberToys):
-            globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime)
+            globalPvalue(i, workDir, referenceFile, nX17Toy, parametrizeX17, pvalueC0, MIN, MAX, prefix, startTime, numberPL)
     
     elif ToySample:
         dataFile = f'{dataF}.root'
@@ -389,14 +391,14 @@ if __name__ == '__main__':
                     else:
                         my_file = Path(workDir + f'{referenceFile}_s{SEED + i + 662607015}.root')
                         if not my_file.is_file():
-                            sampleMass(_Nbkg = 220000, _fIPC18 = 0.45454545454545453, _fIPC15 = 0.045454545454545453, _fEPC18 = 0.45454545454545453, _Nx17 = 100000, year = 2021, SEED = SEED + i + 662607015, workDir = workDir, fileName = referenceFile)
+                            sampleMass(_Nbkg = 220000, _fIPC18 = 0.45454545454545453, _fIPC15 = 0.45454545454545453, _fEPC18 = 0.045454545454545453, _Nx17 = 100000, year = 2021, SEED = SEED + i + 662607015, workDir = workDir, fileName = referenceFile)
             else:
                 sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = nX17Toy, year = 2021, SEED = SEED + i, workDir = workDir, fileName=dataF)
                 if varyReference:
                     if referenceFile.find('Realistic') < 0:
                         sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.25, _fEPC18 = 0.25, _Nx17 = 100000, year = 2021, SEED = SEED + i + 299792458, workDir = workDir, fileName = referenceFile)
                     else:
-                        sampleMass(_Nbkg = 220000, _fIPC18 = 0.45454545454545453, _fIPC15 = 0.045454545454545453, _fEPC18 = 0.45454545454545453, _Nx17 = 100000, year = 2021, SEED = SEED + i + 662607015, workDir = workDir, fileName = referenceFile)
+                        sampleMass(_Nbkg = 220000, _fIPC18 = 0.45454545454545453, _fIPC15 = 0.45454545454545453, _fEPC18 = 0.045454545454545453, _Nx17 = 100000, year = 2021, SEED = SEED + i + 662607015, workDir = workDir, fileName = referenceFile)
             
             startTime = time()
             dataFile = f'{dataF}_s{SEED + i}.root'

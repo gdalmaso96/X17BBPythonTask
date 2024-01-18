@@ -438,6 +438,7 @@ def sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.14, _fEPC18 = 0.48, _
 
 if __name__ ==  '__main__':
     sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = 450, year = 2021)
-    sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.25, _fEPC18 = 0.25, _Nx17 = 100000, year = 2021, SEED=299792459)
-    sampleMass(_Nbkg = 220000, _fIPC18 = 0.4545454545, _fIPC15 = 0.04545454545, _fEPC18 = 0.04545454545, _Nx17 = 100000, year = 2021, SEED = 299792458, workDir = '')
+    sampleMass(_Nbkg = 250000, _fIPC18 = 0.20, _fIPC15 = 0.11, _fEPC18 = 0.54, _Nx17 = 0, year = 2021)
+    sampleMass(_Nbkg = 400000, _fIPC18 = 0.25, _fIPC15 = 0.25, _fEPC18 = 0.25, _Nx17 = 100000, year = 2021, SEED=299792458)
+    sampleMass(_Nbkg = 220000, _fIPC18 = 0.4545454545, _fIPC15 = 0.4545454545, _fEPC18 = 0.04545454545, _Nx17 = 100000, year = 2021, SEED = 299792459, workDir = '')
 
