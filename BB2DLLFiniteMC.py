@@ -27,17 +27,17 @@ MCFile = 'X17referenceRealistic.root'
 MCFile = 'MC2023.root'
 workDir = 'results/'
 
-dthMin = 30
+dthMin = 0
 dthMax = 180
-dthnBins = 15
+dthnBins = 18
 
 esumMin = 10
 esumMax = 24
 esumnBins = 14
 
-imasMin = 12
+imasMin = 0
 imasMax = 20
-imasnBins = 40
+imasnBins = 20
 
 nMCXtotParametrized = 1e9
 
@@ -49,51 +49,69 @@ startingPs = np.array([450, 37500, 27500, 135000, 50000])
 def loadMC(fileName, workDir = '', ecodeCoding=0):
     with uproot.open(workDir + fileName + ':ntuple') as MC:
         esumMultiplier = 1
+        vMultiplier = 1
+        vRes = 0.001 # deg
+        eRes = 0.00001 # MeV
         try:
             x = MC.arrays(['imas', 'ecode', 'esum', 'dth'], library='np')
             if VariableSelection == 0:
                 var = 'dth'
             elif VariableSelection == 1:
                 var = 'imas'
+                vRes = 0.1 # MeV
         except:
-            x = MC.arrays(['invm', 'ecode', 'esum', 'angle'], library='np')
+            x = MC.arrays(['invm', 'ecode', 'esum', 'angle', 'simbeamenergy'], library='np')
             if VariableSelection == 0:
                 var = 'angle'
             elif VariableSelection == 1:
                 var = 'invm'
+                vMultiplier = 1e3
+                vRes = 0.1 # MeV
             esumMultiplier = 1e3
             
         if ecodeCoding == 1: # Hicham's coding
-            vXMC    = x[var][x['ecode'] == 0]
-            vI176MC = x[var][x['ecode'] == 1]
-            vI179MC = x[var][x['ecode'] == 2]
-            vI181MC = x[var][x['ecode'] == 3]
-            vI146MC = x[var][x['ecode'] == 4]
-            vI149MC = x[var][x['ecode'] == 5]
-            vI151MC = x[var][x['ecode'] == 6]
-            vE18MC  = x[var][x['ecode'] == 7]
-            vE15MC  = x[var][x['ecode'] == 8]
+            # Random smeerings gaussian
+            vXMC    = np.random.normal(x[var][x['ecode'] == 0]*vMultiplier, vRes)
+            vI176MC = np.random.normal(x[var][x['ecode'] == 1]*vMultiplier, vRes)
+            vI179MC = np.random.normal(x[var][x['ecode'] == 2]*vMultiplier, vRes)
+            vI181MC = np.random.normal(x[var][x['ecode'] == 3]*vMultiplier, vRes)
+            vI146MC = np.random.normal(x[var][x['ecode'] == 4]*vMultiplier, vRes)
+            vI149MC = np.random.normal(x[var][x['ecode'] == 5]*vMultiplier, vRes)
+            vI151MC = np.random.normal(x[var][x['ecode'] == 6]*vMultiplier, vRes)
+            vE18MC  = np.random.normal(x[var][x['ecode'] == 7]*vMultiplier, vRes)
+            vE15MC  = np.random.normal(x[var][x['ecode'] == 8]*vMultiplier, vRes)
             
-            eXMC    = x['esum'][x['ecode'] == 0]*esumMultiplier
-            eI176MC = x['esum'][x['ecode'] == 1]*esumMultiplier
-            eI179MC = x['esum'][x['ecode'] == 2]*esumMultiplier
-            eI181MC = x['esum'][x['ecode'] == 3]*esumMultiplier
-            eI146MC = x['esum'][x['ecode'] == 4]*esumMultiplier
-            eI149MC = x['esum'][x['ecode'] == 5]*esumMultiplier
-            eI151MC = x['esum'][x['ecode'] == 6]*esumMultiplier
-            eE18MC  = x['esum'][x['ecode'] == 7]*esumMultiplier
-            eE15MC  = x['esum'][x['ecode'] == 8]*esumMultiplier
+            eXMC    = np.random.normal(x['esum'][x['ecode'] == 0]*esumMultiplier, eRes)
+            eI176MC = np.random.normal(x['esum'][x['ecode'] == 1]*esumMultiplier, eRes)
+            eI179MC = np.random.normal(x['esum'][x['ecode'] == 2]*esumMultiplier, eRes)
+            eI181MC = np.random.normal(x['esum'][x['ecode'] == 3]*esumMultiplier, eRes)
+            eI146MC = np.random.normal(x['esum'][x['ecode'] == 4]*esumMultiplier, eRes)
+            eI149MC = np.random.normal(x['esum'][x['ecode'] == 5]*esumMultiplier, eRes)
+            eI151MC = np.random.normal(x['esum'][x['ecode'] == 6]*esumMultiplier, eRes)
+            eE18MC  = np.random.normal(x['esum'][x['ecode'] == 7]*esumMultiplier, eRes)
+            eE15MC  = np.random.normal(x['esum'][x['ecode'] == 8]*esumMultiplier, eRes)
             
             # Create histograms
-            hXMC, binsXMCx, binsXMCy     = np.histogram2d(vXMC, eXMC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
-            hI176MC, binsI176MCx, binsI176MCy = np.histogram2d(vI176MC, eI176MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
-            hI179MC, binsI179MCx, binsI179MCy = np.histogram2d(vI179MC, eI179MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
-            hI181MC, binsI181MCx, binsI181MCy = np.histogram2d(vI181MC, eI181MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
-            hI146MC, binsI146MCx, binsI146MCy = np.histogram2d(vI146MC, eI146MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
-            hI149MC, binsI149MCx, binsI149MCy = np.histogram2d(vI149MC, eI149MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
-            hI151MC, binsI151MCx, binsI151MCy = np.histogram2d(vI151MC, eI151MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
-            hE18MC, binsE18MCx, binsE18MCy = np.histogram2d(vE18MC, eE18MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
-            hE15MC, binsE15MCx, binsE15MCy = np.histogram2d(vE15MC, eE15MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+            if VariableSelection == 0:
+                hXMC, binsXMCx, binsXMCy     = np.histogram2d(vXMC, eXMC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+                hI176MC, binsI176MCx, binsI176MCy = np.histogram2d(vI176MC, eI176MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+                hI179MC, binsI179MCx, binsI179MCy = np.histogram2d(vI179MC, eI179MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+                hI181MC, binsI181MCx, binsI181MCy = np.histogram2d(vI181MC, eI181MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+                hI146MC, binsI146MCx, binsI146MCy = np.histogram2d(vI146MC, eI146MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+                hI149MC, binsI149MCx, binsI149MCy = np.histogram2d(vI149MC, eI149MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+                hI151MC, binsI151MCx, binsI151MCy = np.histogram2d(vI151MC, eI151MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+                hE18MC, binsE18MCx, binsE18MCy = np.histogram2d(vE18MC, eE18MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+                hE15MC, binsE15MCx, binsE15MCy = np.histogram2d(vE15MC, eE15MC, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+            elif VariableSelection == 1:
+                hXMC, binsXMCx, binsXMCy     = np.histogram2d(vXMC, eXMC, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
+                hI176MC, binsI176MCx, binsI176MCy = np.histogram2d(vI176MC, eI176MC, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
+                hI179MC, binsI179MCx, binsI179MCy = np.histogram2d(vI179MC, eI179MC, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
+                hI181MC, binsI181MCx, binsI181MCy = np.histogram2d(vI181MC, eI181MC, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
+                hI146MC, binsI146MCx, binsI146MCy = np.histogram2d(vI146MC, eI146MC, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
+                hI149MC, binsI149MCx, binsI149MCy = np.histogram2d(vI149MC, eI149MC, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
+                hI151MC, binsI151MCx, binsI151MCy = np.histogram2d(vI151MC, eI151MC, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
+                hE18MC, binsE18MCx, binsE18MCy = np.histogram2d(vE18MC, eE18MC, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
+                hE15MC, binsE15MCx, binsE15MCy = np.histogram2d(vE15MC, eE15MC, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
         
             hMX = np.array([hXMC, hI176MC, hI179MC, hI181MC, hI146MC, hI149MC, hI151MC, hE18MC, hE15MC])
         elif ecodeCoding == 0: # Fabrizio's coding
@@ -122,6 +140,7 @@ def loadMC(fileName, workDir = '', ecodeCoding=0):
 # Import data histogram
 def loadData(fileName, workDir = ''):
     with uproot.open(workDir + fileName + ':ntuple') as data:
+        vMultiplier = 1
         try:
             x = data.arrays(['imas', 'esum', 'dth'], library='np')
             if VariableSelection == 0:
@@ -137,12 +156,16 @@ def loadData(fileName, workDir = ''):
                 var = 'angle'
             elif VariableSelection == 1:
                 var = 'invm'
+                vMultiplier = 1e3
                 
-            vXdata   = x[var]
+            vXdata   = x[var]*vMultiplier
             eXdata   = x['esum']*1e3
         
         # Create histograms
-        hdata, binsdatax, binsdatay = np.histogram2d(vXdata, eXdata, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+        if VariableSelection == 0:
+            hdata, binsdatax, binsdatay = np.histogram2d(vXdata, eXdata, bins=[dthnBins, esumnBins], range=[[dthMin, dthMax], [esumMin, esumMax]])
+        elif VariableSelection == 1:
+            hdata, binsdatax, binsdatay = np.histogram2d(vXdata, eXdata, bins=[imasnBins, esumnBins], range=[[imasMin, imasMax], [esumMin, esumMax]])
     
     return hdata, binsdatax, binsdatay
 
@@ -195,8 +218,6 @@ def LogLikelihood(p, hdata, hMX, getA=False, Kstart = 0):
             for i in range(len(hMX)):
                 ai.append(hMX[i][I][J])
                 Ai.append(hMX[i][I][J])
-            ai = np.array(ai)
-            Ai = np.array(Ai)
             
             # Do null bins a la Beeston-Barlow
             if Kstart < len(K):
@@ -271,7 +292,7 @@ def sampleToyMC(hMXtemp, SEED = 0):
 
 ########################################################################
 # Maximize likelihood
-def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False, DoMINOS = False, FixMass = False, fullParametrized = False, ecodeCoding = 0):
+def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = False, doNullHyphotesis = False,  parametrizedX17 = False, DoMINOS = False, FixMass = False, fullParametrized = False, ecodeCoding = 0, fractionsActive = False, fractions = []):
     massIndex = 5
     if ecodeCoding == 0:
         nMCXtot = hMX[0].sum()
@@ -344,7 +365,10 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         if ecodeCoding == 0:
             def ll(nX, nE15, nI15, nE18, nI18, mX17):
                 nMCXtot = nMCXtotParametrized
-                hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+                if VariableSelection == 0:
+                    hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+                elif VariableSelection == 1:
+                    hMX[0] = nMCXtot*SigLikX17.MassVSEnergySum(X, Y, mX17, imasMin, imasMax, imasnBins, esumMin, esumMax, esumnBins, imasRes = 0.1, esumRes = 1.15)
                 p0 = nX/nMCXtot
                 p1 = nE15/nMCXe15
                 p2 = nI15/nMCXi15
@@ -362,33 +386,78 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
             logL.fixed[0] = doNullHyphotesis
             logL.fixed[massIndex] = doNullHyphotesis + FixMass
         elif ecodeCoding == 1:
-            def ll(nX, nI176, nI179, nI181, nI146, nI149, nI151, nE18, nE15, mX17):
-                nMCXtot = nMCXtotParametrized
-                hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
-                p0 = nX/nMCXtot
-                p1 = nI176/nMCXi176
-                p2 = nI179/nMCXi179
-                p3 = nI181/nMCXi181
-                p4 = nI146/nMCXi146
-                p5 = nI149/nMCXi149
-                p6 = nI151/nMCXi151
-                p7 = nE18/nMCXe18
-                p8 = nE15/nMCXe15
-                return LogLikelihood([p0, p1, p2, p3, p4, p5, p6, p7, p8], hdata, hMX, False, Kstart = 1)
-            
-            logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4], startingPs[5], startingPs[6], startingPs[7], startingPs[8], startingPs[9])
-            logL.limits[0] = (0, None)
-            logL.limits[1] = (0, None)
-            logL.limits[2] = (0, None)
-            logL.limits[3] = (0, None)
-            logL.limits[4] = (0, None)
-            logL.limits[5] = (0, None)
-            logL.limits[6] = (0, None)
-            logL.limits[7] = (0, None)
-            logL.limits[8] = (0, None)
-            logL.limits[massIndex] = (15, 18.15)
-            logL.fixed[0] = doNullHyphotesis
-            logL.fixed[massIndex] = doNullHyphotesis + FixMass
+            if not fractionsActive:
+                def ll(nX, nI176, nI179, nI181, nI146, nI149, nI151, nE18, nE15, mX17):
+                    nMCXtot = nMCXtotParametrized
+                    if VariableSelection == 0:
+                        hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+                    elif VariableSelection == 1:
+                        hMX[0] = nMCXtot*SigLikX17.MassVSEnergySum(X, Y, mX17, imasMin, imasMax, imasnBins, esumMin, esumMax, esumnBins, imasRes = 0.1, esumRes = 1.15)
+                    p0 = nX/nMCXtot
+                    p1 = nI176/nMCXi176
+                    p2 = nI179/nMCXi179
+                    p3 = nI181/nMCXi181
+                    p4 = nI146/nMCXi146
+                    p5 = nI149/nMCXi149
+                    p6 = nI151/nMCXi151
+                    p7 = nE18/nMCXe18
+                    p8 = nE15/nMCXe15
+                    return LogLikelihood([p0, p1, p2, p3, p4, p5, p6, p7, p8], hdata, hMX, False, Kstart = 1)
+                
+                logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4], startingPs[5], startingPs[6], startingPs[7], startingPs[8], startingPs[9])
+                logL.limits[0] = (0, None)
+                logL.limits[1] = (0, None)
+                logL.limits[2] = (0, None)
+                logL.limits[3] = (0, None)
+                logL.limits[4] = (0, None)
+                logL.limits[5] = (0, None)
+                logL.limits[6] = (0, None)
+                logL.limits[7] = (0, None)
+                logL.limits[8] = (0, None)
+                logL.limits[massIndex] = (15, 18.15)
+                logL.fixed[0] = doNullHyphotesis
+                logL.fixed[massIndex] = doNullHyphotesis + FixMass
+            else:
+                def ll(nX, nI176, nI179, nI181, nI146, nI149, nI151, nE18, nE15, mX17):
+                    nMCXtot = nMCXtotParametrized
+                    if VariableSelection == 0:
+                        hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+                    elif VariableSelection == 1:
+                        hMX[0] = nMCXtot*SigLikX17.MassVSEnergySum(X, Y, mX17, imasMin, imasMax, imasnBins, esumMin, esumMax, esumnBins, imasRes = 0.1, esumRes = 1.15)
+                    p0 = nX/nMCXtot
+                    p1 = nI176/nMCXi176
+                    p2 = nI179/nMCXi179
+                    p3 = nI181/nMCXi181
+                    p4 = nI146/nMCXi146
+                    p5 = nI149/nMCXi149
+                    p6 = nI151/nMCXi151
+                    p7 = nE18/nMCXe18
+                    p8 = nE15/nMCXe15
+                    # Gaussian contraint to be added to the likelihood on the fractions
+                    fI146 = nI176/(nI146 + nI176)
+                    fI149 = nI179/(nI149 + nI179)
+                    fI151 = nI181/(nI151 + nI181)
+                    #print(fI146, fractions[0])
+                    #print(fI149, fractions[1])
+                    #print(fI151, fractions[2])
+                    fractionsL  = (fractions[0] - fI146)**2/(fractions[0]*0.05)**2
+                    fractionsL += (fractions[1] - fI149)**2/(fractions[1]*0.05)**2
+                    fractionsL += (fractions[2] - fI151)**2/(fractions[2]*0.05)**2
+                    return LogLikelihood([p0, p1, p2, p3, p4, p5, p6, p7, p8], hdata, hMX, False, Kstart = 1) + fractionsL # + 1e7*(nI181 < nI179)
+                
+                logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4], startingPs[5], startingPs[6], startingPs[7], startingPs[8], startingPs[9])
+                logL.limits[0] = (0, None)
+                logL.limits[1] = (0, None)
+                logL.limits[2] = (0, None)
+                logL.limits[3] = (0, None)
+                logL.limits[4] = (0, None)
+                logL.limits[5] = (0, None)
+                logL.limits[6] = (0, None)
+                logL.limits[7] = (0, None)
+                logL.limits[8] = (0, None)
+                logL.limits[massIndex] = (15, 18.15)
+                logL.fixed[0] = doNullHyphotesis
+                logL.fixed[massIndex] = doNullHyphotesis + FixMass
             
     else:
         if ecodeCoding == 0:
@@ -409,30 +478,66 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
             logL.limits[4] = (0, None)
             logL.fixed[0] = doNullHyphotesis
         elif ecodeCoding == 1:
-            def ll(nX, nI176, nI179, nI181, nI146, nI149, nI151, nE18, nE15):
-                p0 = nX/nMCXtot
-                p1 = nI176/nMCXi176
-                p2 = nI179/nMCXi179
-                p3 = nI181/nMCXi181
-                p4 = nI146/nMCXi146
-                p5 = nI149/nMCXi149
-                p6 = nI151/nMCXi151
-                p7 = nE18/nMCXe18
-                p8 = nE15/nMCXe15
-                return LogLikelihood([p0, p1, p2, p3, p4, p5, p6, p7, p8], hdata, hMX, False)
+            if not fractionsActive:
+                def ll(nX, nI176, nI179, nI181, nI146, nI149, nI151, nE18, nE15):
+                    p0 = nX/nMCXtot
+                    p1 = nI176/nMCXi176
+                    p2 = nI179/nMCXi179
+                    p3 = nI181/nMCXi181
+                    p4 = nI146/nMCXi146
+                    p5 = nI149/nMCXi149
+                    p6 = nI151/nMCXi151
+                    p7 = nE18/nMCXe18
+                    p8 = nE15/nMCXe15
+                    return LogLikelihood([p0, p1, p2, p3, p4, p5, p6, p7, p8], hdata, hMX, False)
 
-            startingPs = startingPs[:9]
-            logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4], startingPs[5], startingPs[6], startingPs[7], startingPs[8])
-            logL.limits[0] = (0, None)
-            logL.limits[1] = (0, None)
-            logL.limits[2] = (0, None)
-            logL.limits[3] = (0, None)
-            logL.limits[4] = (0, None)
-            logL.limits[5] = (0, None)
-            logL.limits[6] = (0, None)
-            logL.limits[7] = (0, None)
-            logL.limits[8] = (0, None)
-            logL.fixed[0] = doNullHyphotesis
+                startingPs = startingPs[:9]
+                logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4], startingPs[5], startingPs[6], startingPs[7], startingPs[8])
+                logL.limits[0] = (0, None)
+                logL.limits[1] = (0, None)
+                logL.limits[2] = (0, None)
+                logL.limits[3] = (0, None)
+                logL.limits[4] = (0, None)
+                logL.limits[5] = (0, None)
+                logL.limits[6] = (0, None)
+                logL.limits[7] = (0, None)
+                logL.limits[8] = (0, None)
+                logL.fixed[0] = doNullHyphotesis
+            else:
+                def ll(nX, nI176, nI179, nI181, nI146, nI149, nI151, nE18, nE15):
+                    p0 = nX/nMCXtot
+                    p1 = nI176/nMCXi176
+                    p2 = nI179/nMCXi179
+                    p3 = nI181/nMCXi181
+                    p4 = nI146/nMCXi146
+                    p5 = nI149/nMCXi149
+                    p6 = nI151/nMCXi151
+                    p7 = nE18/nMCXe18
+                    p8 = nE15/nMCXe15
+                    # Gaussian contraint to be added to the likelihood on the fractions
+                    fI146 = nI176/(nI146 + nI176)
+                    fI149 = nI179/(nI149 + nI179)
+                    fI151 = nI181/(nI151 + nI181)
+                    #print(fI146, fractions[0])
+                    #print(fI149, fractions[1])
+                    #print(fI151, fractions[2])
+                    fractionsL  = (fractions[0] - fI146)**2/(fractions[0]*0.05)**2
+                    fractionsL += (fractions[1] - fI149)**2/(fractions[1]*0.05)**2
+                    fractionsL += (fractions[2] - fI151)**2/(fractions[2]*0.05)**2
+                    return LogLikelihood([p0, p1, p2, p3, p4, p5, p6, p7, p8], hdata, hMX, False) + fractionsL # + 1e7*(nI181 < nI179)
+
+                startingPs = startingPs[:9]
+                logL = Minuit(ll, startingPs[0], startingPs[1], startingPs[2], startingPs[3], startingPs[4], startingPs[5], startingPs[6], startingPs[7], startingPs[8])
+                logL.limits[0] = (0, None)
+                logL.limits[1] = (0, None)
+                logL.limits[2] = (0, None)
+                logL.limits[3] = (0, None)
+                logL.limits[4] = (0, None)
+                logL.limits[5] = (0, None)
+                logL.limits[6] = (0, None)
+                logL.limits[7] = (0, None)
+                logL.limits[8] = (0, None)
+                logL.fixed[0] = doNullHyphotesis
     
 
     startTime = time.time()
@@ -538,7 +643,10 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         if fullParametrized:
             mX17 = values[massIndex]
             nMCXtot = nMCXtotParametrized
-            hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+            if VariableSelection == 0:
+                hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+            elif VariableSelection == 1:
+                hMX[0] = nMCXtot*SigLikX17.MassVSEnergySum(X, Y, mX17, imasMin, imasMax, imasnBins, esumMin, esumMax, esumnBins, imasRes = 0.1, esumRes = 1.15)
             hMX[1] = fEpc15.pdf(X, Y)*nMCXe15
             hMX[2] = fIpc15.pdf(X, Y)*nMCXi15
             hMX[3] = fEpc18.pdf(X, Y)*nMCXe18
@@ -546,7 +654,10 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         elif parametrizedX17:
             mX17 = values[massIndex]
             nMCXtot = nMCXtotParametrized
-            hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+            if VariableSelection == 0:
+                hMX[0] = nMCXtot*SigLikX17.AngleVSEnergySum(X, Y, mX17, dthMin, dthMax, dthnBins, esumMin, esumMax, esumnBins, dthRes = 9.5, esumRes = 1.15)
+            elif VariableSelection == 1:
+                hMX[0] = nMCXtot*SigLikX17.MassVSEnergySum(X, Y, mX17, imasMin, imasMax, imasnBins, esumMin, esumMax, esumnBins, imasRes = 0.1, esumRes = 1.15)
         
         if ecodeCoding == 0:
             pvalues = values[:5]/np.array([nMCXtot, nMCXe15, nMCXi15, nMCXe18, nMCXi18])
@@ -566,15 +677,22 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
                 val, AIJ, TI = LogLikelihood([pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4]], hdata, hMX, True)
             elif ecodeCoding == 1:
                 val, AIJ, TI = LogLikelihood([pvalues[0], pvalues[1], pvalues[2], pvalues[3], pvalues[4], pvalues[5], pvalues[6], pvalues[7], pvalues[8]], hdata, hMX, True)
-        TI = TI.reshape((dthnBins, esumnBins))
+        if VariableSelection == 0:
+            TI = TI.reshape((dthnBins, esumnBins))
+        elif VariableSelection == 1:
+            TI = TI.reshape((imasnBins, esumnBins))
 
         print(val)
 
         # Compute best fit histograms
         hBestFit = []
+        if VariableSelection == 0:
+            NBINS = dthnBins
+        elif VariableSelection == 1:
+            NBINS = imasnBins
         for j in range(len(hMX)):
             hj = []
-            for I in range(dthnBins):
+            for I in range(NBINS):
                 htemp = []
                 for J in range(esumnBins):
                     htemp.append(AIJ[I*esumnBins + J][j]*pvalues[j])
@@ -592,31 +710,36 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         for j in range(len(hMX)):
             if j == len(hMX) - 1:
                 bottom = np.sum(hBestFit[1:], axis=0)
-                bottomMC = np.zeros((dthnBins, esumnBins))
+                if VariableSelection == 0:
+                    bottomMC = np.zeros((dthnBins, esumnBins))
+                elif VariableSelection == 1:
+                    bottomMC = np.zeros((imasnBins, esumnBins))
                 for k in range(1, massIndex):
                     bottomMC += hMX[k] * pvalues[k]
                 
-                plt.imshow((TI).transpose()[::-1], cmap=cm.coolwarm, extent=[binsdatax.min(), binsdatax.max(), binsdatay.min(), binsdatay.max()], aspect='auto')
-                plt.grid()
-                cbar = plt.colorbar(orientation='horizontal')
-                cbar.set_label('ti')
+        plt.imshow((TI).transpose()[::-1], cmap=cm.coolwarm, extent=[binsdatax.min(), binsdatax.max(), binsdatay.min(), binsdatay.max()], aspect='auto')
+        plt.grid()
+        cbar = plt.colorbar(orientation='horizontal')
+        cbar.set_label('ti')
 
-                
-                plt.xlabel('Relative angle, [deg]')
-                plt.ylabel('Energy sum [MeV]')
-                bottom = np.sum(bottom, axis=1)
-                bottomMC = np.sum(bottomMC, axis=1)
+        if VariableSelection == 0:
+            plt.xlabel('Relative angle, [deg]')
+        elif VariableSelection == 1:
+            plt.xlabel('Invariant mass, [MeV/c$^2$]')
+        plt.ylabel('Energy sum [MeV]')
+        bottom = np.sum(bottom, axis=1)
+        bottomMC = np.sum(bottomMC, axis=1)
         
         # Compute chi2 p-value
         # Compute lratio
         LRATIO = 0
         DOF = 0
-        for I in range(dthnBins):
+        for I in range(NBINS):
             for J in range(esumnBins):
                 if np.sum(hBestFit[:, I, J]) > 0 and hdata[I][J] > 0:
                     mui = np.sum(hBestFit[:, I, J])
                     ni = hdata[I][J]
-                    LRATIO += ni*np.log(ni/mui) - ni + mui
+                    LRATIO += 2*(ni*np.log(ni/mui) - ni + mui)
         
         CHI2 = LRATIO
         print('\n--- Goodness of fit ---')
@@ -624,7 +747,10 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         DOF = len(np.array(logL.fixed)[np.array(logL.fixed) == False])
         print('DOF: ' + str(DOF))
         print('p-value: ' + str(chi2.sf(CHI2, DOF)))
-        print('sigma: ' + str(norm.isf(chi2.sf(CHI2, DOF)*0.5)))
+        print('sigma: ' + str(norm.isf(chi2.sf(CHI2, DOF)*0.5)) + '\n')
+        
+        print('\n--- Strenghts ---')
+        print(pvalues)
 
         ax = plt.subplot(132)
         plt.stairs( np.sum(hdata, axis=1), binsdatax,label='data', linewidth=8, color='k')
@@ -646,7 +772,8 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         
         # Plot single contributions
         for k in range(1, massIndex):
-            htemp = np.sum(hMX[k]*pvalues[k], axis=1)
+            htemp = np.sum(hBestFit[k], axis=1)
+            #htemp = np.sum(hMX[k] * pvalues[k], axis=1)
             #plt.bar(binsdatax[:-1], htemp, width=(binsdatax[1] - binsdatax[0]), label=BKGlabels[k-1], align='edge', alpha=0.5, color='C%d'%k)
             plt.stairs(htemp, binsdatax, linewidth=8, color='C%d'%k, label=BKGlabels[k-1])
         
@@ -654,25 +781,34 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         plt.errorbar((binsdatax[:-1] + binsdatax[1:])/2, np.sum(hdata, axis=1), yerr=np.sqrt(np.sum(hdata, axis=1)), fmt='o', color='k', label='data', markersize=10, linewidth=8)
         
         #plt.xlim(60, 180)
+        plt.xlim(binsdatax.min(), binsdatax.max())
         #plt.ylim(0, 3000*20/dthnBins)
         plt.yscale('log')
         plt.legend()
-        plt.xlabel('Relative angle [deg]')
+        #plt.xlabel('Relative angle [deg]')
         ax.set_xticklabels([])
         plt.grid()
         
         bounds = [0.3775, 0.05, 0.2925, 0.125]
+        bottom = np.sum(hBestFit[1:], axis=0)
+        bottom = np.sum(bottom, axis=0)
+        pull2 = (np.sum(hdata, axis=0) - bottom)/np.sqrt(bottom)
         bottom = np.sum(hBestFit[:], axis=0)
         bottom = np.sum(bottom, axis=1)
         pull = (np.sum(hdata, axis=1) - bottom)/np.sqrt(bottom)
+        MAXpull = np.abs(np.concatenate((pull[False == np.isnan(pull)], pull2[False == np.isnan(pull2)]))).max()*1.2
         bottom = np.sqrt(bottom)
         plt.gcf().add_axes(bounds)
         plt.bar(binsdatax[:-1], pull, width=(binsdatax[1] - binsdatax[0]), alpha=0.5, label='MC X17', align='edge', color=cm.coolwarm(0.99))
         #plt.xlim(60, 180)
+        plt.xlim(binsdatax.min(), binsdatax.max())
         plt.grid()
-        plt.xlabel('Relative angle [deg]')
+        if VariableSelection == 0:
+            plt.xlabel('Relative angle [deg]')
+        elif VariableSelection == 1:
+            plt.xlabel(r'Invariant mass [MeV/c$^2$]')
         plt.ylabel('Pull')
-        plt.ylim(-5.5, 5.5)
+        plt.ylim(-MAXpull, MAXpull)
 
 
         ax = plt.subplot(133)
@@ -688,10 +824,15 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         plt.yscale('log')
         ax.set_xticklabels([])
         plt.grid()
+        plt.xlim(binsdatay.min(), binsdatay.max())
         
         # Plot single contributions
         for k in range(1, massIndex):
-            htemp = np.sum(hMX[k]*pvalues[k], axis=0)
+            htemp = np.sum(hBestFit[k], axis=0)
+            #htemp = np.sum(hMX[k] * pvalues[k], axis=0)
+            if (htemp < 0).any():
+                print('Negative contribution')
+                print(htemp)
             #plt.bar(binsdatay[:-1], htemp, width=(binsdatay[1] - binsdatay[0]), label=BKGlabels[k-1], align='edge', alpha=0.5, color='C%d'%k)
             plt.stairs(htemp, binsdatay, linewidth=8, color='C%d'%k, label=BKGlabels[k-1])
             
@@ -708,13 +849,30 @@ def getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure =
         plt.bar(binsdatay[:-1], pull, width=(binsdatay[1] - binsdatay[0]), alpha=0.5, label='MC X17', align='edge', color=cm.coolwarm(0.99))
         plt.grid()
         plt.xlabel('Energy sum [MeV]')
-        plt.ylim(-5.5, 5.5)
+        plt.ylim(-MAXpull, MAXpull)
+        plt.xlim(binsdatay.min(), binsdatay.max())
         
         
         if not doNullHyphotesis:
             plt.savefig('X17Fit.png', bbox_inches='tight')
         else:
             plt.savefig('X17FitNull.png', bbox_inches='tight')
+            
+        # Plot 2D pulls
+        bottom = np.sum(hBestFit[:], axis=0)
+        pull = (hdata - bottom)/np.sqrt(bottom)
+        fig = plt.figure(figsize=(24, 16), dpi=100)
+        plt.imshow(pull.transpose()[::-1], cmap=cm.coolwarm, extent=[binsdatax.min(), binsdatax.max(), binsdatay.min(), binsdatay.max()], aspect='auto')
+        if VariableSelection == 0:
+            plt.xlabel('Relative angle [deg]')
+        elif VariableSelection == 1:
+            plt.xlabel(r'Invariant mass [MeV/c$^2$]')
+        plt.ylabel('Energy sum [MeV]')
+        plt.grid()
+        # Set the colorbar limits
+        MAXpull = np.abs(pull[False == np.isnan(pull)]).max()*1.2
+        cbar = plt.colorbar(orientation='horizontal', label='Pull')
+        plt.clim(-MAXpull, MAXpull)
         
         # Plot minos matrix
         if DoMINOS:
@@ -822,8 +980,8 @@ if __name__ == '__main__':
     startingPs = np.array([0, 37500, 27500, 135000, 50000, 17])
     startingPs = np.array([0, 100000, 100000, 100000, 50000, 50000, 50000, 50000, 50000, 17])
     startingPs = np.array([0, 21000, 1e3, 1.9e3, 1.9e3, 4.2e3, 2e3, 5.6e3, 1.2e3, 17])
-    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = False, DoMINOS = False, fullParametrized = False, ecodeCoding=1)
+    H0 = getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs,  plotFigure = True, doNullHyphotesis = True,  parametrizedX17 = False, DoMINOS = False, fullParametrized = False, ecodeCoding=1, fractionsActive = True, fractions = [0.7368421052631579, 0.4444444444444445, 0.4117647058823529]) # fractions = [2.8, 0.8, 0.7])
     
-    print('\n--- Hypothesis test ---')
-    print(computeSignificance(H0[2], H1[2], 2, parametrizedX17=False))
+    #print('\n--- Hypothesis test ---')
+    #print(computeSignificance(H0[2], H1[2], 2, parametrizedX17=False))
     #doProfileLL(startingPs, hdata, hMX, plotFigure = True)

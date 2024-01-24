@@ -36,3 +36,20 @@ def AngleVSEnergySum(dth, esum, mass, dthMin, dthMax, dthnBins, esumMin, esumMax
     return results
     
     
+# Random PDF
+def MassVSEnergySum(imas, esum, mass, imasMin, imasMax, imasnBins, esumMin, esumMax, esumnBins, imasRes = 9.5, esumRes = 1.15):
+    imas = np.array(imas)
+    esum = np.array(esum)
+    
+    results = np.array([])
+    for x, y in zip(imas, esum):
+        pEsum = norm.pdf(y, loc = transitionEnergy, scale = esumRes)*(esumMax - esumMin)/esumnBins #/(norm.cdf(esumMax, loc = transitionEnergy, scale = esumRes) - norm.cdf(esumMin, loc = transitionEnergy, scale = esumRes))
+        pInvMass = norm.pdf(x, loc = mass, scale = imasRes)*(imasMax - imasMin)/imasnBins #/(norm.cdf(dthMax, loc = dThCenter, scale = dthRes) - norm.cdf(dthMin, loc = dThCenter, scale = dthRes))
+        results = np.append(results, pInvMass*pEsum)
+    
+    results = results.reshape(esumnBins, imasnBins)
+    results = results.transpose()
+    
+    return results
+    
+    
