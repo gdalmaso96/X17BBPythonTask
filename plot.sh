@@ -52,5 +52,8 @@
 #python3 plotEstimators.py --files "results/VaryReferencebins20x14CurrentStatisticsParametrized_700_results_SEED*.txt"
 #python3 plotEstimators.py --files "results/VaryReferencebins20x14CurrentStatisticsParametrized_800_results_SEED*.txt"
 #python3 plotEstimators.py --files "results/VaryReferencebins20x14CurrentStatisticsParametrized_900_results_SEED*.txt"
-python3 plotEstimators.py --files "results/BKGtestSideband_results_SEED0.txt" --BKGonly True
-
+#python3 plotEstimators.py --files "results/BKGtestSideband_results_SEED0.txt" --BKGonly True
+#python3 plotEstimators.py --files "results/BKGonlyFractionside_results_SEED0.txt" --BKGonly True
+#python3 plotEstimators.py --files "results/BKGonlyFractionside_IPCconstrained_results_SEED0.txt" --BKGonly True
+python3 plotEstimators.py --files "results/BKGonlyFractionside_30deg_results_SEED0.txt" --BKGonly True
+python3 plotEstimators.py --files "results/BKGonlyFractionside_30deg_IPCconstrained_results_SEED0.txt" --BKGonly True
