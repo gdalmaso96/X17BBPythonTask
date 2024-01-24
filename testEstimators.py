@@ -15,7 +15,7 @@ matplotlib.rcParams.update({'font.size': 35})
 
 # Null signal profile python3 testEstimators.py --seed 0 --referenceFile X17referenceRealistic.root --profileLikelihood True --profileLikelihood2D True --prefix bins20x14CurrentStatisticsParametrizedNullSig --parametrizeX17 True --dataFile X17MC2021_s0 --mX17plMin 15 --numberPL 15
 
-# Background test: python3 testEstimators.py --sampleHistograms True --posterioriFC True --ecodeCoding 1 --dataFile data2023 --referenceFile MC2023.root --parametrizeX17 True --BKGonly True --nSamples 100
+# Background test: python3 testEstimators.py --sampleHistograms True --posterioriFC True --ecodeCoding 1 --dataFile data2023 --referenceFile MC2023.root --parametrizeX17 True --BKGonly True --nSamples 100 --prefix BKGonlyFractionside
 
 def argparser():
     parser = argparse.ArgumentParser(description='Test estimators from 2DLLFiniteMC.py')
@@ -438,7 +438,7 @@ if __name__ == '__main__':
             if ecodeCoding == 1:
                 startingPs = np.array([450, 106889.88591294855, 0.4154335251499399, 11627.154551231886, 0.00029258110335583787, 74879.0672728438, 0.005317345671056906, 150686.2621480443, 157176.2036992142, 17], dtype=float)
             if posterioriFC:
-                values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, ecodeCoding=ecodeCoding)
+                values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, ecodeCoding=ecodeCoding, fractionsActive = True, fractions = [0.7368421052631579, 0.4444444444444445, 0.4117647058823529]) 
                 # Get Aji
                 startingPs = values
                 if ecodeCoding == 0:
@@ -567,11 +567,11 @@ if __name__ == '__main__':
                         hMX.append(BB2DLLFiniteMC.sampleToyMC(hMXOriginal[j], SEED + i))
             
             if not BKGonly:
-                values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, ecodeCoding=ecodeCoding)
+                values, errors, fval, valid = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, parametrizedX17 = parametrizeX17, ecodeCoding=ecodeCoding, fractionsActive = True, fractions = [0.7368421052631579, 0.4444444444444445, 0.4117647058823529]) 
                 execTime = time() - startTime
                 
                 startingPs[0] = 0
-            valuesH0, errorsH0, fvalH0, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, ecodeCoding=ecodeCoding)
+            valuesH0, errorsH0, fvalH0, validH0 = BB2DLLFiniteMC.getMaxLikelihood(hdata, hMX, binsdatax, binsdatay, startingPs, plotFigure = plotToy, doNullHyphotesis=True, parametrizedX17 = parametrizeX17, ecodeCoding=ecodeCoding, fractionsActive = True, fractions = [0.7368421052631579, 0.4444444444444445, 0.4117647058823529]) 
             if BKGonly:
                 values = valuesH0
                 errors = errorsH0
