@@ -316,8 +316,11 @@ if __name__ == '__main__':
         lratio = np.array(lratio)
         pvalue = np.array(pvalue)
         sigma = np.array(sigma)
-        ExecTime = np.array(ExecTime)
+        execTime = np.array(ExecTime)
+        execTimeH0 = np.array(ExecTimeH0)
         mX17 = np.array(mX17)
+        
+        print(len(nSig))
         
         # Plot results, only I and E
         plt.figure(figsize=(4*14, 2*14), dpi=100)
@@ -378,6 +381,29 @@ if __name__ == '__main__':
         plt.grid()
         
         plt.savefig(f'{prefix}_BKGonly.png', bbox_inches='tight')
+
+        plt.figure(figsize=(42, 14), dpi=100)
+        plt.suptitle(f'{prefix}, {len(nSig)} tests')
+        plt.subplot(1, 3, 1)
+
+        plt.hist(execTime, bins=50, label=f'mean = {np.mean(execTime):.2f}, std = {np.std(execTime):.2f}', color=cm.coolwarm(0.))
+        plt.xlabel('Execution time')
+        plt.legend()
+        plt.grid()
+
+        plt.subplot(1, 3, 2)
+        plt.hist(execTimeH0, bins=50, label=f'mean = {np.mean(execTimeH0):.2f}, std = {np.std(execTimeH0):.2f}', color=cm.coolwarm(0.))
+        plt.xlabel('Execution time H0')
+        plt.legend()
+        plt.grid()
+        
+        plt.subplot(1, 3, 3)
+        plt.bar(['True', 'False'], [np.sum(valid), np.sum(valid == False)], color=cm.coolwarm(0.))
+        plt.xlabel('valid')
+        plt.yscale('log')
+        plt.grid()
+
+        plt.savefig(f'{prefix}_execTime.png', bbox_inches='tight')
         
         print(len(fval[fval > -17071157.360353477]))
         
