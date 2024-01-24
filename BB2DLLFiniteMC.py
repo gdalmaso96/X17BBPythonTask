@@ -50,7 +50,7 @@ def loadMC(fileName, workDir = '', ecodeCoding=0):
     with uproot.open(workDir + fileName + ':ntuple') as MC:
         esumMultiplier = 1
         vMultiplier = 1
-        vRes = 0.001 # deg
+        vRes = 0.00001 # deg
         eRes = 0.00001 # MeV
         try:
             x = MC.arrays(['imas', 'ecode', 'esum', 'dth'], library='np')
