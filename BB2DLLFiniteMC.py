@@ -52,6 +52,7 @@ def loadMC(fileName, workDir = '', ecodeCoding=0):
         vMultiplier = 1
         vRes = 0.00001 # deg
         eRes = 0.00001 # MeV
+        SMEAR = False
         try:
             x = MC.arrays(['imas', 'ecode', 'esum', 'dth'], library='np')
             if VariableSelection == 0:
@@ -70,26 +71,46 @@ def loadMC(fileName, workDir = '', ecodeCoding=0):
             esumMultiplier = 1e3
             
         if ecodeCoding == 1: # Hicham's coding
-            # Random smeerings gaussian
-            vXMC    = np.random.normal(x[var][x['ecode'] == 0]*vMultiplier, vRes)
-            vI176MC = np.random.normal(x[var][x['ecode'] == 1]*vMultiplier, vRes)
-            vI179MC = np.random.normal(x[var][x['ecode'] == 2]*vMultiplier, vRes)
-            vI181MC = np.random.normal(x[var][x['ecode'] == 3]*vMultiplier, vRes)
-            vI146MC = np.random.normal(x[var][x['ecode'] == 4]*vMultiplier, vRes)
-            vI149MC = np.random.normal(x[var][x['ecode'] == 5]*vMultiplier, vRes)
-            vI151MC = np.random.normal(x[var][x['ecode'] == 6]*vMultiplier, vRes)
-            vE18MC  = np.random.normal(x[var][x['ecode'] == 7]*vMultiplier, vRes)
-            vE15MC  = np.random.normal(x[var][x['ecode'] == 8]*vMultiplier, vRes)
+            vXMC    = x[var][x['ecode'] == 0]*vMultiplier
+            vI176MC = x[var][x['ecode'] == 1]*vMultiplier
+            vI179MC = x[var][x['ecode'] == 2]*vMultiplier
+            vI181MC = x[var][x['ecode'] == 3]*vMultiplier
+            vI146MC = x[var][x['ecode'] == 4]*vMultiplier
+            vI149MC = x[var][x['ecode'] == 5]*vMultiplier
+            vI151MC = x[var][x['ecode'] == 6]*vMultiplier
+            vE18MC  = x[var][x['ecode'] == 7]*vMultiplier
+            vE15MC  = x[var][x['ecode'] == 8]*vMultiplier
             
-            eXMC    = np.random.normal(x['esum'][x['ecode'] == 0]*esumMultiplier, eRes)
-            eI176MC = np.random.normal(x['esum'][x['ecode'] == 1]*esumMultiplier, eRes)
-            eI179MC = np.random.normal(x['esum'][x['ecode'] == 2]*esumMultiplier, eRes)
-            eI181MC = np.random.normal(x['esum'][x['ecode'] == 3]*esumMultiplier, eRes)
-            eI146MC = np.random.normal(x['esum'][x['ecode'] == 4]*esumMultiplier, eRes)
-            eI149MC = np.random.normal(x['esum'][x['ecode'] == 5]*esumMultiplier, eRes)
-            eI151MC = np.random.normal(x['esum'][x['ecode'] == 6]*esumMultiplier, eRes)
-            eE18MC  = np.random.normal(x['esum'][x['ecode'] == 7]*esumMultiplier, eRes)
-            eE15MC  = np.random.normal(x['esum'][x['ecode'] == 8]*esumMultiplier, eRes)
+            eXMC    = x['esum'][x['ecode'] == 0]*esumMultiplier
+            eI176MC = x['esum'][x['ecode'] == 1]*esumMultiplier
+            eI179MC = x['esum'][x['ecode'] == 2]*esumMultiplier
+            eI181MC = x['esum'][x['ecode'] == 3]*esumMultiplier
+            eI146MC = x['esum'][x['ecode'] == 4]*esumMultiplier
+            eI149MC = x['esum'][x['ecode'] == 5]*esumMultiplier
+            eI151MC = x['esum'][x['ecode'] == 6]*esumMultiplier
+            eE18MC  = x['esum'][x['ecode'] == 7]*esumMultiplier
+            eE15MC  = x['esum'][x['ecode'] == 8]*esumMultiplier
+            # Random smeerings gaussian
+            if SMEAR:
+                vXMC    = np.random.normal(vXMC   , vRes)
+                vI176MC = np.random.normal(vI176MC, vRes)
+                vI179MC = np.random.normal(vI179MC, vRes)
+                vI181MC = np.random.normal(vI181MC, vRes)
+                vI146MC = np.random.normal(vI146MC, vRes)
+                vI149MC = np.random.normal(vI149MC, vRes)
+                vI151MC = np.random.normal(vI151MC, vRes)
+                vE18MC  = np.random.normal(vE18MC , vRes)
+                vE15MC  = np.random.normal(vE15MC , vRes)
+                
+                eXMC    = np.random.normal(eXMC   , eRes)
+                eI176MC = np.random.normal(eI176MC, eRes)
+                eI179MC = np.random.normal(eI179MC, eRes)
+                eI181MC = np.random.normal(eI181MC, eRes)
+                eI146MC = np.random.normal(eI146MC, eRes)
+                eI149MC = np.random.normal(eI149MC, eRes)
+                eI151MC = np.random.normal(eI151MC, eRes)
+                eE18MC  = np.random.normal(eE18MC , eRes)
+                eE15MC  = np.random.normal(eE15MC , eRes)
             
             # Create histograms
             if VariableSelection == 0:
