@@ -30,7 +30,7 @@ class MorphTemplate1D:
             return np.where(self.ms == self.m0)[0][0]
     
     # Compute the M matrix
-    def computMmatrix(self):
+    def oldComputMmatrix(self):
         n = len(self.hist)
         M = []
         for i in range(n): # loop on morphs
@@ -42,6 +42,23 @@ class MorphTemplate1D:
         M = np.linalg.inv(M).transpose()
         return M
     
+    def computMmatrix(self):
+        n = len(self.hist)
+        
+        M = np.ones((n, n))
+        M = (M*(self.ms - self.ms[self.m0Index])).transpose()
+        M = np.power(M, np.arange(n))
+        M = np.linalg.inv(M).transpose()
+        #M = []
+        #for i in range(n): # loop on morphs
+        #    m = []
+        #    for j in range(n): # loop on powers
+        #        m.append(np.power((self.ms[i] - self.ms[self.m0Index]), j))
+        #    M.append(np.array(m))
+        #M = np.array(M)
+        #M = np.linalg.inv(M).transpose()
+        return M
+    
     # Compute ci coefficients
     def computCi(self, m):
         deltam = np.power(m - self.ms[self.m0Index], np.linspace(0, len(self.hist) - 1, len(self.hist)))
@@ -49,11 +66,14 @@ class MorphTemplate1D:
         return c
 
     # Compute the morphed template
-    def morphTemplate(self, x):
+    def morphTemplate(self, x, hist=None):
         # Apply Chebyshev nodes
         smear = self.ChebyshevNodes(x)
         ci = self.computCi(smear)
-        thist = np.swapaxes(self.hist, 0, len(self.hist.shape) - 1)
+        if hist is not None:
+            thist = np.swapaxes(hist, 0, len(hist.shape) - 1)
+        else:
+            thist = np.swapaxes(self.hist, 0, len(self.hist.shape) - 1)
         res = np.dot(thist, ci).transpose()
         res = res*(res > 0)
         return res
