@@ -712,7 +712,7 @@ def plotChannels(channels, sample='dataHist', title='Data'):
         plt.show()
 
 # Create up/down  variables for field and resolution scaling
-def createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = False):
+def createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = False, esumCutLow = 0, esumCutHigh = 1000, angleCutLow = 0, angleCutHigh = 180):
     if AlternativeResolutionScale:
         # Use the average momentum instead of simp for each component
         pres_up = (p - 0.5*simp)*(1 + alphares) + 0.5*simp
@@ -889,7 +889,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                 esum = esum[selection]
                 angle = angle[selection]
                 
-                esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = False)
+                esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = False, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh)
                 
                 plt.subplot(1, 3, 1)
                 plt.plot(angle, esum, 'o', label='X17 %.1f MeV' %(mass), alpha=0.5, color='C' + str(int((mass - X17masses.min())/0.2)), zorder=20 - int((mass - X17masses.min())/0.2))
@@ -908,7 +908,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                     channels[channel]['X17%.1f' %(mass)] = np.copy(hist)
                     
                     for j in range(1, 6):
-                        esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, j*alphares, j*alphafield, AlternativeResolutionScale = False)
+                        esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, j*alphares, j*alphafield, AlternativeResolutionScale = False, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh)
                         histres_up = np.histogram2d(esumres_up, angleres_up, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
                         histres_dn = np.histogram2d(esumres_dn, angleres_dn, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
                         histfield_up = np.histogram2d(esumfield_up, anglefield_up, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
@@ -956,9 +956,9 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                 simp = np.vstack((_simpx_pos[_ecode == i], _simpy_pos[_ecode == i], _simpz_pos[_ecode == i], _simpx_ele[_ecode == i], _simpy_ele[_ecode == i], _simpz_ele[_ecode == i]))*1e3
                     
                 if i < 7:
-                    esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = False)
+                    esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = False, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh)
                 else:
-                    esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = AlternativeResolutionScale)
+                    esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = AlternativeResolutionScale, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh)
                 
                 factor = 1
                 for channel in channels.keys():
@@ -968,9 +968,9 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                     
                     for j in range(1, 6):
                         if i < 7:
-                            esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, j*alphares, j*alphafield, AlternativeResolutionScale = False)
+                            esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, j*alphares, j*alphafield, AlternativeResolutionScale = False, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh)
                         else:
-                            esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, j*alphares, j*alphafield, AlternativeResolutionScale = AlternativeResolutionScale)
+                            esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, j*alphares, j*alphafield, AlternativeResolutionScale = AlternativeResolutionScale, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh)
                         
                         if i < 7 and MorphEPConly:
                             histres_up = np.copy(hist)
@@ -1064,7 +1064,7 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
         
     return ll(data, mu = mu, mueff = mueff, betas = betas, P=P)
 
-def logLSetLimits(logL):
+def logLSetLimits(logL, alphavalues):
     # Set limits
     # Signal
     logL.limits[0] = (0, None)
@@ -1094,38 +1094,39 @@ def logLSetLimits(logL):
     return logL
 
 # This function finds the best parameters
-def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0):
+def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0, DoPreliminaryFit = False):
     # First, find the best fit with doBB = False
     # Then, minimize for each parameter independently twice
     # Finally, minimize the full log likelihood
     
     ############################################
     # Find suitable starting point
-    def lambdaLikelihood(pars):
-        return logLikelihood(pars, Hists, doBB = False, FitToy = FitToy, doNullHypothesis = doNullHypothesis, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
-    
-    # Define minuit
     names = ['nSig', 'mass', 'nIPC400', 'nIPC700', 'nIPC1000', 'percent176', 'percent179', 'percent181', 'FIPC15', 'nEPC18', 'nEPC15', 'alphaRes', 'alphaField']
-    logL = Minuit(lambdaLikelihood, startingPars, name = names)
-    
-    # Set limits
-    logL = logLSetLimits(logL)
-    
-    # Fix parameters
-    if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
-        logL.fixed = FixedParameters
-    
-    if doNullHypothesis:
-        logL.values[0] = 0
-        logL.fixed[0] = True
-        logL.fixed[1] = True
-    
-    logL.simplex(ncall = 100000)
-    logL.strategy = 2
-    logL.tol = 1e-10
-    logL.migrad(ncall = 100000, iterate = 5)
-    
-    startingPars = logL.values
+    if DoPreliminaryFit:
+        def lambdaLikelihood(pars):
+            return logLikelihood(pars, Hists, doBB = False, FitToy = FitToy, doNullHypothesis = doNullHypothesis, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
+        
+        # Define minuit
+        logL = Minuit(lambdaLikelihood, startingPars, name = names)
+        
+        # Set limits
+        logL = logLSetLimits(logL, Hists.alphavalues)
+        
+        # Fix parameters
+        if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
+            logL.fixed = FixedParameters
+        
+        if doNullHypothesis:
+            logL.values[0] = 0
+            logL.fixed[0] = True
+            logL.fixed[1] = True
+        
+        logL.simplex(ncall = 100000)
+        logL.strategy = 2
+        logL.tol = 1e-10
+        logL.migrad(ncall = 100000, iterate = 5)
+        
+        startingPars = logL.values
     
     ############################################
     # Find best fit
@@ -1134,7 +1135,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     logL = Minuit(lambdaLikelihood, startingPars, name = names)
     
     # Set limits
-    logL = logLSetLimits(logL)
+    logL = logLSetLimits(logL, Hists.alphavalues)
     
     # Fix parameters
     if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
@@ -1216,7 +1217,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     
     return logL, betas, logL.fval
 
-def plotComparison(Hists, pars, betas, compareWithBetas=True, logL = None, Toy = False):
+def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8']):
     PARS = np.copy(pars)
     nSig, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = pars
     nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151 = getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15)
@@ -1579,8 +1580,6 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0):
                     xmin, xmax = minosError(logL, logL.parameters[j], BestPars, BestErrors, MAXLikelihood=MAXLikelihood)
                     ymin, ymax = minosError(logL, logL.parameters[i], BestPars, BestErrors, MAXLikelihood=MAXLikelihood)
                     
-                    #logL = logLSetLimits(logL)
-                    
                     X, Y, contour = minosContour(logL, logL.parameters[j], logL.parameters[i], BestPars, BestErrors, bounds = [BestPars[j] - xmin, BestPars[j] + xmax, BestPars[i] - ymin, BestPars[i] + ymax], steps = steps, MAXLikelihood=MAXLikelihood)
                     
                     # Increase grid density through interpolation with RectBivariateSpline
@@ -1626,7 +1625,6 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0):
                 plt.subplot(nParameters, nParameters, nParameters*i + j + 1)
                 if logL.fixed[i] == False:
                     xmin, xmax = minosError(logL, logL.parameters[j], BestPars, BestErrors, MAXLikelihood=MAXLikelihood)
-                    #logL = logLSetLimits(logL)
                     
                     logL.draw_mnprofile(logL.parameters[j], bound = [BestPars[j] - xmin, BestPars[j] + xmax])
                 
@@ -1642,7 +1640,7 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0):
             #print(logL.errors)
     plt.text(0.65, 0.65, 'Profile\nlikelihoods', fontsize=100, ha='center', va='center', transform=plt.gcf().transFigure)
 
-def GoodnessOfFit(logL, Hists, nToys = 100, doNullHypothesis = False, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = []):
+def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothesis = False, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = []):
     startTime = time.time()
     newP176 = logL.values[5]
     newP179 = logL.values[6]
@@ -1662,7 +1660,7 @@ def GoodnessOfFit(logL, Hists, nToys = 100, doNullHypothesis = False, FixedParam
             print('Process toy', i, ' - Time:', time.time() - startTime)
         
         np.random.seed(i)
-        tpars = np.copy(totPars)
+        tpars = np.copy(pars)
         
         # Sample the nuisances
         if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
@@ -1690,9 +1688,9 @@ def GoodnessOfFit(logL, Hists, nToys = 100, doNullHypothesis = False, FixedParam
             if FixedParameters[12] == False:
                 tpars[12] = np.random.normal(newAlphaField, dAlphaField)
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
-                while tpars[12] < alphavalues[1][0] or tpars[12] > alphavalues[1][-1]:
+                while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
                     tpars[12] = np.random.normal(newAlphaField, dAlphaField)
-                while _alphaField < alphavalues[1][0] or _alphaField > alphavalues[1][-1]:
+                while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                     _alphaField = np.random.normal(newAlphaField, dAlphaField)
         elif FixedParameters == False:
             tpars[5] = np.random.normal(newP176, dP176)
@@ -1715,18 +1713,18 @@ def GoodnessOfFit(logL, Hists, nToys = 100, doNullHypothesis = False, FixedParam
                 _p181 = np.random.normal(newP181, dP181)
             tpars[12] = np.random.normal(newAlphaField, dAlphaField)
             _alphaField = np.random.normal(newAlphaField, dAlphaField)
-            while tpars[12] < alphavalues[1][0] or tpars[12] > alphavalues[1][-1]:
+            while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
                 tpars[12] = np.random.normal(newAlphaField, dAlphaField)
-            while _alphaField < alphavalues[1][0] or _alphaField > alphavalues[1][-1]:
+            while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
         
         yields = np.concatenate([[tpars[0]], getYields(tpars[2], tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8]), [tpars[9], tpars[10]]])
         
         # Sample the toy
         if doNullHypothesis:
-            Hists.generateToy(yields[1:], betas = BETAS, fluctuateTemplates = True, morph = tpars[-2:], mass=None)
+            Hists.generateToy(yields[1:], betas = betas, fluctuateTemplates = True, morph = tpars[-2:], mass=None)
         else:
-            Hists.generateToy(yields, betas = BETAS, fluctuateTemplates = True, morph = tpars[-2:], mass=tpars[1])
+            Hists.generateToy(yields, betas = betas, fluctuateTemplates = True, morph = tpars[-2:], mass=tpars[1])
         
         # Fit
         logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = doNullHypothesis, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
@@ -1743,8 +1741,8 @@ def GoodnessOfFit(logL, Hists, nToys = 100, doNullHypothesis = False, FixedParam
     
     print(logLToy.fval)
     
-    plotComparison(Hists, logLToy.values, betasToy, compareWithBetas=True, logL = logLToy, Toy = True)
-    plotComparison(Hists, logLToy.values, betasToy, compareWithBetas=False, logL = logLToy, Toy = True)
+    plotComparison(Hists, logLToy.values, betasToy, channels, compareWithBetas=True, logL = logLToy, Toy = True)
+    plotComparison(Hists, logLToy.values, betasToy, channels, compareWithBetas=False, logL = logLToy, Toy = True)
     
     fig = plt.figure(figsize=(49, 28), dpi=100)
     plt.subplots_adjust(hspace=0.4, wspace=0.4)
@@ -1769,7 +1767,7 @@ def GoodnessOfFit(logL, Hists, nToys = 100, doNullHypothesis = False, FixedParam
     plt.xlabel(r'$\log{\mathcal{L}}$')
     return PARS, Likelihood, Accurate, Valid
 
-def plotCheck(PARS, Likelihood, Toy, logLToy, SEED = 0, prefix = '', TIME = []):
+def plotCheck(PARS, Likelihood, Toy, logLToy, SEED = 0, prefix = '', TIME = [], workDir = './'):
     dataLikelihood = Likelihood[Toy == False]
     
     _likelihood = Likelihood[Toy == True]
@@ -1797,19 +1795,23 @@ def plotCheck(PARS, Likelihood, Toy, logLToy, SEED = 0, prefix = '', TIME = []):
     plt.hist(_likelihood, bins=50, label= 'Number of toys above\ndata likelihood: ' + f'{np.sum(np.array(_likelihood) > np.max(dataLikelihood))/len(_likelihood)*100:.1f}%' + f'\nAverage: {np.mean(_likelihood):.2e}\nStd: {np.std(_likelihood):.2e}')
     plt.vlines(np.max(dataLikelihood), 0, plt.gca().get_ylim()[1], label='Data likelihood', color='k', linestyles='dashed')
     plt.legend()
+    MAXX = np.max(np.abs(_likelihood))
+    if MAXX < dataLikelihood.max():
+        MAXX = min(np.max(np.abs(_likelihood))*5, dataLikelihood.max())
+    plt.xlim(None, MAXX)
     plt.xlabel(r'$\log{\mathcal{L}}$')
     plt.savefig(workDir + '../' + prefix + 'CheckLikelihood_' + f'{SEED}.png')
     
     if len(TIME) > 0:
         fig = plt.figure(figsize=(14, 14), dpi=100)
-        plt.hist(TIME, bins=50, label= 'Time per toy')
+        plt.hist(TIME, bins=50, label= 'Time per toy: ' + f'{np.mean(TIME):.2f} $\pm$ {np.std(TIME):.2f} s')
         plt.legend()
         plt.xlabel('Time [s]')
         plt.savefig(workDir + '../' + prefix + 'CheckTime_' + f'{SEED}.png')
     
     return
 
-def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = []):
+def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './'):
     TIME = []
     newP176 = pars[5]
     newP179 = pars[6]
@@ -1819,6 +1821,10 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
     _p181 = pars[7]
     newAlphaField = pars[12]
     _alphaField = pars[12]
+    storeFixedParameters = np.copy(FixedParameters)
+    
+    startToy = len(PARS)
+    
     ############################################
     # Get lratio for the data
     ############################################
@@ -1826,7 +1832,6 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
     logL.values = np.copy(pars)
     logL.values[0] = SignalYield
     logL.values[1] = SignalMass
-    storeFixedParameters = np.copy(FixedParameters)
     
     FixedParameters[0] = True
     FixedParameters[1] = True
@@ -1835,7 +1840,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
     
     # Fit data
     FixedParameters = np.copy(storeFixedParameters)
-    print(FixedParameters)
+    
     logL, _, MAXLikelihood = bestFit(logL.values, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters)
     
     datalRatio = locLikelihood - MAXLikelihood
@@ -1852,8 +1857,8 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         Valid.append(logL.valid)
         Toy.append(False)
         with open(workDir + outputFileName, 'w') as file:
-            file.write('# SignalYield\tSignalMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\n')
-            file.write(f'{SignalYield}\t{SignalMass}\t{False}\t{MAXLikelihood}\t{locLikelihood}\t{datalRatio}\t{logL.accurate}\t{logL.valid}\n')
+            file.write('# SignalYield\tSignalMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')
+            file.write(f'{SignalYield}\t{SignalMass}\t{False}\t{MAXLikelihood}\t{locLikelihood}\t{datalRatio}\t{logL.accurate}\t{logL.valid}\t{SEED}\n')
     
     ############################################
     # Generate lratio distribution with toys
@@ -1861,17 +1866,8 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
     
     # For each toy, sample the not fixed nuisances, sample toys and templates, and compute the log likelihood
     startTime = time.time()
-    newP176 = logL.values[5]
-    newP179 = logL.values[6]
-    newP181 = logL.values[7]
-    _p176 = logL.values[5]
-    _p179 = logL.values[6]
-    _p181 = logL.values[7]
-    newAlphaField = logL.values[12]
-    _alphaField = logL.values[12]
     MAXLikelihood = 0
     
-    startToy = len(PARS)
     if startToy > nToys:
         startToy = nToys
     
@@ -1911,9 +1907,9 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
             if FixedParameters[12] == False:
                 tpars[12] = np.random.normal(newAlphaField, dAlphaField)
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
-                while tpars[12] < alphavalues[1][0] or tpars[12] > alphavalues[1][-1]:
+                while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
                     tpars[12] = np.random.normal(newAlphaField, dAlphaField)
-                while _alphaField < alphavalues[1][0] or _alphaField > alphavalues[1][-1]:
+                while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                     _alphaField = np.random.normal(newAlphaField, dAlphaField)
         elif FixedParameters == False:
             tpars[5] = np.random.normal(newP176, dP176)
@@ -1936,9 +1932,9 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
                 _p181 = np.random.normal(newP181, dP181)
             tpars[12] = np.random.normal(newAlphaField, dAlphaField)
             _alphaField = np.random.normal(newAlphaField, dAlphaField)
-            while tpars[12] < alphavalues[1][0] or tpars[12] > alphavalues[1][-1]:
+            while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
                 tpars[12] = np.random.normal(newAlphaField, dAlphaField)
-            while _alphaField < alphavalues[1][0] or _alphaField > alphavalues[1][-1]:
+            while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
         
         print('Toy', i, ' - Time:', time.time() - startTime)
@@ -1953,11 +1949,17 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         FixedParameters[1] = True
         tpars[0] = SignalYield
         tpars[1] = SignalMass
-        logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
+        logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        
+        if np.isnan(locLikelihoodToy):
+            logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
         
         # Fit the toy
         FixedParameters = np.copy(storeFixedParameters)
-        logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
+        logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        
+        if locLikelihoodToy < MAXLikelihoodToy or np.isnan(MAXLikelihoodToy):
+            logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
         
         lratio = locLikelihoodToy - MAXLikelihoodToy
         
@@ -1970,7 +1972,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         TIME.append(time.time() - _TIME)
         print(FixedParameters)
         with open(workDir + outputFileName, 'a') as file:
-            file.write(f'{SignalYield}\t{SignalMass}\t{True}\t{MAXLikelihoodToy}\t{locLikelihoodToy}\t{lratio}\t{logLToy.accurate}\t{logLToy.valid}\n')
+            file.write(f'{SignalYield}\t{SignalMass}\t{True}\t{MAXLikelihoodToy}\t{locLikelihoodToy}\t{lratio}\t{logLToy.accurate}\t{logLToy.valid}\t{SEED+i}\n')
     
     PARS = np.array(PARS)
     Likelihood = np.array(Likelihood)
@@ -1978,7 +1980,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
     Valid = np.array(Valid)
     Toy = np.array(Toy)
     
-    plotCheck(PARS, Likelihood, Toy, logLToy, SEED = SEED, prefix = prefix, TIME = TIME)
+    plotCheck(PARS, Likelihood, Toy, logLToy, SEED = SEED, prefix = prefix, TIME = TIME, workDir = workDir)
 
     print(FixedParameters)
     
