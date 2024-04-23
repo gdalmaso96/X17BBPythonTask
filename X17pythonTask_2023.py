@@ -1150,7 +1150,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     logL.fixed = np.full(len(logL.fixed), True)
     
     # Scan parameters singularly
-    for j in range(2):
+    for j in range(5):
         for i in freeIndices:
             logL.fixed[i] = False
             logL.simplex(ncall=100000)
@@ -1174,7 +1174,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
             logL.fixed = np.full(len(logL.fixed), True)
             
             # Scan parameters singularly
-            for j in range(2):
+            for j in range(5):
                 for i in freeIndices:
                     logL.fixed[i] = False
                     logL.simplex(ncall=100000)
