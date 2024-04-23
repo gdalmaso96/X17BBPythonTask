@@ -1094,7 +1094,7 @@ def logLSetLimits(logL, alphavalues):
     return logL
 
 # This function finds the best parameters
-def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0, DoPreliminaryFit = False):
+def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0, DoPreliminaryFit = True):
     # First, find the best fit with doBB = False
     # Then, minimize for each parameter independently twice
     # Finally, minimize the full log likelihood
