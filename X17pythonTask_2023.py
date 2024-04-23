@@ -1831,7 +1831,7 @@ def plotCheck(PARS, Likelihood, Toy, logLToy, SEED = 0, prefix = '', TIME = [], 
     if MAXX < dataLikelihood.max():
         MAXX = min(np.max(np.abs(_likelihood))*5, dataLikelihood.max())
     plt.xlim(None, MAXX)
-    plt.xlabel(r'$\log{\mathcal{L}}$')
+    plt.xlabel(r'$\lambda_R$')
     plt.savefig(workDir + '../' + prefix + 'CheckLikelihood_' + f'{SEED}.png')
     
     if len(TIME) > 0:
