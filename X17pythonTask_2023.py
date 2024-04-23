@@ -1966,7 +1966,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         
         lratio = locLikelihoodToy - MAXLikelihoodToy
         
-        plotComparison(Hists, logLToy.values, betasToy, Hists.channels, compareWithBetas=False, logL = logLToy, Toy = True, BKGnames=Hists.BKGnames, subfix='_' + prefix + '_S' + str(SEED) + '_T' + str(i))
+        #plotComparison(Hists, logLToy.values, betasToy, Hists.channels, compareWithBetas=False, logL = logLToy, Toy = True, BKGnames=Hists.BKGnames, subfix='_' + prefix + '_S' + str(SEED) + '_T' + str(i))
         # Append result to file
         Likelihood.append(lratio)
         PARS.append(logLToy.values)
