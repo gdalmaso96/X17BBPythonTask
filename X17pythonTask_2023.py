@@ -1067,8 +1067,8 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
 def logLSetLimits(logL, alphavalues):
     # Set limits
     # Signal
-    logL.limits[0] = (0, None)
-    logL.limits[1] = (16.5, 17.3)
+    logL.limits[0] = (None, None)
+    logL.limits[1] = (16.3, 17.3)
     
     # IPC
     # Yields
@@ -1145,7 +1145,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
         logL.values[0] = 0
         logL.fixed[0] = True
         logL.fixed[1] = True
-    
+    logL.simplex(ncall=100000)
     freeIndices = np.where(np.array(logL.fixed) == False)[0]
     logL.fixed = np.full(len(logL.fixed), True)
     
@@ -1950,20 +1950,49 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         # Fit the toy for current grid point
         FixedParameters[0] = True
         FixedParameters[1] = True
+        #FixedParameters[5] = True
+        #FixedParameters[6] = True
+        #FixedParameters[7] = True
+        #FixedParameters[12] = True
         tpars[0] = SignalYield
         tpars[1] = SignalMass
         logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
         
-        if np.isnan(locLikelihoodToy):
-            logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
+        
+        #FixedParameters[5] = storeFixedParameters[5]
+        #FixedParameters[6] = storeFixedParameters[6]
+        #FixedParameters[7] = storeFixedParameters[7]
+        #FixedParameters[12] = storeFixedParameters[12]
+        #
+        #logLToy, betasToy, locLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        #
+        #if np.isnan(locLikelihoodToy):
+        #    logLToy, betasToy, locLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
+        
+        print(logLToy.values)
         
         # Fit the toy
         FixedParameters = np.copy(storeFixedParameters)
-        logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        #FixedParameters[5] = True
+        #FixedParameters[6] = True
+        #FixedParameters[7] = True
+        #FixedParameters[12] = True
+        logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        #FixedParameters[5] = storeFixedParameters[5]
+        #FixedParameters[6] = storeFixedParameters[6]
+        #FixedParameters[7] = storeFixedParameters[7]
+        #FixedParameters[12] = storeFixedParameters[12]
+        #
+        #logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        #
+        #
+        #if locLikelihoodToy < MAXLikelihoodToy or np.isnan(MAXLikelihoodToy) or np.abs(locLikelihoodToy - MAXLikelihoodToy) < 1e-8:
+        #    logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        #    if locLikelihoodToy < MAXLikelihoodToy or np.isnan(MAXLikelihoodToy) or np.abs(locLikelihoodToy - MAXLikelihoodToy) < 1e-8:
+        #        logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
         
-        if locLikelihoodToy < MAXLikelihoodToy or np.isnan(MAXLikelihoodToy):
-            logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
         
+        print(logLToy.values)
         lratio = locLikelihoodToy - MAXLikelihoodToy
         
         #plotComparison(Hists, logLToy.values, betasToy, Hists.channels, compareWithBetas=False, logL = logLToy, Toy = True, BKGnames=Hists.BKGnames, subfix='_' + prefix + '_S' + str(SEED) + '_T' + str(i))
