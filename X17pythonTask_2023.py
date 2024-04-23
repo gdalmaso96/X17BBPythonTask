@@ -1217,7 +1217,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     
     return logL, betas, logL.fval
 
-def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8']):
+def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8'], subfix = ''):
     PARS = np.copy(pars)
     nSig, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = pars
     nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151 = getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15)
@@ -1387,6 +1387,7 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     plt.gca().set_xticks(xticks)
     plt.gca().set_xticklabels(xtickslabels, fontsize=20)
     plt.xticks(rotation=45)
+    plt.savefig('Comparison' + subfix + '.png')
     
     fig = plt.figure(figsize=(14, 14), dpi=100)
     if compareWithBetas:
@@ -1397,6 +1398,7 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     plt.hist(pulls, label= f'{pulls.mean():.2f} $\pm$ {pulls.std():.2f}', bins=30)
     plt.legend()
     plt.xlabel('Pulls')
+    plt.savefig('Pulls' + subfix + '.png')
     print('chi2:', np.sum(pulls**2))
     print('dof:', len(pulls) - len(PARS) - len(morph))
     pvalue = chi2.sf(np.sum(pulls**2), len(pulls) - len(PARS) - len(morph))
@@ -1408,6 +1410,7 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     plt.hist(betas[data != 0], bins=30, label=f'{betas.mean():.2f} $\pm$ {betas.std():.2f}')
     plt.legend()
     plt.xlabel(r'$\beta$')
+    plt.savefig('Betas' + subfix + '.png')
 
 def minos (logL, name1, name2, x1, x2, pars, MAXLikelihood = 0):
     fixed = np.copy(logL.fixed)
@@ -1956,13 +1959,14 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         
         # Fit the toy
         FixedParameters = np.copy(storeFixedParameters)
-        logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
         
         if locLikelihoodToy < MAXLikelihoodToy or np.isnan(MAXLikelihoodToy):
             logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
         
         lratio = locLikelihoodToy - MAXLikelihoodToy
         
+        plotComparison(Hists, logLToy.values, betasToy, Hists.channels, compareWithBetas=False, logL = logLToy, Toy = True, BKGnames=Hists.BKGnames, subfix='_' + prefix + '_S' + str(SEED) + '_T' + str(i))
         # Append result to file
         Likelihood.append(lratio)
         PARS.append(logLToy.values)
