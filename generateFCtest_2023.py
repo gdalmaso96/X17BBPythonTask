@@ -6,6 +6,7 @@ import argparse
 startTime = time.time()
 
 #python3 generateFCtest_2023.py --SignalYield 500 --SignalMass 16.9 --SEED 0 --nToys 10
+#python3 generateFCtest_2023.py --SignalYield   0 --SignalMass 16.9 --SEED   0 --nToys 1 --generateDataSets True --DataSEED 0 --DataSignalMass 16.9 --DataSignalYield 0
 
 def argparser():
     parser = argparse.ArgumentParser(description='Generate FC test')
@@ -13,6 +14,10 @@ def argparser():
     parser.add_argument('--SignalMass', type=float, default=16.9, help='Signal mass')
     parser.add_argument('--SEED', type=int, default=0, help='Seed')
     parser.add_argument('--nToys', type=int, default=10, help='Number of toys')
+    parser.add_argument('--generateDataSets', type=bool, default=False, help='Sample data sets')
+    parser.add_argument('--DataSEED', type=int, default=0, help='Data set seed')
+    parser.add_argument('--DataSignalMass', type=float, default=16.9, help='Data set signal mass')
+    parser.add_argument('--DataSignalYield', type=int, default=0, help='Data set signal yield')
     return parser.parse_args()
 
 massElectron = 0.5109989461 #MeV
@@ -121,6 +126,10 @@ if __name__ == '__main__':
     SignalMass = args.SignalMass
     SEED = args.SEED
     nToys = args.nToys
+    generateDataSets = args.generateDataSets
+    DataSEED = args.DataSEED
+    DataSignalMass = args.DataSignalMass
+    DataSignalYield = args.DataSignalYield
     
     ################################################################################################################################################
     # Load data
@@ -140,6 +149,8 @@ if __name__ == '__main__':
     FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, True, False])
 
     logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = True, FixedParameters = FixedParameters)
+    
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, Toy = False)
 
     BestBetas = np.copy(betas)
     BestPars = np.copy(logL.values)
@@ -161,6 +172,8 @@ if __name__ == '__main__':
     angleCutLow = 180
     angleCutHigh = 0
     TotalMCStatistics = []
+    # Eventually the toy generation is done including the bias from the BB parameters. Here it is set to 1 everywhere
+    BestBetas = 1
 
     TotalMCStatistics, nBKGs, channelsTest = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames)
 
@@ -171,15 +184,47 @@ if __name__ == '__main__':
     yields = np.concatenate([[BestPars[0]], X17pythonTask_2023.getYields(BestPars[2], BestPars[3], BestPars[4], BestPars[5], BestPars[6], BestPars[7], BestPars[8]), [BestPars[9], BestPars[10]]])
 
     np.random.seed(0)
-    HistsTest.generateToy(yields, betas = 1, fluctuateTemplates = True, morph = BestPars[-2:], mass=BestPars[1])
+    HistsTest.generateToy(yields, betas = BestBetas, fluctuateTemplates = True, morph = BestPars[-2:], mass=BestPars[1])
 
     HistsTest.DataArray = np.copy(HistsTest.DataArrayToy)
 
     FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, True, False])
     
-    print(BestPars)
-
     # Signal grid point
     print('Start FC generation after ', time.time() - startTime, ' seconds')
-    PARS, Likelihood, Accurate, Valid, Toy, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalMass, logL, HistsTest, BestPars, SEED = SEED, nToys = nToys, betas = betas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir)
+    if generateDataSets:
+        outputFileName = 'DataFC_N%d_m%.2f_NGrid%d_MGrid%.2f.txt' % (DataSignalYield, DataSignalMass, SignalYield, SignalMass)
+        with open(workDir + outputFileName, 'w') as f:
+            f.write('#DataSignalYield DataSignalMass SignalYield SignalMass MAXLikelihood locLikelihood datalRatio accurate valid DataSEED\n')
+        for i in range(nToys):
+            if i %10 == 0:
+                print('Generating data toy number ', i + DataSEED, ' after ', time.time() - startTime, ' seconds')
+            BestPars[0] = DataSignalYield
+            BestPars[1] = DataSignalMass
+            
+            # New HistsTest
+            HistsTest = X17pythonTask_2023.histHandler(channelsTest, 'dataHist', 'X17', BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
+            
+            np.random.seed(DataSEED + i)
+            yields = np.concatenate([[BestPars[0]], X17pythonTask_2023.getYields(BestPars[2], BestPars[3], BestPars[4], BestPars[5], BestPars[6], BestPars[7], BestPars[8]), [BestPars[9], BestPars[10]]])
+            HistsTest.generateToy(yields, betas = BestBetas, fluctuateTemplates = True, morph = BestPars[-2:], mass=BestPars[1])
+            HistsTest.DataArray = np.copy(HistsTest.DataArrayToy)
+            HistsTest.SignalArray = np.copy(HistsTest.SignalArrayToy)
+            HistsTest.SignalArrayNuisance = np.copy(HistsTest.SignalArrayNuisanceToy)
+            HistsTest.SignalArrayNuisance5Sigma = np.copy(HistsTest.SignalArrayNuisance5SigmaToy)
+            HistsTest.SignalArrayNuisance5SigmaArray = np.copy(HistsTest.SignalArrayNuisance5SigmaArrayToy)
+            HistsTest.BKGarray = np.copy(HistsTest.BKGarrayToy)
+            HistsTest.BKGarrayNuisance5Sigma = np.copy(HistsTest.BKGarrayNuisance5SigmaToy)
+            HistsTest.BKGarrayNuisance5SigmaArray = np.copy(HistsTest.BKGarrayNuisance5SigmaArrayToy)
+            
+            SignalYield, SignalMass, Toy, MAXLikelihood, locLikelihood, datalRatio, accurate, valid, SEED, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalMass, logL, HistsTest, BestPars, SEED = SEED, nToys = 0, betas = BestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir, doingDataToy = True)
+            with open(workDir + outputFileName, 'a') as f:
+                f.write(f'{DataSignalYield} {DataSignalMass} {SignalYield} {SignalMass} {MAXLikelihood} {locLikelihood} {datalRatio} {accurate} {valid} {DataSEED + i}\n')
+    else:
+        logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, HistsTest, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters)
+        X17pythonTask_2023.plotComparison(HistsTest, logL.values, betas, channels, compareWithBetas=False, logL = logL, Toy = False, subfix='Test')
+    
+        print(BestPars)
+
+        PARS, Likelihood, Accurate, Valid, Toy, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalMass, logL, HistsTest, BestPars, SEED = SEED, nToys = nToys, betas = BestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir)
     print('Time elapsed to generate FC: ', time.time() - startTime)
