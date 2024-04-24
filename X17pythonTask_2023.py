@@ -1791,12 +1791,14 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
         plt.ylabel('Counts')
         plt.legend()
         plt.title(logLToy.parameters[i])
+    plt.savefig('GoFparameters.png', bbox_inches='tight')
 
     fig = plt.figure(figsize=(14, 14), dpi=100)
     plt.hist(Likelihood, bins=50, label= 'Number of toys above\ndata likelihood: ' + f'{np.sum(np.array(Likelihood) > MAXLikelihood)/len(Likelihood)*100:.1f}%' + f'\nAverage: {np.mean(Likelihood):.2e}\nStd: {np.std(Likelihood):.2e}')
     plt.vlines(MAXLikelihood, 0, plt.gca().get_ylim()[1], label='Data likelihood', color='k', linestyles='dashed')
     plt.legend()
-    plt.xlabel(r'$\log{\mathcal{L}}$')
+    plt.xlabel(r'$\lambda$')
+    plt.savefig('GoodnessOfFit.png', bbox_inches='tight')
     return PARS, Likelihood, Accurate, Valid
 
 def plotCheck(PARS, Likelihood, Toy, logLToy, SEED = 0, prefix = '', TIME = [], workDir = './'):
