@@ -1068,7 +1068,7 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
 def logLSetLimits(logL, alphavalues):
     # Set limits
     # Signal
-    logL.limits[0] = (None, None)
+    logL.limits[0] = (0, None)
     logL.limits[1] = (16.5, 17.3)
     
     # IPC
@@ -1926,7 +1926,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         Valid.append(logL.valid)
         Toy.append(False)
         if doingDataToy:
-            return SignalYield, SignalMass, False, MAXLikelihood, locLikelihood, datalRatio, logL.accurate, logL.valid, SEED, FixedParameters
+            return SignalYield, SignalMass, False, MAXLikelihood, locLikelihood, datalRatio, logL.accurate, logL.valid, SEED, FixedParameters, logL.values[0], logL.values[1]
         else:
             with open(workDir + outputFileName, 'w') as file:
                 file.write('# SignalYield\tSignalMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')

@@ -195,7 +195,7 @@ if __name__ == '__main__':
     if generateDataSets:
         outputFileName = 'DataFC_N%d_m%.2f_NGrid%d_MGrid%.2f.txt' % (DataSignalYield, DataSignalMass, SignalYield, SignalMass)
         with open(workDir + outputFileName, 'w') as f:
-            f.write('#DataSignalYield DataSignalMass SignalYield SignalMass MAXLikelihood locLikelihood datalRatio accurate valid DataSEED\n')
+            f.write('#DataSignalYield DataSignalMass SignalYield SignalMass FitYield FitMass MAXLikelihood locLikelihood datalRatio accurate valid DataSEED\n')
         for i in range(nToys):
             if i %10 == 0:
                 print('Generating data toy number ', i + DataSEED, ' after ', time.time() - startTime, ' seconds')
@@ -217,9 +217,9 @@ if __name__ == '__main__':
             HistsTest.BKGarrayNuisance5Sigma = np.copy(HistsTest.BKGarrayNuisance5SigmaToy)
             HistsTest.BKGarrayNuisance5SigmaArray = np.copy(HistsTest.BKGarrayNuisance5SigmaArrayToy)
             
-            SignalYield, SignalMass, Toy, MAXLikelihood, locLikelihood, datalRatio, accurate, valid, SEED, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalMass, logL, HistsTest, BestPars, SEED = SEED, nToys = 0, betas = BestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir, doingDataToy = True)
+            SignalYield, SignalMass, Toy, MAXLikelihood, locLikelihood, datalRatio, accurate, valid, SEED, FixedParameters, fitN, fitM = X17pythonTask_2023.FCgenerator(SignalYield, SignalMass, logL, HistsTest, BestPars, SEED = SEED, nToys = 0, betas = BestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir, doingDataToy = True)
             with open(workDir + outputFileName, 'a') as f:
-                f.write(f'{DataSignalYield} {DataSignalMass} {SignalYield} {SignalMass} {MAXLikelihood} {locLikelihood} {datalRatio} {accurate} {valid} {DataSEED + i}\n')
+                f.write(f'{DataSignalYield} {DataSignalMass} {SignalYield} {SignalMass} {fitN} {fitM} {MAXLikelihood} {locLikelihood} {datalRatio} {accurate} {valid} {DataSEED + i}\n')
     else:
         logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, HistsTest, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters)
         X17pythonTask_2023.plotComparison(HistsTest, logL.values, betas, channels, compareWithBetas=False, logL = logL, Toy = False, subfix='Test')
