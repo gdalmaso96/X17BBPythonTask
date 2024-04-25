@@ -60,7 +60,7 @@ MAXLikelihood = 0
 
 
 def BBliteBeta(Di, mu0, mueff):
-    betas = (Di + mueff)/(mu0 + mueff + (mu0 == 0))
+    betas = (Di + mueff)/(mu0 + mueff + (mu0 + mueff == 0))
     return betas + (betas == 0)
 
 # Python implementation of momentum morphing class algorithm in https://arxiv.org/pdf/1410.7388.pdf
@@ -714,15 +714,14 @@ def plotChannels(channels, sample='dataHist', title='Data'):
 
 # Create up/down  variables for field and resolution scaling
 def createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = False, esumCutLow = 0, esumCutHigh = 1000, angleCutLow = 0, angleCutHigh = 180):
+    pres_up = (p - simp)*(1 + alphares) + simp
+    pres_dn = (p - simp)*(1 - alphares) + simp
     if AlternativeResolutionScale:
         # Use the average momentum instead of simp for each component
         pres_up = (p - 0.5*simp)*(1 + alphares) + 0.5*simp
         pres_dn = (p - 0.5*simp)*(1 - alphares) + 0.5*simp
         #pres_up = (p - np.mean(p, axis=1, keepdims=True))*(1 + alphares) + np.mean(p, axis=1, keepdims=True)
         #pres_dn = (p - np.mean(p, axis=1, keepdims=True))*(1 - alphares) + np.mean(p, axis=1, keepdims=True)
-    else:
-        pres_up = (p - simp)*(1 + alphares) + simp
-        pres_dn = (p - simp)*(1 - alphares) + simp
     esumres_up = np.sqrt(np.sum(np.power(pres_up[:3], 2), axis=0) + np.power(massElectron, 2)) # positrons
     esumres_up = esumres_up + np.sqrt(np.sum(np.power(pres_up[3:6], 2), axis=0) + np.power(massElectron, 2)) # electrons
     angleres_up = np.arccos(np.sum(pres_up[:3]*pres_up[3:6], axis=0)/np.sqrt(np.sum(np.power(pres_up[:3], 2), axis=0))/np.sqrt(np.sum(np.power(pres_up[3:6], 2), axis=0)))*180/np.pi
@@ -788,13 +787,13 @@ def removeDuplicates(MC):
     
 
 def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/results/MC2023totOLDmerge.root:ntuple', workDir = './results/', MCFile = 'MC2023tot.root', ECODETYPE = 'ecode', MorphEPConly = False, X17masses = np.array([16.3, 16.5, 16.7, 16.9, 17.1, 17.3]), dX17mass = 0.0001, alphares = 0.005, alphafield = 0.005, esumCutLow = 16, esumCutHigh = 20, angleCutLow = 115, angleCutHigh = 160, BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15'], alphaNames = ['res', 'field'], AlternativeResolutionScale = True):
+    TotalMCStatistics = []
     with uproot.open(CUTfile) as fCUT:
         MCCUT = fCUT.arrays([ECODETYPE, 'run', 'event'], library='np')
         
         ecodeCUT = MCCUT[ECODETYPE]
         runCUT = MCCUT['run']
         eventCUT = MCCUT['event']
-        TotalMCStatistics = []
             
         with uproot.open(workDir + MCFile + ':ntuple') as f:
             MC = f.arrays(['esum', 'angle', ECODETYPE, 'px_pos', 'py_pos', 'pz_pos', 'px_ele', 'py_ele', 'pz_ele', 'simpx_pos', 'simpy_pos', 'simpz_pos', 'simpx_ele', 'simpy_ele', 'simpz_ele', 'siminvm', 'run', 'event', 'theta_gamma'], library='np')
@@ -1021,7 +1020,7 @@ def getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FI
 # The returned value is the Baker-Cousins ratio
 def ll(Di, fPar = 0, mu = 0, mueff = 0, betas = 1, alphas = 0, P = 0):
     f = mu + fPar
-    binnedTerm = Di*np.log(f + (f == 0)) - f - Di*np.log(Di + (Di == 0)) + Di
+    binnedTerm = Di*np.log(f + (f <= 0))*(1*(f > 0) + -100*(f <= 0)) - f - Di*np.log(Di + (Di == 0)) + Di
     binnedTerm = binnedTerm + mueff*(np.log(betas) - (betas - 1))
     binnedTerm = -2*np.sum(binnedTerm)
     return binnedTerm + np.sum(np.power(alphas, 2)) + P
@@ -1043,6 +1042,9 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
     P += np.power((alphaField - _alphaField)/dAlphaField, 2)
 
     # Compute statistical uncertainty
+    estimateFunction = None
+    estimateVarianceFunction = None
+    data = None
     if FitToy:
         estimateVarianceFunction = Hists.getEstimateVarianceToy
         estimateFunction = Hists.getEstimateToy
@@ -1053,22 +1055,33 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
         data = Hists.DataArray
     
     mu0 = estimateFunction(yields, betas = 1, morph = [alphaRes, alphaField], mass = mass)
+    mu0 = mu0*(np.abs(mu0) > 1e-6)
+    betas = 1
+    mueff = 0
+    Vmu0 = 0
+    mu = 0
+    if np.any(mu0 < 0):
+        return 1e10
     if doBB:
         Vmu0 = estimateVarianceFunction(yields, betas = 1, morph = [alphaRes, alphaField], mass = mass)
+        Vmu0 = Vmu0*(mu0 > 0)
         mueff = np.power(mu0, 2)/(Vmu0 + (mu0==0))
         betas = BBliteBeta(data, mu0, mueff)
         mu = estimateFunction(yields, betas, morph = [alphaRes, alphaField], mass = mass)
+        mu = mu*(np.abs(mu) > 1e-6)
+        if np.any(mu < 0):
+            return 1e10
     else:
         mueff = 0
         betas = 1
         mu = mu0
-        
+    
     return ll(data, mu = mu, mueff = mueff, betas = betas, P=P)
 
 def logLSetLimits(logL, alphavalues):
     # Set limits
     # Signal
-    logL.limits[0] = (0, 10000)
+    logL.limits[0] = (-10000, 10000)
     logL.limits[1] = (16.5, 17.3)
     
     # IPC
@@ -1103,6 +1116,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     ############################################
     # Find suitable starting point
     names = ['nSig', 'mass', 'nIPC400', 'nIPC700', 'nIPC1000', 'percent176', 'percent179', 'percent181', 'FIPC15', 'nEPC18', 'nEPC15', 'alphaRes', 'alphaField']
+    logL = None
     if DoPreliminaryFit:
         def lambdaLikelihood(pars):
             return logLikelihood(pars, Hists, doBB = False, FitToy = FitToy, doNullHypothesis = doNullHypothesis, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
@@ -1147,23 +1161,23 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
         logL.fixed[0] = True
         logL.fixed[1] = True
     
-    
+    #logL.scan(ncall=100000)
     freeIndices = np.where(np.array(logL.fixed) == False)[0]
     logL.fixed = np.full(len(logL.fixed), True)
     #
     ## Scan parameters singularly
     for j in range(5):
         # Check if the signal yield and mass are fixed
-        if 0 in freeIndices:
-            logL.fixed[0] = False
-            logL.fixed[1] = False
-            logL.scan()
+        #if 0 in freeIndices:
+        #    logL.fixed[0] = False
+        #    logL.fixed[1] = False
+        #    logL.scan()
         #    logL.simplex(ncall=100000)
         #    logL.strategy = 2
         #    logL.tol = 1e-10
         #    #logL.migrad(ncall = 100000, iterate = 5)
-            logL.fixed[0] = True
-            logL.fixed[1] = True
+        #    logL.fixed[0] = True
+        #    logL.fixed[1] = True
         for i in freeIndices:
             logL.fixed[i] = False
             logL.simplex(ncall=100000)
@@ -1227,7 +1241,9 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     #            break
     
     logL.hesse()
-    
+    estimateVarianceFunction = None
+    estimateFunction = None
+    data = None
     if FitToy:
         estimateVarianceFunction = Hists.getEstimateVarianceToy
         estimateFunction = Hists.getEstimateToy
