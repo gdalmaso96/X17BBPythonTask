@@ -1068,7 +1068,7 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
 def logLSetLimits(logL, alphavalues):
     # Set limits
     # Signal
-    logL.limits[0] = (0, None)
+    logL.limits[0] = (0, 10000)
     logL.limits[1] = (16.5, 17.3)
     
     # IPC
@@ -1929,8 +1929,8 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
             return SignalYield, SignalMass, False, MAXLikelihood, locLikelihood, datalRatio, logL.accurate, logL.valid, SEED, FixedParameters, logL.values[0], logL.values[1]
         else:
             with open(workDir + outputFileName, 'w') as file:
-                file.write('# SignalYield\tSignalMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')
-                file.write(f'{SignalYield}\t{SignalMass}\t{False}\t{MAXLikelihood}\t{locLikelihood}\t{datalRatio}\t{logL.accurate}\t{logL.valid}\t{SEED}\n')
+                file.write('# SignalYield\tSignalMass\tFitYield\tFitMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')
+                file.write(f'{SignalYield}\t{SignalMass}\t{logL.values[0]}\t{logL.values[1]}\t{False}\t{MAXLikelihood}\t{locLikelihood}\t{datalRatio}\t{logL.accurate}\t{logL.valid}\t{SEED}\n')
     
     ############################################
     # Generate lratio distribution with toys
@@ -2077,7 +2077,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         TIME.append(time.time() - _TIME)
         print(FixedParameters)
         with open(workDir + outputFileName, 'a') as file:
-            file.write(f'{SignalYield}\t{SignalMass}\t{True}\t{MAXLikelihoodToy}\t{locLikelihoodToy}\t{lratio}\t{logLToy.accurate}\t{logLToy.valid}\t{SEED+i}\n')
+            file.write(f'{SignalYield}\t{SignalMass}\t{logLToy.values[0]}\t{logLToy.values[1]}\t{True}\t{MAXLikelihoodToy}\t{locLikelihoodToy}\t{lratio}\t{logLToy.accurate}\t{logLToy.valid}\t{SEED+i}\n')
     
     PARS = np.array(PARS)
     Likelihood = np.array(Likelihood)
