@@ -1154,15 +1154,16 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     ## Scan parameters singularly
     for j in range(5):
         # Check if the signal yield and mass are fixed
-        #if 0 in freeIndices:
-        #    logL.fixed[0] = False
-        #    logL.fixed[1] = False
+        if 0 in freeIndices:
+            logL.fixed[0] = False
+            logL.fixed[1] = False
+            logL.scan()
         #    logL.simplex(ncall=100000)
         #    logL.strategy = 2
         #    logL.tol = 1e-10
         #    #logL.migrad(ncall = 100000, iterate = 5)
-        #    logL.fixed[0] = True
-        #    logL.fixed[1] = True
+            logL.fixed[0] = True
+            logL.fixed[1] = True
         for i in freeIndices:
             logL.fixed[i] = False
             logL.simplex(ncall=100000)
