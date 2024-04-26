@@ -1,4 +1,5 @@
 import X17pythonTask_2023
+from matplotlib import pyplot as plt
 import numpy as np
 import time
 import argparse
@@ -149,8 +150,12 @@ if __name__ == '__main__':
     FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, True, False])
 
     logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = True, FixedParameters = FixedParameters)
+
+    print(logL.values, logL.fval)
     
     X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, Toy = False)
+
+    print(logL.values, logL.fcn(logL.values))
 
     BestBetas = np.copy(betas)
     BestPars = np.copy(logL.values)
@@ -188,6 +193,8 @@ if __name__ == '__main__':
 
     HistsTest.DataArray = np.copy(HistsTest.DataArrayToy)
 
+    print(HistsTest.DataArray)
+
     FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, True, False])
     
     # Signal grid point
@@ -222,6 +229,16 @@ if __name__ == '__main__':
                 f.write(f'{DataSignalYield} {DataSignalMass} {SignalYield} {SignalMass} {fitN} {fitM} {MAXLikelihood} {locLikelihood} {datalRatio} {accurate} {valid} {DataSEED + i}\n')
     else:
         logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, HistsTest, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters)
+        ns = np.linspace(-100, 100, 201)
+        ys = []
+        for i in range(len(ns)):
+            ys.append(logL.fcn(np.concatenate([[ns[i]],logL.values[1:]])))
+
+        #fig = plt.figure(figsize = (14, 14), dpi=100)
+        #plt.plot(ns, ys)
+        #plt.savefig('Check.png')
+
+
         X17pythonTask_2023.plotComparison(HistsTest, logL.values, betas, channels, compareWithBetas=False, logL = logL, Toy = False, subfix='Test')
     
         print(BestPars)

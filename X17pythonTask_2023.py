@@ -336,6 +336,7 @@ class histHandler:
             self.BKGarrayNuisance5SigmaArrayToy = np.array(self.BKGarrayNuisance5SigmaArrayToy)
     
     def getMorphedMassArray(self, mass, massArray = []):
+        morphed = None
         if len(massArray) == 0:
             morphed = self.MassMorpher.morphTemplate(mass)
         else:
@@ -345,6 +346,9 @@ class histHandler:
         return morphed*(morphed > 1e-10)
     
     def getMorphedBKGarray(self, morph = [], mass = None):
+        tempArray = None
+        temphists = None
+        morphed = None
         if mass is not None:
             tempArray = self.getMorphedMassArray(mass, massArray=self.SignalArrayNuisance5Sigma)
             temphists = np.insert(self.BKGarray, 0, tempArray[0, self.alphaRefsIndex, :], axis=0)
@@ -364,6 +368,9 @@ class histHandler:
         return temphists
     
     def getMorphedBKGarrayToy(self, morph = [], mass = None):
+        tempArray = None
+        temphists = None
+        morphed = None
         if mass is not None:
             tempArray = self.getMorphedMassArray(mass, massArray=self.SignalArrayNuisance5SigmaToy)
             temphists = np.insert(self.BKGarrayToy, 0, tempArray[0, self.alphaRefsIndex, :], axis=0)
@@ -383,6 +390,8 @@ class histHandler:
         return temphists
     
     def getEstimate(self, yields, betas = 1, nus=1, morph = [], mass = None, multiplier = False):
+        temphists = None
+        totMCs = None
         if len(morph) > 0:
             temphists = self.getMorphedBKGarray(morph, mass = mass)
             totMCs = np.sum(temphists, axis=1)
@@ -407,6 +416,8 @@ class histHandler:
         return temphists
     
     def getEstimateToy(self, yields, betas = 1, nus=1, morph = [], mass = None, multiplier = False):
+        temphists = None
+        totMCs = None
         if len(morph) > 0:
             temphists = self.getMorphedBKGarrayToy(morph, mass = mass)
         elif mass is not None:
@@ -430,6 +441,8 @@ class histHandler:
         return temphists
 
     def getEstimateUncertainty(self, yields, betas = 1, nus=1, morph = [], mass = None, multiplier = False):
+        temphists = None
+        totMCs = None
         if len(morph) > 0:
             temphists = self.getMorphedBKGarray(morph, mass = mass)
             totMCs = np.sum(temphists, axis=1)
@@ -455,6 +468,8 @@ class histHandler:
         return np.sqrt(temphists)
     
     def getEstimateUncertaintyToy(self, yields, betas = 1, nus=1, morph = [], mass = None, multiplier = False):
+        temp = None
+        totMCs = None
         if len(morph) > 0:
             temp = self.getMorphedBKGarrayToy(morph, mass = mass)
         elif mass is not None:
@@ -479,6 +494,8 @@ class histHandler:
         return np.sqrt(temp)
     
     def getEstimateVariance(self, yields, betas = 1, nus=1, morph = [], mass = None, multiplier = False):
+        temphists = None
+        totMCs = None
         if len(morph) > 0:
             temphists = self.getMorphedBKGarray(morph, mass = mass)
             totMCs = np.sum(temphists, axis=1)
@@ -504,6 +521,8 @@ class histHandler:
         return temphists
     
     def getEstimateVarianceToy(self, yields, betas = 1, nus=1, morph = [], mass = None, multiplier = False):
+        temp = None
+        totMCs = None
         if len(morph) > 0:
             temp = self.getMorphedBKGarrayToy(morph, mass = mass)
         elif mass is not None:
@@ -528,6 +547,7 @@ class histHandler:
         return temp
 
     def generateToy(self, yields, betas = 1, nus=1, fluctuateTemplates = True, morph = [], mass = None):
+        temphists = None
         if fluctuateTemplates:
             #temphists *= betas*nus
             if len(morph) > 0:
@@ -1081,7 +1101,7 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
 def logLSetLimits(logL, alphavalues):
     # Set limits
     # Signal
-    logL.limits[0] = (-10000, 10000)
+    logL.limits[0] = (0, 10000)
     logL.limits[1] = (16.5, 17.3)
     
     # IPC
@@ -1171,7 +1191,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
         #if 0 in freeIndices:
         #    logL.fixed[0] = False
         #    logL.fixed[1] = False
-        #    logL.scan()
+        #    #logL.scan()
         #    logL.simplex(ncall=100000)
         #    logL.strategy = 2
         #    logL.tol = 1e-10
@@ -2083,6 +2103,15 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         print(logLToy.fixed)
         print(logLToy.values)
         lratio = locLikelihoodToy - MAXLikelihoodToy
+        
+        #ns = np.linspace(-50, 50, 101)
+        #ys = []
+        #for n in ns:
+        #    ys.append(logLToy.fcn(np.concatenate([[n], logLToy.values[1:]])))
+        #
+        #fig = plt.figure(figsize=(14, 14), dpi=100)
+        #plt.plot(ns, ys)
+        #plt.savefig(workDir + '../' + prefix + '_S' + str(SEED) + '_T' + str(i) + '.png')
         
         #plotComparison(Hists, logLToy.values, betasToy, Hists.channels, compareWithBetas=False, logL = logLToy, Toy = True, BKGnames=Hists.BKGnames, subfix='_' + prefix + '_S' + str(SEED) + '_T' + str(i))
         # Append result to file
