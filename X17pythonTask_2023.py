@@ -556,7 +556,7 @@ class histHandler:
                 if mass is not None:
                     # Prepare signal templates
                     temphists = np.copy(self.SignalArrayNuisance5Sigma)
-                    temphists = (np.random.poisson(temphists)).astype(float)
+                    #temphists = (np.random.poisson(temphists)).astype(float)
                     self.SignalArrayNuisance5SigmaToy = np.copy(temphists)
                     
                     # Get SignalArrayToy, they are redundant
@@ -564,7 +564,7 @@ class histHandler:
                 
                 # Prepare BKG templates
                 temphists = np.copy(self.BKGarrayNuisance5Sigma)
-                temphists = (np.random.poisson(temphists)).astype(float)
+                #temphists = (np.random.poisson(temphists)).astype(float)
                 self.BKGarrayNuisance5SigmaToy = np.copy(temphists)
                 
                 # Get BKGarrayToy, they are redundant
@@ -586,12 +586,12 @@ class histHandler:
                 if mass is not None:
                     # Prepare signal templates
                     temphists = np.copy(self.SignalArray)
-                    temphists = (np.random.poisson(temphists)).astype(float)
+                    #temphists = (np.random.poisson(temphists)).astype(float)
                     self.SignalArrayToy = np.copy(temphists)
                 
                 # Prepare BKG templates
                 temphists = np.copy(self.BKGarray)
-                temphists = (np.random.poisson(temphists)).astype(float)
+                #temphists = (np.random.poisson(temphists)).astype(float)
                 self.BKGarrayToy = np.copy(temphists)
         else:
             if mass is not None:
@@ -730,7 +730,7 @@ def plotChannels(channels, sample='dataHist', title='Data'):
         plt.ylim(minEsum, maxEsum)
         cbar = plt.colorbar()
         cbar.set_label(r'Counts/MeV/deg')
-        plt.show()
+        plt.savefig("2023data.png", bbox_inches='tight')
 
 # Create up/down  variables for field and resolution scaling
 def createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = False, esumCutLow = 0, esumCutHigh = 1000, angleCutLow = 0, angleCutHigh = 180):
@@ -778,8 +778,8 @@ def combinedBins(channels, sample='dataHist'):
 def readData(channels, workDir = './results/', dataFile = 'data2023.root', dataRunMax = 511000):
     TotalDataNumber = 0
     with uproot.open(workDir + dataFile + ':ntuple') as f:
-        esum = f.arrays(['esum'], '(theta_gamma > 80) * (run < ' + str(dataRunMax) + ')', library='np')['esum']*1e3
-        angle = f.arrays(['angle'], '(theta_gamma > 80) * (run < ' + str(dataRunMax) + ')', library='np')['angle']
+        esum = f.arrays(['esum'], '(theta_gamma >= 80) * (run < ' + str(dataRunMax) + ')', library='np')['esum']*1e3
+        angle = f.arrays(['angle'], '(theta_gamma >= 80) * (run < ' + str(dataRunMax) + ')', library='np')['angle']
         theta_gamma = f.arrays(['theta_gamma'], 'run < ' + str(dataRunMax), library='np')['theta_gamma']
         
         TotalDataNumber = len(theta_gamma)
@@ -878,22 +878,22 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                 _simpy_ele[(_ecode == 7) | (_ecode == 8)] = _simpy_ele[(_ecode == 7) | (_ecode == 8)]*0.152/0.1537
                 _simpz_ele[(_ecode == 7) | (_ecode == 8)] = _simpz_ele[(_ecode == 7) | (_ecode == 8)]*0.152/0.1537
             
-            _ecode = _ecode[theta_gamma > 80]
-            _esum = _esum[theta_gamma > 80]
-            _angle = _angle[theta_gamma > 80]
-            _px_pos = _px_pos[theta_gamma > 80]
-            _py_pos = _py_pos[theta_gamma > 80]
-            _pz_pos = _pz_pos[theta_gamma > 80]
-            _px_ele = _px_ele[theta_gamma > 80]
-            _py_ele = _py_ele[theta_gamma > 80]
-            _pz_ele = _pz_ele[theta_gamma > 80]
-            _simpx_pos = _simpx_pos[theta_gamma > 80]
-            _simpy_pos = _simpy_pos[theta_gamma > 80]
-            _simpz_pos = _simpz_pos[theta_gamma > 80]
-            _simpx_ele = _simpx_ele[theta_gamma > 80]
-            _simpy_ele = _simpy_ele[theta_gamma > 80]
-            _simpz_ele = _simpz_ele[theta_gamma > 80]
-            _siminvm = _siminvm[theta_gamma > 80]*1e3
+            _ecode = _ecode[theta_gamma >= 80]
+            _esum = _esum[theta_gamma >= 80]
+            _angle = _angle[theta_gamma >= 80]
+            _px_pos = _px_pos[theta_gamma >= 80]
+            _py_pos = _py_pos[theta_gamma >= 80]
+            _pz_pos = _pz_pos[theta_gamma >= 80]
+            _px_ele = _px_ele[theta_gamma >= 80]
+            _py_ele = _py_ele[theta_gamma >= 80]
+            _pz_ele = _pz_ele[theta_gamma >= 80]
+            _simpx_pos = _simpx_pos[theta_gamma >= 80]
+            _simpy_pos = _simpy_pos[theta_gamma >= 80]
+            _simpz_pos = _simpz_pos[theta_gamma >= 80]
+            _simpx_ele = _simpx_ele[theta_gamma >= 80]
+            _simpy_ele = _simpy_ele[theta_gamma >= 80]
+            _simpz_ele = _simpz_ele[theta_gamma >= 80]
+            _siminvm = _siminvm[theta_gamma >= 80]*1e3
             
             # Get Signal
             # Loop over masses
@@ -1060,6 +1060,9 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
     P += np.power((percent179 - _p179)/dP179, 2)
     P += np.power((percent181 - _p181)/dP181, 2)
     P += np.power((alphaField - _alphaField)/dAlphaField, 2)
+    
+    #pIPC181 = nIPC181/(nIPC176 + nIPC179 + nIPC181)
+    #P += np.power((pIPC181 - 0.05)/0.01, 2)
 
     # Compute statistical uncertainty
     estimateFunction = None
@@ -1310,7 +1313,7 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     else:
         fig = plt.figure(figsize=(28*binWidths.sum()/800, 14), dpi=100)
 
-    plt.subplots_adjust(hspace=0.0)
+    plt.subplots_adjust(hspace=0.0, top=0.98, bottom=0.15)
     plt.subplot(6, 1, (1, 4))
 
     # Bootstrap fit uncertainties
@@ -1384,15 +1387,15 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     xtickslabels = []
     for channel in Hists.channels.keys():
         esumBins = np.linspace(Hists.channels[channel]['Esum'][0], Hists.channels[channel]['Esum'][1], Hists.channels[channel]['Esum'][2]+1)
-        esumBins = (esumBins[1:] + esumBins[:-1])/2
+        #esumBins = (esumBins[1:] + esumBins[:-1])/2
         minAngle = Hists.channels[channel]['Angle'][0]
         maxAngle = Hists.channels[channel]['Angle'][1]
-        for esum in esumBins:
+        for esumMin, esumMax in zip(esumBins[:-1], esumBins[1:]):
             index = index + Hists.channels[channel]['Angle'][2]
             plt.vlines(binSides[index], 0, 1e5, colors='k', linestyles='dashed')
             # Text inside the box
             xticks.append(0.5*(binSides[index] + binSides[index-Hists.channels[channel]['Angle'][2]]))
-            xtickslabels.append(f'{esum:.1f} MeV\n[{minAngle}, {maxAngle}] deg')
+            xtickslabels.append(f'[{esumMin}, {esumMax}] MeV\n[{minAngle}, {maxAngle}] deg')
     
     plt.legend(loc='upper right', ncol=int(len(BKGnames)*0.5), fontsize=20)
     
@@ -1453,7 +1456,7 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     plt.gca().set_xticks(xticks)
     plt.gca().set_xticklabels(xtickslabels, fontsize=20)
     plt.xticks(rotation=45)
-    plt.savefig('Comparison' + subfix + '.png')
+    plt.savefig('Comparison' + subfix + '.png', bbox_inches='tight')
     
     fig = plt.figure(figsize=(14, 14), dpi=100)
     if compareWithBetas:
@@ -1734,56 +1737,56 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
         # Sample the nuisances
         if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
             if FixedParameters[5] == False:
-                tpars[5] = np.random.normal(newP176, dP176)
+                #tpars[5] = np.random.normal(newP176, dP176)
+                #while tpars[5] < 0 or tpars[5] > 1:
+                #    tpars[5] = np.random.normal(newP176, dP176)
                 _p176 = np.random.normal(newP176, dP176)
-                while tpars[5] < 0 or tpars[5] > 1:
-                    tpars[5] = np.random.normal(newP176, dP176)
                 while _p176 < 0 or _p176 > 1:
                     _p176 = np.random.normal(newP176, dP176)
             if FixedParameters[6] == False:
-                tpars[6] = np.random.normal(newP179, dP179)
+                #tpars[6] = np.random.normal(newP179, dP179)
+                #while tpars[6] < 0 or tpars[6] > 1:
+                #    tpars[6] = np.random.normal(newP179, dP179)
                 _p179 = np.random.normal(newP179, dP179)
-                while tpars[6] < 0 or tpars[6] > 1:
-                    tpars[6] = np.random.normal(newP179, dP179)
                 while _p179 < 0 or _p179 > 1:
                     _p179 = np.random.normal(newP179, dP179)
             if FixedParameters[7] == False:
-                tpars[7] = np.random.normal(newP181, dP181)
+                #tpars[7] = np.random.normal(newP181, dP181)
+                #while tpars[7] < 0 or tpars[7] > 1:
+                #    tpars[7] = np.random.normal(newP181, dP181)
                 _p181 = np.random.normal(newP181, dP181)
-                while tpars[7] < 0 or tpars[7] > 1:
-                    tpars[7] = np.random.normal(newP181, dP181)
                 while _p181 < 0 or _p181 > 1:
                     _p181 = np.random.normal(newP181, dP181)
             if FixedParameters[12] == False:
-                tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+                #tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+                #while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
+                #    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
-                while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
-                    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
                 while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                     _alphaField = np.random.normal(newAlphaField, dAlphaField)
         elif FixedParameters == False:
-            tpars[5] = np.random.normal(newP176, dP176)
+            #tpars[5] = np.random.normal(newP176, dP176)
+            #while tpars[5] < 0 or tpars[5] > 1:
+            #    tpars[5] = np.random.normal(newP176, dP176)
             _p176 = np.random.normal(newP176, dP176)
-            while tpars[5] < 0 or tpars[5] > 1:
-                tpars[5] = np.random.normal(newP176, dP176)
             while _p176 < 0 or _p176 > 1:
                 _p176 = np.random.normal(newP176, dP176)
-            tpars[6] = np.random.normal(newP179, dP179)
+            #tpars[6] = np.random.normal(newP179, dP179)
+            #while tpars[6] < 0 or tpars[6] > 1:
+            #    tpars[6] = np.random.normal(newP179, dP179)
             _p179 = np.random.normal(newP179, dP179)
-            while tpars[6] < 0 or tpars[6] > 1:
-                tpars[6] = np.random.normal(newP179, dP179)
             while _p179 < 0 or _p179 > 1:
                 _p179 = np.random.normal(newP179, dP179)
-            tpars[7] = np.random.normal(newP181, dP181)
+            #tpars[7] = np.random.normal(newP181, dP181)
+            #while tpars[7] < 0 or tpars[7] > 1:
+            #    tpars[7] = np.random.normal(newP181, dP181)
             _p181 = np.random.normal(newP181, dP181)
-            while tpars[7] < 0 or tpars[7] > 1:
-                tpars[7] = np.random.normal(newP181, dP181)
             while _p181 < 0 or _p181 > 1:
                 _p181 = np.random.normal(newP181, dP181)
-            tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+            #tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+            #while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
+            #    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
             _alphaField = np.random.normal(newAlphaField, dAlphaField)
-            while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
-                tpars[12] = np.random.normal(newAlphaField, dAlphaField)
             while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
         
@@ -1951,7 +1954,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
     
     datalRatio = locLikelihood - MAXLikelihood
     
-    prefix = 'FC_N%.0f_m%.2f' % (SignalYield, SignalMass) + '_T' + str(fluctuateTemplates)
+    prefix = 'AlternativeFC_N%.0f_m%.2f' % (SignalYield, SignalMass) + '_T' + str(fluctuateTemplates)
     outputFileName = prefix + '_S' + str(SEED) + '.txt'
     
     # Append result to file
@@ -1993,56 +1996,56 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         # Sample the nuisances
         if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
             if FixedParameters[5] == False:
-                tpars[5] = np.random.normal(newP176, dP176)
+                #tpars[5] = np.random.normal(newP176, dP176)
+                #while tpars[5] < 0 or tpars[5] > 1:
+                #    tpars[5] = np.random.normal(newP176, dP176)
                 _p176 = np.random.normal(newP176, dP176)
-                while tpars[5] < 0 or tpars[5] > 1:
-                    tpars[5] = np.random.normal(newP176, dP176)
                 while _p176 < 0 or _p176 > 1:
                     _p176 = np.random.normal(newP176, dP176)
             if FixedParameters[6] == False:
-                tpars[6] = np.random.normal(newP179, dP179)
+                #tpars[6] = np.random.normal(newP179, dP179)
+                #while tpars[6] < 0 or tpars[6] > 1:
+                #    tpars[6] = np.random.normal(newP179, dP179)
                 _p179 = np.random.normal(newP179, dP179)
-                while tpars[6] < 0 or tpars[6] > 1:
-                    tpars[6] = np.random.normal(newP179, dP179)
                 while _p179 < 0 or _p179 > 1:
                     _p179 = np.random.normal(newP179, dP179)
             if FixedParameters[7] == False:
-                tpars[7] = np.random.normal(newP181, dP181)
+                #tpars[7] = np.random.normal(newP181, dP181)
+                #while tpars[7] < 0 or tpars[7] > 1:
+                #    tpars[7] = np.random.normal(newP181, dP181)
                 _p181 = np.random.normal(newP181, dP181)
-                while tpars[7] < 0 or tpars[7] > 1:
-                    tpars[7] = np.random.normal(newP181, dP181)
                 while _p181 < 0 or _p181 > 1:
                     _p181 = np.random.normal(newP181, dP181)
             if FixedParameters[12] == False:
-                tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+                #tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+                #while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
+                #    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
-                while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
-                    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
                 while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                     _alphaField = np.random.normal(newAlphaField, dAlphaField)
         elif FixedParameters == False:
-            tpars[5] = np.random.normal(newP176, dP176)
+            #tpars[5] = np.random.normal(newP176, dP176)
+            #while tpars[5] < 0 or tpars[5] > 1:
+            #    tpars[5] = np.random.normal(newP176, dP176)
             _p176 = np.random.normal(newP176, dP176)
-            while tpars[5] < 0 or tpars[5] > 1:
-                tpars[5] = np.random.normal(newP176, dP176)
             while _p176 < 0 or _p176 > 1:
                 _p176 = np.random.normal(newP176, dP176)
-            tpars[6] = np.random.normal(newP179, dP179)
+            #tpars[6] = np.random.normal(newP179, dP179)
+            #while tpars[6] < 0 or tpars[6] > 1:
+            #    tpars[6] = np.random.normal(newP179, dP179)
             _p179 = np.random.normal(newP179, dP179)
-            while tpars[6] < 0 or tpars[6] > 1:
-                tpars[6] = np.random.normal(newP179, dP179)
             while _p179 < 0 or _p179 > 1:
                 _p179 = np.random.normal(newP179, dP179)
-            tpars[7] = np.random.normal(newP181, dP181)
+            #tpars[7] = np.random.normal(newP181, dP181)
+            #while tpars[7] < 0 or tpars[7] > 1:
+            #    tpars[7] = np.random.normal(newP181, dP181)
             _p181 = np.random.normal(newP181, dP181)
-            while tpars[7] < 0 or tpars[7] > 1:
-                tpars[7] = np.random.normal(newP181, dP181)
             while _p181 < 0 or _p181 > 1:
                 _p181 = np.random.normal(newP181, dP181)
-            tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+            #tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+            #while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
+            #    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
             _alphaField = np.random.normal(newAlphaField, dAlphaField)
-            while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
-                tpars[12] = np.random.normal(newAlphaField, dAlphaField)
             while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
         
@@ -2131,7 +2134,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
     Valid = np.array(Valid)
     Toy = np.array(Toy)
     
-    plotCheck(PARS, Likelihood, Toy, logLToy, SEED = SEED, prefix = prefix, TIME = TIME, workDir = workDir)
+    #plotCheck(PARS, Likelihood, Toy, logLToy, SEED = SEED, prefix = prefix, TIME = TIME, workDir = workDir)
 
     print(FixedParameters)
     
