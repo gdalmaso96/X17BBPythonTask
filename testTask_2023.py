@@ -106,7 +106,7 @@ BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.
 scalingFactor = [1/3., 1/3., 1/3., 1., 1., 1., 1., 1.]
 #scalingFactor = [1., 1., 1., 1., 1., 1., 1/3., 1/3.]
 scalingFactor = [1/3., 1/3., 1/3., 1/3., 1/3., 1/3., 1., 1.]
-scalingFactor = [1/5., 1/5., 1/5., 1., 1., 1., 1., 1.]
+#scalingFactor = [1/5., 1/5., 1/5., 1., 1., 1., 1., 1.]
 
 if fitFakes:
     BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15', 'Fakes']
