@@ -806,8 +806,12 @@ def removeDuplicates(MC):
     return MC
     
 
-def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/results/MC2023totOLDmerge.root:ntuple', workDir = './results/', MCFile = 'MC2023tot.root', ECODETYPE = 'ecode', MorphEPConly = False, X17masses = np.array([16.3, 16.5, 16.7, 16.9, 17.1, 17.3]), dX17mass = 0.0001, alphares = 0.005, alphafield = 0.005, esumCutLow = 16, esumCutHigh = 20, angleCutLow = 115, angleCutHigh = 160, BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15'], alphaNames = ['res', 'field'], AlternativeResolutionScale = True):
+def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/results/MC2023totOLDmerge.root:ntuple', workDir = './results/', MCFile = 'MC2023tot.root', ECODETYPE = 'ecode', MorphEPConly = False, X17masses = np.array([16.3, 16.5, 16.7, 16.9, 17.1, 17.3]), dX17mass = 0.0001, alphares = 0.005, alphafield = 0.005, esumCutLow = 16, esumCutHigh = 20, angleCutLow = 115, angleCutHigh = 160, BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15'], alphaNames = ['res', 'field'], AlternativeResolutionScale = True, scalingFactor = 1):
     TotalMCStatistics = []
+    
+    if scalingFactor == 1:
+        scalingFactor = np.ones(len(BKGnames))
+        
     with uproot.open(CUTfile) as fCUT:
         MCCUT = fCUT.arrays([ECODETYPE, 'run', 'event'], library='np')
         
@@ -837,7 +841,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             ecode = MC[ECODETYPE]
             
             for i in range(1, 9):
-                TotalMCStatistics.append(np.sum(ecode == i))
+                TotalMCStatistics.append(np.sum(ecode == i)*scalingFactor[i - 1])
             
             _ecode = MC[ECODETYPE][selectionCUT]
             _esum = MC['esum'][selectionCUT]*1e3*alphaFieldCorrection
@@ -984,7 +988,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                 for channel in channels.keys():
                     hist = np.histogram2d(esum, angle, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]*factor
                     
-                    channels[channel][BKGnames[i-1]] = np.copy(hist)
+                    channels[channel][BKGnames[i-1]] = np.copy(hist)*scalingFactor[i - 1]
                     
                     for j in range(1, 6):
                         if i < 7:
@@ -1002,10 +1006,10 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                             histres_dn = np.histogram2d(esumres_dn, angleres_dn, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]*factor
                             histfield_up = np.histogram2d(esumfield_up, anglefield_up, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]*factor
                             histfield_dn = np.histogram2d(esumfield_dn, anglefield_dn, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]*factor
-                        channels[channel][BKGnames[i-1] + 'res_%dup' %(j)] = np.copy(histres_up)
-                        channels[channel][BKGnames[i-1] + 'res_%ddn' %(j)] = np.copy(histres_dn)
-                        channels[channel][BKGnames[i-1] + 'field_%dup' %(j)] = np.copy(histfield_up)
-                        channels[channel][BKGnames[i-1] + 'field_%ddn' %(j)] = np.copy(histfield_dn)
+                        channels[channel][BKGnames[i-1] + 'res_%dup' %(j)] = np.copy(histres_up)*scalingFactor[i - 1]
+                        channels[channel][BKGnames[i-1] + 'res_%ddn' %(j)] = np.copy(histres_dn)*scalingFactor[i - 1]
+                        channels[channel][BKGnames[i-1] + 'field_%dup' %(j)] = np.copy(histfield_up)*scalingFactor[i - 1]
+                        channels[channel][BKGnames[i-1] + 'field_%ddn' %(j)] = np.copy(histfield_dn)*scalingFactor[i - 1]
                         
                     channels[channel][BKGnames[i-1] + 'res_up'] = np.copy(channels[channel][BKGnames[i-1] + 'res_1up'])
                     channels[channel][BKGnames[i-1] + 'res_dn'] = np.copy(channels[channel][BKGnames[i-1] + 'res_1dn'])

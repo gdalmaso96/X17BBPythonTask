@@ -102,6 +102,12 @@ channels = {
 }
 
 BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15']
+
+scalingFactor = [1/3., 1/3., 1/3., 1., 1., 1., 1., 1.]
+#scalingFactor = [1., 1., 1., 1., 1., 1., 1/3., 1/3.]
+scalingFactor = [1/3., 1/3., 1/3., 1/3., 1/3., 1/3., 1., 1.]
+scalingFactor = [1/5., 1/5., 1/5., 1., 1., 1., 1., 1.]
+
 if fitFakes:
     BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15', 'Fakes']
 
@@ -114,7 +120,7 @@ TotalDataNumber, channels = X17pythonTask_2023.readData(channels, workDir = work
 #X17pythonTask_2023.plotChannels(channels, sample='dataHist', title='Data')
 
 # Load MC
-TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames)
+TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor)
 
 alphavalues = [np.linspace(-5*alphares, 5*alphares, 11), np.linspace(-5*alphafield, 5*alphafield, 11)]
 alphaRefs = [0, 0]
@@ -124,7 +130,7 @@ Hists = X17pythonTask_2023.histHandler(channels, 'dataHist', 'X17', BKGnames, 'E
 ################################################################################################################################################
 # Fit sidebands
 startingPars = np.array([100, 16.9, 4e5, 1e4, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0])
-FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False])
+FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, True, False])
 if fitFakes:
     startingPars = np.concatenate([startingPars, [1e2]])
     FixedParameters = np.concatenate([FixedParameters, [False]])
@@ -146,7 +152,7 @@ Valid = []
 totPars = logL.values
 BETAS = betas
 
-PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 10000, doNullHypothesis = True, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
+PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 100, doNullHypothesis = True, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
 
 print('Time elapsed: ', time.time() - startTime)
 
