@@ -820,13 +820,20 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
         eventCUT = MCCUT['event']
             
         with uproot.open(workDir + MCFile + ':ntuple') as f:
-            MC = f.arrays(['esum', 'angle', ECODETYPE, 'px_pos', 'py_pos', 'pz_pos', 'px_ele', 'py_ele', 'pz_ele', 'simpx_pos', 'simpy_pos', 'simpz_pos', 'simpx_ele', 'simpy_ele', 'simpz_ele', 'siminvm', 'run', 'event', 'theta_gamma'], library='np')
+            MC = f.arrays(['esum', 'angle', ECODETYPE, 'px_pos', 'py_pos', 'pz_pos', 'px_ele', 'py_ele', 'pz_ele', 'simpx_pos', 'simpy_pos', 'simpz_pos', 'simpx_ele', 'simpy_ele', 'simpz_ele', 'siminvm', 'run', 'event', 'theta_gamma', 'simbeamenergy'], library='np')
             
             MC = removeDuplicates(MC)
             
             # Select from MC only events in common with MCCUT
             selectionCUT = np.isin(MC['run'], runCUT) & np.isin(MC['event'], eventCUT)
-            selectionCUT = selectionCUT | (MC[ECODETYPE] == 0)| (MC[ECODETYPE] == 1) | (MC[ECODETYPE] == 2) | (MC[ECODETYPE] == 3) | (MC[ECODETYPE] == 4) | (MC[ECODETYPE] == 5) | (MC[ECODETYPE] == 6) | (MC[ECODETYPE] == 7) | (MC[ECODETYPE] == 8)
+            selectionCUT = selectionCUT | (MC[ECODETYPE] == 0) | (MC[ECODETYPE] == 7) | (MC[ECODETYPE] == 8)
+            
+            # Reduce proton beam energy bins
+            selectionCUT400  = ( (MC[ECODETYPE] == 1) | (MC[ECODETYPE] == 4)) & (MC['simbeamenergy'] > 0 ) & (MC['simbeamenergy'] < 2000 )
+            selectionCUT700  = ( (MC[ECODETYPE] == 2) | (MC[ECODETYPE] == 5)) & (MC['simbeamenergy'] > 0 ) & (MC['simbeamenergy'] < 2000 )
+            selectionCUT1000 = ( (MC[ECODETYPE] == 3) | (MC[ECODETYPE] == 6)) & (MC['simbeamenergy'] > 0 ) & (MC['simbeamenergy'] < 2000 )
+            
+            selectionCUT = selectionCUT | (selectionCUT400 | selectionCUT700 | selectionCUT1000)
             
             theta_gamma = MC['theta_gamma'][selectionCUT]
             
