@@ -87,17 +87,17 @@ channels = {
     'ch3': {
         'name': 'X17 2023, low energy, high angle',
         'Esum': [15, 16, 1],
-        'Angle': [80, 180, 5]
+        'Angle': [80, 160, 4]
     },
-    #'ch4': {
-    #    'name': 'X17 2023, low energy, high angle, last bin',
-    #    'Esum': [15, 16, 1],
-    #    'Angle': [160, 170, 1]
-    #},
+    'ch4': {
+        'name': 'X17 2023, low energy, high angle, last bin',
+        'Esum': [15, 16, 1],
+        'Angle': [160, 170, 1]
+    },
     'ch5': {
         'name': 'X17 2023, high energy, high angle',
         'Esum': [16, 20, 2],
-        'Angle': [80, 180, 10]
+        'Angle': [80, 170, 9]
     },
 }
 
@@ -107,6 +107,7 @@ scalingFactor = [1/3., 1/3., 1/3., 1., 1., 1., 1., 1.]
 #scalingFactor = [1., 1., 1., 1., 1., 1., 1/3., 1/3.]
 scalingFactor = [1/3., 1/3., 1/3., 1/3., 1/3., 1/3., 1., 1.]
 #scalingFactor = [1/5., 1/5., 1/5., 1., 1., 1., 1., 1.]
+scalingFactor = 1
 
 if fitFakes:
     BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15', 'Fakes']
@@ -120,7 +121,13 @@ TotalDataNumber, channels = X17pythonTask_2023.readData(channels, workDir = work
 #X17pythonTask_2023.plotChannels(channels, sample='dataHist', title='Data')
 
 # Load MC
-TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor)
+simbeamEnergy = {
+    'IPC400': [0, 2], # energy in MeV of simulated proton beam
+    'IPC700': [0, 2], # energy in MeV of simulated proton beam
+    'IPC1000': [0, 2] # energy in MeV of simulated proton beam
+    }
+
+TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor, simbeamEnergy = simbeamEnergy)
 
 alphavalues = [np.linspace(-5*alphares, 5*alphares, 11), np.linspace(-5*alphafield, 5*alphafield, 11)]
 alphaRefs = [0, 0]
@@ -152,7 +159,7 @@ Valid = []
 totPars = logL.values
 BETAS = betas
 
-PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 100, doNullHypothesis = True, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
+PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 1000, doNullHypothesis = True, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
 
 print('Time elapsed: ', time.time() - startTime)
 

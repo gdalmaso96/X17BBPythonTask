@@ -806,7 +806,7 @@ def removeDuplicates(MC):
     return MC
     
 
-def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/results/MC2023totOLDmerge.root:ntuple', workDir = './results/', MCFile = 'MC2023tot.root', ECODETYPE = 'ecode', MorphEPConly = False, X17masses = np.array([16.3, 16.5, 16.7, 16.9, 17.1, 17.3]), dX17mass = 0.0001, alphares = 0.005, alphafield = 0.005, esumCutLow = 16, esumCutHigh = 20, angleCutLow = 115, angleCutHigh = 160, BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15'], alphaNames = ['res', 'field'], AlternativeResolutionScale = True, scalingFactor = 1):
+def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/results/MC2023totOLDmerge.root:ntuple', workDir = './results/', MCFile = 'MC2023tot.root', ECODETYPE = 'ecode', MorphEPConly = False, X17masses = np.array([16.3, 16.5, 16.7, 16.9, 17.1, 17.3]), dX17mass = 0.0001, alphares = 0.005, alphafield = 0.005, esumCutLow = 16, esumCutHigh = 20, angleCutLow = 115, angleCutHigh = 160, BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15'], alphaNames = ['res', 'field'], AlternativeResolutionScale = True, scalingFactor = 1, simbeamEnergy = {'IPC400': [0, 2], 'IPC700': [0, 2], 'IPC1000': [0, 2]}):
     TotalMCStatistics = []
     
     if scalingFactor == 1:
@@ -829,9 +829,12 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             selectionCUT = selectionCUT | (MC[ECODETYPE] == 0) | (MC[ECODETYPE] == 7) | (MC[ECODETYPE] == 8)
             
             # Reduce proton beam energy bins
-            selectionCUT400  = ( (MC[ECODETYPE] == 1) | (MC[ECODETYPE] == 4)) & (MC['simbeamenergy'] > 0 ) & (MC['simbeamenergy'] < 2000 )
-            selectionCUT700  = ( (MC[ECODETYPE] == 2) | (MC[ECODETYPE] == 5)) & (MC['simbeamenergy'] > 0 ) & (MC['simbeamenergy'] < 2000 )
-            selectionCUT1000 = ( (MC[ECODETYPE] == 3) | (MC[ECODETYPE] == 6)) & (MC['simbeamenergy'] > 0 ) & (MC['simbeamenergy'] < 2000 )
+            selectionCUT400  = ( (MC[ECODETYPE] == 1) | (MC[ECODETYPE] == 4)) 
+            selectionCUT700  = ( (MC[ECODETYPE] == 2) | (MC[ECODETYPE] == 5)) 
+            selectionCUT1000 = ( (MC[ECODETYPE] == 3) | (MC[ECODETYPE] == 6)) 
+            selectionCUT400  = selectionCUT400  & (MC['simbeamenergy'] > simbeamEnergy['IPC400'][0] ) & (MC['simbeamenergy'] < simbeamEnergy['IPC400'][1] )
+            selectionCUT700  = selectionCUT700  & (MC['simbeamenergy'] > simbeamEnergy['IPC700'][0] ) & (MC['simbeamenergy'] < simbeamEnergy['IPC700'][1] )
+            selectionCUT1000 = selectionCUT1000 & (MC['simbeamenergy'] > simbeamEnergy['IPC1000'][0]) & (MC['simbeamenergy'] < simbeamEnergy['IPC1000'][1])
             
             selectionCUT = selectionCUT | (selectionCUT400 | selectionCUT700 | selectionCUT1000)
             
