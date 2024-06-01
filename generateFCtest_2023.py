@@ -110,6 +110,7 @@ angleCutHigh = 160
 dataRunMax = 511000
 
 workDir = './results/'
+#workDir = '/data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/results/'
 dataFile = 'data2023.root'
 MCFile = 'MC2023tot.root'
 
@@ -211,7 +212,8 @@ if __name__ == '__main__':
     # Signal grid point
     print('Start FC generation after ', time.time() - startTime, ' seconds')
     if generateDataSets:
-        outputFileName = 'DataFC_N%d_m%.2f_NGrid%d_MGrid%.2f_SEED%d.txt' % (DataSignalYield, DataSignalMass, SignalYield, SignalMass, DataSEED)
+        outputFileName = 'DataAlternativeFC_N%d_m%.2f_NGrid%d_MGrid%.2f_SEED%d.txt' % (DataSignalYield, DataSignalMass, SignalYield, SignalMass, DataSEED)
+        #outputFileName = 'DataFC_N%d_m%.2f_NGrid%d_MGrid%.2f_SEED%d.txt' % (DataSignalYield, DataSignalMass, SignalYield, SignalMass, DataSEED)
         with open(workDir + outputFileName, 'w') as f:
             f.write('#DataSignalYield DataSignalMass SignalYield SignalMass FitYield FitMass MAXLikelihood locLikelihood datalRatio accurate valid DataSEED\n')
         for i in range(nToys):
