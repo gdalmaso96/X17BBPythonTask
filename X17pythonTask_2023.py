@@ -17,11 +17,13 @@ matplotlib.rcParams['figure.facecolor'] = 'white'
 
 massElectron = 0.5109989461 #MeV
 
-ratio176 = 3.84 # +- 0.27
+#ratio176 = 3.84 # +- 0.27
+ratio176 = 1.97 # +- 0.15
 ratio179 = 0.93 # +- 0.07
 ratio181 = 0.74 # +- 0.06
 
-dRatio176 = 0.27
+#dRatio176 = 0.27
+dRatio176 = 0.15
 dRatio179 = 0.07
 dRatio181 = 0.06
 
@@ -848,7 +850,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             
             
             # Get TotalMCStatistics
-            ecode = MC[ECODETYPE]
+            ecode = MC[ECODETYPE][selectionCUT]
             
             for i in range(1, 9):
                 TotalMCStatistics.append(np.sum(ecode == i)*scalingFactor[i - 1])

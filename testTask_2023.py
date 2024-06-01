@@ -6,11 +6,13 @@ startTime = time.time()
 
 massElectron = 0.5109989461 #MeV
 
-ratio176 = 3.84 # +- 0.27
+#ratio176 = 3.84 # +- 0.27
+ratio176 = 1.97 # +- 0.15
 ratio179 = 0.93 # +- 0.07
 ratio181 = 0.74 # +- 0.06
 
-dRatio176 = 0.27
+#dRatio176 = 0.27
+dRatio176 = 0.15
 dRatio179 = 0.07
 dRatio181 = 0.06
 
@@ -87,27 +89,24 @@ channels = {
     'ch3': {
         'name': 'X17 2023, low energy, high angle',
         'Esum': [15, 16, 1],
-        'Angle': [80, 160, 4]
+        'Angle': [80, 180, 5]
     },
-    'ch4': {
-        'name': 'X17 2023, low energy, high angle, last bin',
-        'Esum': [15, 16, 1],
-        'Angle': [160, 170, 1]
-    },
+    #'ch4': {
+    #    'name': 'X17 2023, low energy, high angle, last bin',
+    #    'Esum': [15, 16, 1],
+    #    'Angle': [160, 170, 1]
+    #},
     'ch5': {
         'name': 'X17 2023, high energy, high angle',
         'Esum': [16, 20, 2],
-        'Angle': [80, 170, 9]
+        'Angle': [80, 180, 10]
     },
 }
 
 BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15']
 
-scalingFactor = [1/3., 1/3., 1/3., 1., 1., 1., 1., 1.]
-#scalingFactor = [1., 1., 1., 1., 1., 1., 1/3., 1/3.]
-scalingFactor = [1/3., 1/3., 1/3., 1/3., 1/3., 1/3., 1., 1.]
-#scalingFactor = [1/5., 1/5., 1/5., 1., 1., 1., 1., 1.]
-scalingFactor = 1
+scalingFactor = [1/2., 1/2., 1/2., 1/2., 1/2., 1/2., 1., 1.]
+#scalingFactor = 1
 
 if fitFakes:
     BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15', 'Fakes']
@@ -122,9 +121,9 @@ TotalDataNumber, channels = X17pythonTask_2023.readData(channels, workDir = work
 
 # Load MC
 simbeamEnergy = {
-    'IPC400': [0, 2], # energy in MeV of simulated proton beam
-    'IPC700': [0, 2], # energy in MeV of simulated proton beam
-    'IPC1000': [0, 2] # energy in MeV of simulated proton beam
+    'IPC400': [0.42, 0.46], # energy in MeV of simulated proton beam
+    'IPC700': [0.593, 0.836], # energy in MeV of simulated proton beam
+    'IPC1000': [0.980, 1.060] # energy in MeV of simulated proton beam
     }
 
 TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor, simbeamEnergy = simbeamEnergy)
@@ -159,7 +158,7 @@ Valid = []
 totPars = logL.values
 BETAS = betas
 
-PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 1000, doNullHypothesis = True, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
+#PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 1000, doNullHypothesis = True, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
 
 print('Time elapsed: ', time.time() - startTime)
 
