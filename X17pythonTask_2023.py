@@ -777,11 +777,11 @@ def combinedBins(channels, sample='dataHist'):
             bins.append(np.diff(bin))
     return np.concatenate(bins)
 
-def readData(channels, workDir = './results/', dataFile = 'data2023.root', dataRunMax = 511000):
+def readData(channels, workDir = './results/', dataFile = 'data2023.root', dataRunMax = 511000, angleUS = 180):
     TotalDataNumber = 0
     with uproot.open(workDir + dataFile + ':ntuple') as f:
-        esum = f.arrays(['esum'], '(theta_gamma >= 80) * (run < ' + str(dataRunMax) + ')', library='np')['esum']*1e3
-        angle = f.arrays(['angle'], '(theta_gamma >= 80) * (run < ' + str(dataRunMax) + ')', library='np')['angle']
+        esum = f.arrays(['esum'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * (run < ' + str(dataRunMax) + ')', library='np')['esum']*1e3
+        angle = f.arrays(['angle'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * (run < ' + str(dataRunMax) + ')', library='np')['angle']
         theta_gamma = f.arrays(['theta_gamma'], 'run < ' + str(dataRunMax), library='np')['theta_gamma']
         
         TotalDataNumber = len(theta_gamma)
@@ -808,7 +808,7 @@ def removeDuplicates(MC):
     return MC
     
 
-def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/results/MC2023totOLDmerge.root:ntuple', workDir = './results/', MCFile = 'MC2023tot.root', ECODETYPE = 'ecode', MorphEPConly = False, X17masses = np.array([16.3, 16.5, 16.7, 16.9, 17.1, 17.3]), dX17mass = 0.0001, alphares = 0.005, alphafield = 0.005, esumCutLow = 16, esumCutHigh = 20, angleCutLow = 115, angleCutHigh = 160, BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15'], alphaNames = ['res', 'field'], AlternativeResolutionScale = True, scalingFactor = 1, simbeamEnergy = {'IPC400': [0, 2], 'IPC700': [0, 2], 'IPC1000': [0, 2]}):
+def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/results/MC2023totOLDmerge.root:ntuple', workDir = './results/', MCFile = 'MC2023tot.root', ECODETYPE = 'ecode', MorphEPConly = False, X17masses = np.array([16.3, 16.5, 16.7, 16.9, 17.1, 17.3]), dX17mass = 0.0001, alphares = 0.005, alphafield = 0.005, esumCutLow = 16, esumCutHigh = 20, angleCutLow = 115, angleCutHigh = 160, BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15'], alphaNames = ['res', 'field'], AlternativeResolutionScale = True, scalingFactor = 1, simbeamEnergy = {'IPC400': [0, 2], 'IPC700': [0, 2], 'IPC1000': [0, 2]}, angleUS = 180):
     TotalMCStatistics = []
     
     if scalingFactor == 1:
@@ -841,6 +841,8 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             selectionCUT = selectionCUT | (selectionCUT400 | selectionCUT700 | selectionCUT1000)
             
             theta_gamma = MC['theta_gamma'][selectionCUT]
+            angle = MC['angle'][selectionCUT]
+            
             
             alphaResCorrection = 1
             if MorphEPConly:
@@ -894,22 +896,22 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                 _simpy_ele[(_ecode == 7) | (_ecode == 8)] = _simpy_ele[(_ecode == 7) | (_ecode == 8)]*0.152/0.1537
                 _simpz_ele[(_ecode == 7) | (_ecode == 8)] = _simpz_ele[(_ecode == 7) | (_ecode == 8)]*0.152/0.1537
             
-            _ecode = _ecode[theta_gamma >= 80]
-            _esum = _esum[theta_gamma >= 80]
-            _angle = _angle[theta_gamma >= 80]
-            _px_pos = _px_pos[theta_gamma >= 80]
-            _py_pos = _py_pos[theta_gamma >= 80]
-            _pz_pos = _pz_pos[theta_gamma >= 80]
-            _px_ele = _px_ele[theta_gamma >= 80]
-            _py_ele = _py_ele[theta_gamma >= 80]
-            _pz_ele = _pz_ele[theta_gamma >= 80]
-            _simpx_pos = _simpx_pos[theta_gamma >= 80]
-            _simpy_pos = _simpy_pos[theta_gamma >= 80]
-            _simpz_pos = _simpz_pos[theta_gamma >= 80]
-            _simpx_ele = _simpx_ele[theta_gamma >= 80]
-            _simpy_ele = _simpy_ele[theta_gamma >= 80]
-            _simpz_ele = _simpz_ele[theta_gamma >= 80]
-            _siminvm = _siminvm[theta_gamma >= 80]*1e3
+            _ecode = _ecode[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _esum = _esum[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _angle = _angle[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _px_pos = _px_pos[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _py_pos = _py_pos[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _pz_pos = _pz_pos[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _px_ele = _px_ele[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _py_ele = _py_ele[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _pz_ele = _pz_ele[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _simpx_pos = _simpx_pos[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _simpy_pos = _simpy_pos[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _simpz_pos = _simpz_pos[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _simpx_ele = _simpx_ele[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _simpy_ele = _simpy_ele[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _simpz_ele = _simpz_ele[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _siminvm = _siminvm[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]*1e3
             
             # Get Signal
             # Loop over masses
