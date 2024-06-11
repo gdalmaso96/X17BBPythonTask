@@ -123,11 +123,12 @@ class MorphTemplate1D:
         res = res*(res > 0)
         return res
 
+# For the moment a list of signals can be given, but they all need to be given for the same masses
 class histHandler:
-    def __init__(self, channels, dataName, signalName, BKGnames, var1, var2, alphaNames = [], alphavalues = [], alphaRefs = [], TotalMCStatistics = [], masses = [], massRef = 16.9):
+    def __init__(self, channels, dataName, signalNames, BKGnames, var1, var2, alphaNames = [], alphavalues = [], alphaRefs = [], TotalMCStatistics = [], masses = [], massRef = 16.9):
         self.channels = channels
         self.dataName = dataName
-        self.signalName = signalName
+        self.signalNames = signalNames
         self.BKGnames = BKGnames
         self.alphaNames = alphaNames
         self.alphavalues = alphavalues
@@ -142,6 +143,8 @@ class histHandler:
         self.var2 = var2
         self.DataArray = []
         self.DataArrayToy = []
+        
+        # Signals
         self.SignalArray = []
         self.SignalArrayToy = []
         self.SignalArrayNuisance = []
@@ -152,6 +155,8 @@ class histHandler:
         self.SignalArrayNuisance5SigmaArrayToy = []
         self.nMCsSignal = []
         self.nMCsSignalFractions = []
+        
+        # Backgrounds
         self.BKGarray = []
         self.BKGarrayCumSum = []
         self.BKGarrayNuisance = []
@@ -163,7 +168,7 @@ class histHandler:
         self.BKGarrayNuisance5SigmaArrayToy = []
         self.nMCs = []
         self.nMCsFractions = []
-        self.MassMorpher = []
+        self.MassMorpher = None
         self.morphers = []
         self.initializeArrays()
         
@@ -175,18 +180,23 @@ class histHandler:
             hist.append(self.channels[channel][self.dataName].flatten())
         self.DataArray = np.concatenate(hist)
         
-        # Produce 1D array of signal
-        hist = []
-        nMCs = []
+        # Produce 1D array of signals
         if len(self.masses) > 0:
-            for i in range(len(self.masses)):
-                thist = []
-                for channel in self.channels.keys():
-                    thist.append(self.channels[channel][self.signalName+'%.1f'%self.masses[i]].flatten())
-                hist.append(np.concatenate(thist))
-                nMCs.append(hist[-1].sum())
-            self.SignalArray = np.array(hist)
-            self.nMCsSignal = np.array(nMCs)
+            for j in range(len(self.signalNames)):
+                hist = []
+                nMCs = []
+                for i in range(len(self.masses)):
+                    thist = []
+                    for channel in self.channels.keys():
+                        thist.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[i]].flatten())
+                    hist.append(np.concatenate(thist))
+                    nMCs.append(hist[-1].sum())
+                try:
+                    self.SignalArray = np.stack((self.SignalArray, hist))
+                    self.nMCsSignal = np.stack((self.nMCsSignal, nMCs))
+                except:
+                    self.SignalArray = np.array(hist)
+                    self.nMCsSignal = np.array(nMCs)
         
         # Produce 1D BKG arrays
         hist = []
@@ -208,62 +218,96 @@ class histHandler:
         # The output is a histogram to be added to BKGarray and BKGarrayNuisance sets when estimating the final distributions
         # The first index runs on the masses
         # On each position the format is the same as for each background
-        hist = []
-        nMCs = []
         if len(self.masses) > 0:
-            for i in range(len(self.masses)):
-                thist = []
-                for channel in self.channels.keys():
-                    thist.append(self.channels[channel][self.signalName+'%.1f'%self.masses[i]].flatten())
-                hist.append(np.concatenate(thist))
-                nMCs.append(hist[-1].sum())
-            self.SignalArray = np.array(hist)
-            self.nMCsSignal = np.array(nMCs)
-            self.SignalArrayToy = np.array(hist)
-            self.MassMorpher = MorphTemplate1D(self.SignalArray, self.masses, self.massRef)
+            self.SignalArray = np.array([])
+            self.nMCsSignal = np.array([])
+            self.SignalArrayToy = np.array([])
             
-            hist = []
-            if len(self.alphaNames) > 0:
-                for m in range(len(self.masses)):
-                    histSet = []
-                    thistSet = []
-                    for a in range(len(self.alphaNames)):
-                        thist_5dn = []
-                        thist_4dn = []
-                        thist_3dn = []
-                        thist_2dn = []
-                        thist_dn = []
-                        thist = []
-                        thist_up = []
-                        thist_2up = []
-                        thist_3up = []
-                        thist_4up = []
-                        thist_5up = []
-                        for channel in self.channels.keys():
-                            thist_5dn.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_5dn"].flatten())
-                            thist_4dn.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_4dn"].flatten())
-                            thist_3dn.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_3dn"].flatten())
-                            thist_2dn.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_2dn"].flatten())
-                            thist_dn.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_1dn"].flatten())
-                            thist.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]].flatten())
-                            thist_up.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_1up"].flatten())
-                            thist_2up.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_2up"].flatten())
-                            thist_3up.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_3up"].flatten())
-                            thist_4up.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_4up"].flatten())
-                            thist_5up.append(self.channels[channel][self.signalName+'%.1f'%self.masses[m]+self.alphaNames[a]+"_5up"].flatten())
-                        histSet.append(np.array([np.concatenate(thist_5dn), np.concatenate(thist_4dn), np.concatenate(thist_3dn), np.concatenate(thist_2dn), np.concatenate(thist_dn), np.concatenate(thist), np.concatenate(thist_up), np.concatenate(thist_2up), np.concatenate(thist_3up), np.concatenate(thist_4up), np.concatenate(thist_5up)]))
-                        thistSet.append(np.array([np.concatenate(thist_5dn), np.concatenate(thist_4dn), np.concatenate(thist_3dn), np.concatenate(thist_2dn), np.concatenate(thist_dn), np.concatenate(thist), np.concatenate(thist_up), np.concatenate(thist_2up), np.concatenate(thist_3up), np.concatenate(thist_4up), np.concatenate(thist_5up)])/(self.SignalArray[self.massIndex] + 1*(self.SignalArray[self.massIndex] == 0)))
-                    if len(self.alphaRefs) > 0 and len(self.alphavalues) > 0:
-                        #thist = np.swapaxes(thistSet, 1, 2)
-                        #thist = np.concatenate(thist, axis=0)
-                        #thist = np.swapaxes(thist, 0, 1)
-                        self.SignalArrayNuisance5SigmaArrayToy.append(np.array(thistSet))
-                    self.SignalArrayNuisance5SigmaToy.append(np.array(histSet))
-                    self.SignalArrayNuisance5Sigma.append(np.array(histSet))
-            self.SignalArrayNuisance5Sigma = np.array(self.SignalArrayNuisance5Sigma)
-            self.SignalArrayNuisance5SigmaArray = np.array(self.SignalArrayNuisance5SigmaArrayToy)
-            self.SignalArrayNuisance5SigmaToy = np.array(self.SignalArrayNuisance5SigmaToy)
-            self.SignalArrayNuisance5SigmaArrayToy = np.array(self.SignalArrayNuisance5SigmaArrayToy)
+            self.SignalArrayNuisance5Sigma = np.array([])
+            self.SignalArrayNuisance5SigmaArray = np.array([])
+            self.SignalArrayNuisance5SigmaToy = np.array([])
+            self.SignalArrayNuisance5SigmaArrayToy = np.array([])
+            
+            for j in range(len(self.signalNames)):
+                hist = []
+                nMCs = []
+                tempSignalArrayNuisance5Sigma         = []
+                tempSignalArrayNuisance5SigmaToy      = []
+                tempSignalArrayNuisance5SigmaArrayToy = []
+                for i in range(len(self.masses)):
+                    thist = []
+                    for channel in self.channels.keys():
+                        thist.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[i]].flatten())
+                    hist.append(np.concatenate(thist))
+                    nMCs.append(hist[-1].sum())
+                
+                try:
+                    self.SignalArray    = np.stack((self.SignalArray, hist))
+                    self.nMCsSignal     = np.stack((self.nMCsSignal, nMCs))
+                    self.SignalArrayToy = np.stack((self.SignalArrayToy, hist))
+                except:
+                    self.SignalArray    = np.array(hist)
+                    self.nMCsSignal     = np.array(nMCs)
+                    self.SignalArrayToy = np.array(hist)
+                
+                hist = []
+                if len(self.alphaNames) > 0:
+                    for m in range(len(self.masses)):
+                        histSet = []
+                        thistSet = []
+                        for a in range(len(self.alphaNames)):
+                            thist_5dn = []
+                            thist_4dn = []
+                            thist_3dn = []
+                            thist_2dn = []
+                            thist_dn = []
+                            thist = []
+                            thist_up = []
+                            thist_2up = []
+                            thist_3up = []
+                            thist_4up = []
+                            thist_5up = []
+                            for channel in self.channels.keys():
+                                thist_5dn.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_5dn"].flatten())
+                                thist_4dn.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_4dn"].flatten())
+                                thist_3dn.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_3dn"].flatten())
+                                thist_2dn.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_2dn"].flatten())
+                                thist_dn.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_1dn"].flatten())
+                                thist.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]].flatten())
+                                thist_up.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_1up"].flatten())
+                                thist_2up.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_2up"].flatten())
+                                thist_3up.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_3up"].flatten())
+                                thist_4up.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_4up"].flatten())
+                                thist_5up.append(self.channels[channel][self.signalNames[j]+'_%.1f'%self.masses[m]+self.alphaNames[a]+"_5up"].flatten())
+                            histSet.append(np.array([np.concatenate(thist_5dn), np.concatenate(thist_4dn), np.concatenate(thist_3dn), np.concatenate(thist_2dn), np.concatenate(thist_dn), np.concatenate(thist), np.concatenate(thist_up), np.concatenate(thist_2up), np.concatenate(thist_3up), np.concatenate(thist_4up), np.concatenate(thist_5up)]))
+                            thistSet.append(np.array([np.concatenate(thist_5dn), np.concatenate(thist_4dn), np.concatenate(thist_3dn), np.concatenate(thist_2dn), np.concatenate(thist_dn), np.concatenate(thist), np.concatenate(thist_up), np.concatenate(thist_2up), np.concatenate(thist_3up), np.concatenate(thist_4up), np.concatenate(thist_5up)])/(self.SignalArray[j, self.massIndex] + 1*(self.SignalArray[j, self.massIndex] == 0)))
+                        if len(self.alphaRefs) > 0 and len(self.alphavalues) > 0:
+                            tempSignalArrayNuisance5SigmaArrayToy.append(np.array(thistSet))
+                        tempSignalArrayNuisance5SigmaToy.append(np.array(histSet))
+                        tempSignalArrayNuisance5Sigma.append(np.array(histSet))
+                
+                try:
+                    self.SignalArrayNuisance5Sigma = np.stack((self.SignalArrayNuisance5Sigma, tempSignalArrayNuisance5Sigma))
+                    self.SignalArrayNuisance5SigmaToy = np.stack((self.SignalArrayNuisance5SigmaToy, tempSignalArrayNuisance5SigmaToy))
+                    self.SignalArrayNuisance5SigmaArrayToy = np.stack((self.SignalArrayNuisance5SigmaArrayToy, tempSignalArrayNuisance5SigmaArrayToy))
+                except:
+                    self.SignalArrayNuisance5Sigma = np.array(tempSignalArrayNuisance5Sigma)
+                    self.SignalArrayNuisance5SigmaToy = np.array(tempSignalArrayNuisance5SigmaToy)
+                    self.SignalArrayNuisance5SigmaArrayToy = np.array(tempSignalArrayNuisance5SigmaArrayToy)
+                
+            # Invert the first two axes so that the first one runs on the mass and the second one on the signals
+            if len(self.signalNames) > 1:
+                self.MassMorpher = MorphTemplate1D(self.SignalArray[0], self.masses, self.massRef) # 1 morpher is enough for all signals
+                self.SignalArray = np.swapaxes(self.SignalArray, 0, 1)
+                self.SignalArrayToy = np.swapaxes(self.SignalArrayToy, 0, 1)
+                
+                self.SignalArrayNuisance5Sigma = np.swapaxes(self.SignalArrayNuisance5Sigma, 0, 1)
+                self.SignalArrayNuisance5SigmaToy = np.swapaxes(self.SignalArrayNuisance5SigmaToy, 0, 1)
+                self.SignalArrayNuisance5SigmaArrayToy = np.swapaxes(self.SignalArrayNuisance5SigmaArrayToy, 0, 1)
+            else:
+                self.MassMorpher = MorphTemplate1D(self.SignalArray, self.masses, self.massRef) # 1 morpher is enough for all signals
+            
+            self.SignalArrayNuisance5SigmaArray = np.copy(self.SignalArrayNuisance5SigmaArrayToy)
         
         # Produce 1D histset for shape nuisance parameters
         # The final array has three indeces:
@@ -353,9 +397,18 @@ class histHandler:
         morphed = None
         if mass is not None:
             tempArray = self.getMorphedMassArray(mass, massArray=self.SignalArrayNuisance5Sigma)
-            temphists = np.insert(self.BKGarray, 0, tempArray[0, self.alphaRefsIndex, :], axis=0)
-            tempArray /= (temphists[0] + 1*(temphists[0] == 0))
-            tempArray = np.concatenate((tempArray, self.BKGarrayNuisance5SigmaArray), axis = 2)
+            temphists = np.copy(self.BKGarray)
+            if len(self.signalNames) > 1:
+                tempArray = np.swapaxes(tempArray, 0, 2)
+                tempArray = np.swapaxes(tempArray, 1, 2)
+                for i in range(len(self.signalNames)):
+                    temphists = np.insert(temphists, i, tempArray[i, 0, self.alphaRefsIndex, :], axis=0)
+                    tempArray[i] /= (temphists[i] + 1*(temphists[i] == 0))
+                tempArray = np.concatenate((np.concatenate(tempArray, axis=2), self.BKGarrayNuisance5SigmaArray), axis = 2)
+            else:
+                temphists = np.insert(self.BKGarray, 0, tempArray[0, self.alphaRefsIndex, :], axis=0)
+                tempArray /= (temphists[0] + 1*(temphists[0] == 0))
+                tempArray = np.concatenate((tempArray, self.BKGarrayNuisance5SigmaArray), axis = 2)
         else:
             temphists = np.copy(self.BKGarray)
             tempArray = np.copy(self.BKGarrayNuisance5SigmaArray)
@@ -375,9 +428,18 @@ class histHandler:
         morphed = None
         if mass is not None:
             tempArray = self.getMorphedMassArray(mass, massArray=self.SignalArrayNuisance5SigmaToy)
-            temphists = np.insert(self.BKGarrayToy, 0, tempArray[0, self.alphaRefsIndex, :], axis=0)
-            tempArray /= (temphists[0] + 1*(temphists[0] == 0))
-            tempArray = np.concatenate((tempArray, self.BKGarrayNuisance5SigmaArrayToy), axis = 2)
+            temphists = np.copy(self.BKGarrayToy)
+            if len(self.signalNames) > 1:
+                tempArray = np.swapaxes(tempArray, 0, 2)
+                tempArray = np.swapaxes(tempArray, 1, 2)
+                for i in range(len(self.signalNames)):
+                    temphists = np.insert(temphists, i, tempArray[i, 0, self.alphaRefsIndex, :], axis=0)
+                    tempArray[i] /= (temphists[i] + 1*(temphists[i] == 0))
+                tempArray = np.concatenate((np.concatenate(tempArray, axis=2), self.BKGarrayNuisance5SigmaArrayToy), axis = 2)
+            else:
+                temphists = np.insert(self.BKGarrayToy, 0, tempArray[0, self.alphaRefsIndex, :], axis=0)
+                tempArray /= (temphists[0] + 1*(temphists[0] == 0))
+                tempArray = np.concatenate((tempArray, self.BKGarrayNuisance5SigmaArrayToy), axis = 2)
         else:
             temphists = np.copy(self.BKGarrayToy)
             tempArray = np.copy(self.BKGarrayNuisance5SigmaArrayToy)
@@ -408,7 +470,7 @@ class histHandler:
         # Actually, the TotalMCStatistics can be obtained by the morpher as well, as the interpolation is done with a linear map
         if len(self.TotalMCStatistics) > 0:
             if mass is not None:
-                totMCs = np.insert(self.TotalMCStatistics, 0, totMCs[0])
+                totMCs = np.concatenate((totMCs[:len(self.signalNames)], self.TotalMCStatistics))
             else:
                 totMCs = self.TotalMCStatistics
         if multiplier:
@@ -431,7 +493,7 @@ class histHandler:
         # Actually, the TotalMCStatistics can be obtained by the morpher as well, as the interpolation is done with a linear map
         if len(self.TotalMCStatistics) > 0:
             if mass is not None:
-                totMCs = np.insert(self.TotalMCStatistics, 0, np.sum(temphists, axis=1)[0])
+                totMCs = np.concatenate((np.sum(temphists, axis=1)[:len(self.signalNames)], self.TotalMCStatistics))
             else:
                 totMCs = self.TotalMCStatistics
         else:
@@ -459,7 +521,7 @@ class histHandler:
         # Actually, the TotalMCStatistics can be obtained by the morpher as well, as the interpolation is done with a linear map
         if len(self.TotalMCStatistics) > 0:
             if mass is not None:
-                totMCs = np.insert(self.TotalMCStatistics, 0, totMCs[0])
+                totMCs = np.concatenate((totMCs[:len(self.signalNames)], self.TotalMCStatistics))
             else:
                 totMCs = self.TotalMCStatistics
         if multiplier:
@@ -483,7 +545,7 @@ class histHandler:
         # Actually, the TotalMCStatistics can be obtained by the morpher as well, as the interpolation is done with a linear map
         if len(self.TotalMCStatistics) > 0:
             if mass is not None:
-                totMCs = np.insert(self.TotalMCStatistics, 0, np.sum(temp, axis=1)[0])
+                totMCs = np.concatenate((np.sum(temp, axis=1)[:len(self.signalNames)], self.TotalMCStatistics))
             else:
                 totMCs = self.TotalMCStatistics
         else:
@@ -512,7 +574,7 @@ class histHandler:
         # Actually, the TotalMCStatistics can be obtained by the morpher as well, as the interpolation is done with a linear map
         if len(self.TotalMCStatistics) > 0:
             if mass is not None:
-                totMCs = np.insert(self.TotalMCStatistics, 0, totMCs[0])
+                totMCs = np.concatenate((totMCs[:len(self.signalNames)], self.TotalMCStatistics))
             else:
                 totMCs = self.TotalMCStatistics
         if multiplier:
@@ -536,7 +598,7 @@ class histHandler:
         # Actually, the TotalMCStatistics can be obtained by the morpher as well, as the interpolation is done with a linear map
         if len(self.TotalMCStatistics) > 0:
             if mass is not None:
-                totMCs = np.insert(self.TotalMCStatistics, 0, np.sum(temp, axis=1)[0])
+                totMCs = np.concatenate((np.sum(temp, axis=1)[:len(self.signalNames)], self.TotalMCStatistics))
             else:
                 totMCs = self.TotalMCStatistics
         else:
@@ -562,7 +624,10 @@ class histHandler:
                     self.SignalArrayNuisance5SigmaToy = np.copy(temphists)
                     
                     # Get SignalArrayToy, they are redundant
-                    self.SignalArrayToy = np.copy(self.SignalArrayNuisance5SigmaToy[:, 0, self.alphaRefsIndex, :])
+                    if len(self.signalNames) > 1:
+                        self.SignalArrayToy = np.copy(self.SignalArrayNuisance5SigmaToy[:, :, 0, self.alphaRefsIndex, :])
+                    else:
+                        self.SignalArrayToy = np.copy(self.SignalArrayNuisance5SigmaToy[:, 0, self.alphaRefsIndex, :])
                 
                 # Prepare BKG templates
                 temphists = np.copy(self.BKGarrayNuisance5Sigma)
@@ -574,7 +639,10 @@ class histHandler:
                 for i in range(len(morph)):
                     if i != 0:
                         if mass is not None:
-                            self.SignalArrayNuisance5SigmaToy[:, i, (self.alphaRefsIndex), :] = np.copy(self.SignalArrayToy)
+                            if len(self.signalNames) > 1:
+                                self.SignalArrayNuisance5SigmaToy[:, :, i, (self.alphaRefsIndex), :] = np.copy(self.SignalArrayToy)
+                            else:
+                                self.SignalArrayNuisance5SigmaToy[:, i, (self.alphaRefsIndex), :] = np.copy(self.SignalArrayToy)
                         self.BKGarrayNuisance5SigmaToy[i, :, (self.alphaRefsIndex), :] = np.copy(self.BKGarrayToy)
                 
                 # Scale the BKGarrayNuisance5SigmaToy
@@ -627,7 +695,10 @@ class histHandler:
                     self.SignalArrayNuisance5SigmaToy = np.copy(temphists)
                     
                     # Get SignalArrayToy, they are redundant
-                    self.SignalArrayToy = np.copy(self.SignalArrayNuisance5SigmaToy[:, 0, self.alphaRefsIndex, :])
+                    if len(self.signalNames) > 1:
+                        self.SignalArrayToy = np.copy(self.SignalArrayNuisance5SigmaToy[:, :, 0, self.alphaRefsIndex, :])
+                    else:
+                        self.SignalArrayToy = np.copy(self.SignalArrayNuisance5SigmaToy[:, 0, self.alphaRefsIndex, :])
                 
                 # Prepare BKG templates
                 temphists = np.copy(self.BKGarrayNuisance5Sigma)
@@ -639,7 +710,10 @@ class histHandler:
                 for i in range(len(morph)):
                     if i != 0:
                         if mass is not None:
-                            self.SignalArrayNuisance5SigmaToy[:, i, (self.alphaRefsIndex), :] = np.copy(self.SignalArrayToy)
+                            if len(self.signalNames) > 1:
+                                self.SignalArrayNuisance5SigmaToy[:, :, i, (self.alphaRefsIndex), :] = np.copy(self.SignalArrayToy)
+                            else:
+                                self.SignalArrayNuisance5SigmaToy[:, i, (self.alphaRefsIndex), :] = np.copy(self.SignalArrayToy)
                         self.BKGarrayNuisance5SigmaToy[i, :, (self.alphaRefsIndex), :] = np.copy(self.BKGarrayToy)
                 
                 # Scale the BKGarrayNuisance5SigmaToy
@@ -822,13 +896,13 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
         eventCUT = MCCUT['event']
             
         with uproot.open(workDir + MCFile + ':ntuple') as f:
-            MC = f.arrays(['esum', 'angle', ECODETYPE, 'px_pos', 'py_pos', 'pz_pos', 'px_ele', 'py_ele', 'pz_ele', 'simpx_pos', 'simpy_pos', 'simpz_pos', 'simpx_ele', 'simpy_ele', 'simpz_ele', 'siminvm', 'run', 'event', 'theta_gamma', 'simbeamenergy'], library='np')
+            MC = f.arrays(['esum', 'angle', ECODETYPE, 'px_pos', 'py_pos', 'pz_pos', 'px_ele', 'py_ele', 'pz_ele', 'simpx_pos', 'simpy_pos', 'simpz_pos', 'simpx_ele', 'simpy_ele', 'simpz_ele', 'simesum', 'siminvm', 'run', 'event', 'theta_gamma', 'simbeamenergy'], library='np')
             
             MC = removeDuplicates(MC)
             
             # Select from MC only events in common with MCCUT
             selectionCUT = np.isin(MC['run'], runCUT) & np.isin(MC['event'], eventCUT)
-            selectionCUT = selectionCUT | (MC[ECODETYPE] == 0) | (MC[ECODETYPE] == 7) | (MC[ECODETYPE] == 8)
+            selectionCUT = selectionCUT | (MC[ECODETYPE] == 0) | (MC[ECODETYPE] == 20) | (MC[ECODETYPE] == 7) | (MC[ECODETYPE] == 8)
             
             # Reduce proton beam energy bins
             selectionCUT400  = ( (MC[ECODETYPE] == 1) | (MC[ECODETYPE] == 4)) 
@@ -872,6 +946,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             _simpx_ele = MC['simpx_ele'][selectionCUT]*alphaFieldCorrection
             _simpy_ele = MC['simpy_ele'][selectionCUT]*alphaFieldCorrection
             _simpz_ele = MC['simpz_ele'][selectionCUT]*alphaFieldCorrection
+            _simesum = MC['simesum'][selectionCUT]*1e3
             _siminvm = MC['siminvm'][selectionCUT]
             
             _px_pos = _simpx_pos + (alphaResCorrection)*(_px_pos - _simpx_pos)
@@ -911,16 +986,19 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             _simpx_ele = _simpx_ele[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
             _simpy_ele = _simpy_ele[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
             _simpz_ele = _simpz_ele[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            _simesum = _simesum[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
             _siminvm = _siminvm[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]*1e3
             
             # Get Signal
             # Loop over masses
             fig = plt.figure(figsize=(42, 14), dpi=100)
+            
+            # Get X17 from 17.6 MeV line
             for mass in X17masses:
-                esum = _esum[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)]
-                angle = _angle[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)]
-                p = np.vstack((_px_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _py_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _pz_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _px_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _py_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _pz_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)]))*1e3
-                simp = np.vstack((_simpx_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _simpy_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _simpz_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _simpx_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _simpy_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)], _simpz_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)]))*1e3
+                esum = _esum[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)]
+                angle = _angle[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)]
+                p = np.vstack((_px_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _py_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _pz_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _px_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _py_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _pz_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)]))*1e3
+                simp = np.vstack((_simpx_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _simpy_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _simpz_pos[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _simpx_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _simpy_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)], _simpz_ele[(_ecode == 0)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 17.6) < 0.1)]))*1e3
                 
                 # Select mass
                 selection = (esum < esumCutLow) | (esum > esumCutHigh) | (angle < angleCutLow) | (angle > angleCutHigh)
@@ -943,7 +1021,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                 for channel in channels.keys():
                     hist = np.histogram2d(esum, angle, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
             
-                    channels[channel]['X17%.1f' %(mass)] = np.copy(hist)
+                    channels[channel]['X17_17.6_%.1f' %(mass)] = np.copy(hist)
                     
                     for j in range(1, 6):
                         esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, j*alphares, j*alphafield, AlternativeResolutionScale = False, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh)
@@ -951,17 +1029,17 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                         histres_dn = np.histogram2d(esumres_dn, angleres_dn, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
                         histfield_up = np.histogram2d(esumfield_up, anglefield_up, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
                         histfield_dn = np.histogram2d(esumfield_dn, anglefield_dn, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
-                        channels[channel]['X17%.1fres_%dup' %(mass, j)] = np.copy(histres_up)
-                        channels[channel]['X17%.1fres_%ddn' %(mass, j)] = np.copy(histres_dn)
-                        channels[channel]['X17%.1ffield_%dup' %(mass, j)] = np.copy(histfield_up)
-                        channels[channel]['X17%.1ffield_%ddn' %(mass, j)] = np.copy(histfield_dn)
+                        channels[channel]['X17_17.6_%.1fres_%dup' %(mass, j)] = np.copy(histres_up)
+                        channels[channel]['X17_17.6_%.1fres_%ddn' %(mass, j)] = np.copy(histres_dn)
+                        channels[channel]['X17_17.6_%.1ffield_%dup' %(mass, j)] = np.copy(histfield_up)
+                        channels[channel]['X17_17.6_%.1ffield_%ddn' %(mass, j)] = np.copy(histfield_dn)
                         
-                    channels[channel]['X17%.1fres_up' %(mass)] = np.copy(channels[channel]['X17%.1fres_1up' %(mass)])
-                    channels[channel]['X17%.1fres_dn' %(mass)] = np.copy(channels[channel]['X17%.1fres_1dn' %(mass)])
-                    channels[channel]['X17%.1ffield_up' %(mass)] = np.copy(channels[channel]['X17%.1ffield_1up' %(mass)])
-                    channels[channel]['X17%.1ffield_dn' %(mass)] = np.copy(channels[channel]['X17%.1ffield_1dn' %(mass)])
+                    channels[channel]['X17_17.6_%.1fres_up' %(mass)] = np.copy(channels[channel]['X17_17.6_%.1fres_1up' %(mass)])
+                    channels[channel]['X17_17.6_%.1fres_dn' %(mass)] = np.copy(channels[channel]['X17_17.6_%.1fres_1dn' %(mass)])
+                    channels[channel]['X17_17.6_%.1ffield_up' %(mass)] = np.copy(channels[channel]['X17_17.6_%.1ffield_1up' %(mass)])
+                    channels[channel]['X17_17.6_%.1ffield_dn' %(mass)] = np.copy(channels[channel]['X17_17.6_%.1ffield_1dn' %(mass)])
             
-            plt.suptitle('X17 templates')
+            plt.suptitle('X17 templates - from 17.6 MeV line')
             plt.subplot(1, 3, 1)
             plt.grid()
             plt.ylabel(r'$E_{\mathrm{sum}}$ [MeV]')
@@ -981,6 +1059,76 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             plt.ylabel('Counts')
             plt.xlabel(r'$E_{\mathrm{sum}}$ [MeV]')
             plt.xlim(15, 20)
+            #plt.show()
+            
+            fig = plt.figure(figsize=(42, 14), dpi=100)
+            # Get X17 from 18.1 MeV line
+            for mass in X17masses:
+                esum = _esum[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)]
+                angle = _angle[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)]
+                p = np.vstack((_px_pos[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _py_pos[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _pz_pos[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _px_ele[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _py_ele[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _pz_ele[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)]))*1e3
+                simp = np.vstack((_simpx_pos[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _simpy_pos[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _simpz_pos[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _simpx_ele[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _simpy_ele[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)], _simpz_ele[(_ecode == 20)*(np.abs(_siminvm - mass) < dX17mass)*(np.abs(_simesum - 18.1) < 0.1)]))*1e3
+                
+                # Select mass
+                selection = (esum < esumCutLow) | (esum > esumCutHigh) | (angle < angleCutLow) | (angle > angleCutHigh)
+                esum = esum[selection]
+                angle = angle[selection]
+                
+                esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, alphares, alphafield, AlternativeResolutionScale = False, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh)
+                
+                plt.subplot(1, 3, 1)
+                plt.plot(angle, esum, 'o', label='X17 %.1f MeV' %(mass), alpha=0.5, color='C' + str(int((mass - X17masses.min())/0.2)), zorder=20 - int((mass - X17masses.min())/0.2))
+                
+                plt.subplot(1, 3, 2)
+                plt.hist(angle, bins=90, range=[0, 180], alpha = 0.5, label='X17 %.1f MeV' %(mass), color='C' + str(int((mass - X17masses.min())/0.2)), zorder=20 - int((mass - X17masses.min())/0.2))
+                plt.hist(angle, bins=90, range=[0, 180], histtype='step', color='C' + str(int((mass - X17masses.min())/0.2)), zorder=20 - int((mass - X17masses.min())/0.2), linewidth=5)
+                
+                plt.subplot(1, 3, 3)
+                plt.hist(esum, bins=50, range=[15, 20], alpha = 0.5, label='X17 %.1f MeV' %(mass), color='C' + str(int((mass - X17masses.min())/0.2)), zorder=20 - int((mass - X17masses.min())/0.2))
+                plt.hist(esum, bins=50, range=[15, 20], histtype='step', label='X17 %.1f MeV' %(mass), color='C' + str(int((mass - X17masses.min())/0.2)), zorder=20 - int((mass - X17masses.min())/0.2), linewidth=5)
+                
+                for channel in channels.keys():
+                    hist = np.histogram2d(esum, angle, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
+            
+                    channels[channel]['X17_18.1_%.1f' %(mass)] = np.copy(hist)
+                    
+                    for j in range(1, 6):
+                        esumres_up, angleres_up, esumres_dn, angleres_dn, esumfield_up, anglefield_up, esumfield_dn, anglefield_dn = createUpDownVariables(p, simp, j*alphares, j*alphafield, AlternativeResolutionScale = False, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh)
+                        histres_up = np.histogram2d(esumres_up, angleres_up, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
+                        histres_dn = np.histogram2d(esumres_dn, angleres_dn, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
+                        histfield_up = np.histogram2d(esumfield_up, anglefield_up, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
+                        histfield_dn = np.histogram2d(esumfield_dn, anglefield_dn, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])[0]
+                        channels[channel]['X17_18.1_%.1fres_%dup' %(mass, j)] = np.copy(histres_up)
+                        channels[channel]['X17_18.1_%.1fres_%ddn' %(mass, j)] = np.copy(histres_dn)
+                        channels[channel]['X17_18.1_%.1ffield_%dup' %(mass, j)] = np.copy(histfield_up)
+                        channels[channel]['X17_18.1_%.1ffield_%ddn' %(mass, j)] = np.copy(histfield_dn)
+                        
+                    channels[channel]['X17_18.1_%.1fres_up' %(mass)] = np.copy(channels[channel]['X17_18.1_%.1fres_1up' %(mass)])
+                    channels[channel]['X17_18.1_%.1fres_dn' %(mass)] = np.copy(channels[channel]['X17_18.1_%.1fres_1dn' %(mass)])
+                    channels[channel]['X17_18.1_%.1ffield_up' %(mass)] = np.copy(channels[channel]['X17_18.1_%.1ffield_1up' %(mass)])
+                    channels[channel]['X17_18.1_%.1ffield_dn' %(mass)] = np.copy(channels[channel]['X17_18.1_%.1ffield_1dn' %(mass)])
+            
+            plt.suptitle('X17 templates - from 18.1 MeV line')
+            plt.subplot(1, 3, 1)
+            plt.grid()
+            plt.ylabel(r'$E_{\mathrm{sum}}$ [MeV]')
+            plt.xlabel(r'$\theta_{\mathrm{rel}}$ [deg]')
+            plt.xlim(90, 180)
+            plt.ylim(15, 20)
+            
+            plt.subplot(1, 3, 2)
+            plt.grid()
+            plt.legend()
+            plt.ylabel('Counts')
+            plt.xlabel(r'$\theta_{\mathrm{rel}}$ [deg]')
+            plt.xlim(90, 180)
+            
+            plt.subplot(1, 3, 3)
+            plt.grid()
+            plt.ylabel('Counts')
+            plt.xlabel(r'$E_{\mathrm{sum}}$ [MeV]')
+            plt.xlim(15, 20)
+            #plt.show()
             
             # Get Backgrounds
             for i in range(1, 9): # running on ecode
@@ -1042,6 +1190,11 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
     return TotalMCStatistics, nBKGs, channels
 
 
+def getSignalYields(nSig, p181):
+    nX17_176 = nSig*(1 - p181)
+    nX17_181 = nSig*p181
+    return np.array([nX17_176, nX17_181])
+
 def getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15):
     
     nIPC176 =  nIPC400*percent176
@@ -1065,12 +1218,13 @@ def ll(Di, fPar = 0, mu = 0, mueff = 0, betas = 1, alphas = 0, P = 0):
 
 def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0):
     # Prepare yields vector
-    nSig, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = pars
+    nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = pars
+    nX17_176, nX17_181 = getSignalYields(nSig, pSig181)
     nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151 = getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15)
-    yields = np.array([nSig, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15])
+    yields = np.array([nX17_176, nX17_181, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15])
     if doNullHypothesis:
         mass = None
-        yields = yields[1:]
+        yields = yields[2:]
     
     # Compute penalty term for nuisances
     P = 0
@@ -1122,30 +1276,31 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
 def logLSetLimits(logL, alphavalues):
     # Set limits
     # Signal
-    logL.limits[0] = (0, 10000)
-    logL.limits[1] = (16.5, 17.3)
+    logL.limits[0] = (0, 100000)
+    logL.limits[1] = (0, 1)
+    logL.limits[2] = (16.5, 17.3)
     
     # IPC
     # Yields
-    logL.limits[2] = (0, None)
     logL.limits[3] = (0, None)
     logL.limits[4] = (0, None)
+    logL.limits[5] = (0, None)
     
     # Percentages
-    logL.limits[5] = (0, 1)
     logL.limits[6] = (0, 1)
     logL.limits[7] = (0, 1)
+    logL.limits[8] = (0, 1)
     
     # IPC 15 acceptance
-    logL.limits[8] = (0, 10)
+    logL.limits[9] = (0, 10)
     
     # EPC yields
-    logL.limits[9] = (0, None)
     logL.limits[10] = (0, None)
+    logL.limits[11] = (0, None)
     
     # Scales
-    logL.limits[11] = (alphavalues[0][0], alphavalues[0][-1])
-    logL.limits[12] = (alphavalues[1][0], alphavalues[1][-1])
+    logL.limits[12] = (alphavalues[0][0], alphavalues[0][-1])
+    logL.limits[13] = (alphavalues[1][0], alphavalues[1][-1])
     return logL
 
 # This function finds the best parameters
@@ -1156,7 +1311,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     
     ############################################
     # Find suitable starting point
-    names = ['nSig', 'mass', 'nIPC400', 'nIPC700', 'nIPC1000', 'percent176', 'percent179', 'percent181', 'FIPC15', 'nEPC18', 'nEPC15', 'alphaRes', 'alphaField']
+    names = ['nSig', 'pSig181', 'mass', 'nIPC400', 'nIPC700', 'nIPC1000', 'percent176', 'percent179', 'percent181', 'FIPC15', 'nEPC18', 'nEPC15', 'alphaRes', 'alphaField']
     logL = None
     if DoPreliminaryFit:
         def lambdaLikelihood(pars):
@@ -1176,6 +1331,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
             logL.values[0] = 0
             logL.fixed[0] = True
             logL.fixed[1] = True
+            logL.fixed[2] = True
         
         logL.simplex(ncall = 100000)
         logL.strategy = 2
@@ -1201,6 +1357,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
         logL.values[0] = 0
         logL.fixed[0] = True
         logL.fixed[1] = True
+        logL.fixed[2] = True
     
     #logL.scan(ncall=100000)
     freeIndices = np.where(np.array(logL.fixed) == False)[0]
@@ -1208,78 +1365,21 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     #
     ## Scan parameters singularly
     for j in range(5):
-        # Check if the signal yield and mass are fixed
-        #if 0 in freeIndices:
-        #    logL.fixed[0] = False
-        #    logL.fixed[1] = False
-        #    #logL.scan()
-        #    logL.simplex(ncall=100000)
-        #    logL.strategy = 2
-        #    logL.tol = 1e-10
-        #    #logL.migrad(ncall = 100000, iterate = 5)
-        #    logL.fixed[0] = True
-        #    logL.fixed[1] = True
         for i in freeIndices:
             logL.fixed[i] = False
             logL.simplex(ncall=100000)
-            #logL.strategy = 2
-            #logL.tol = 1e-10
-            #logL.migrad(ncall = 100000, iterate = 5)
             logL.fixed[i] = True
         
         logL.fixed[freeIndices] = np.full(len(logL.fixed[freeIndices]), False)
-        #logL.fixed[5] = True
-        #logL.fixed[6] = True
-        #logL.fixed[7] = True
-        #logL.fixed[8] = True
-        #logL.fixed[12] = True
-        #logL.simplex(ncall=100000)
-        ##logL.migrad(ncall = 100000, iterate = 1)
-        #logL.fixed[freeIndices] = np.full(len(logL.fixed[freeIndices]), False)
-        #logL.fixed[12] = True
-        #logL.simplex(ncall=100000)
-        #logL.fixed[freeIndices] = np.full(len(logL.fixed[freeIndices]), False)
         logL.simplex(ncall=100000)
-        #logL.strategy = 2
-        #logL.tol = 1e-10
-        #logL.migrad(ncall = 100000, iterate = 1)
         logL.fixed = np.full(len(logL.fixed), True)
         
     
     # Free parameters
     logL.fixed[freeIndices] = np.full(len(logL.fixed[freeIndices]), False)
-    #logL.simplex(ncall=100000)
     logL.strategy = 2
     logL.tol = 1e-10
     logL.migrad(ncall=100000, iterate=5)
-    
-    #if (not logL.valid):
-    #    I = 0
-    #    while(not logL.valid):
-    #        logL.simplex(ncall=100000)
-    #        logL.fixed = np.full(len(logL.fixed), True)
-    #        
-    #        # Scan parameters singularly
-    #        for j in range(5):
-    #            for i in freeIndices:
-    #                logL.fixed[i] = False
-    #                logL.simplex(ncall=100000)
-    #                #logL.strategy = 2
-    #                #logL.tol = 1e-10
-    #                #logL.migrad(ncall = 100000, iterate = 5)
-    #                logL.fixed[i] = True
-    #        
-    #        # Free parameters
-    #        logL.fixed[freeIndices] = np.full(len(logL.fixed[freeIndices]), False)
-    #        
-    #        # Best fit
-    #        logL.strategy = 2
-    #        logL.tol = 1e-10
-    #        logL.migrad(ncall=100000, iterate=5)
-    #        
-    #        I += 1
-    #        if I == 10:
-    #            break
     
     logL.hesse()
     estimateVarianceFunction = None
@@ -1294,9 +1394,10 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
         estimateFunction = Hists.getEstimate
         data = Hists.DataArray
         
-    nSig, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = logL.values
+    nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = logL.values
+    nX17_176, nX17_181 = getSignalYields(nSig, pSig181)
     nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151 = getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15)
-    yields = np.array([nSig, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15])
+    yields = np.array([nX17_176, nX17_181, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15])
     mu0 = estimateFunction(yields, betas = 1, morph = [alphaRes, alphaField], mass = mass)
     Vmu0 = estimateVarianceFunction(yields, betas = 1, morph = [alphaRes, alphaField], mass = mass)
     mueff = np.power(mu0, 2)/(Vmu0 + (mu0==0))
@@ -1306,7 +1407,8 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
 
 def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8'], subfix = ''):
     PARS = np.copy(pars)
-    nSig, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = pars
+    nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = pars
+    nX17_176, nX17_181 = getSignalYields(nSig, pSig181)
     nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151 = getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15)
     
     if Toy:
@@ -1330,6 +1432,7 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
         fig = plt.figure(figsize=(28, 14), dpi=100)
     else:
         fig = plt.figure(figsize=(28*binWidths.sum()/800, 14), dpi=100)
+        #fig = plt.figure(figsize=(2*28*binWidths.sum()/800, 14/2), dpi=100)
 
     plt.subplots_adjust(hspace=0.0, top=0.98, bottom=0.15)
     plt.subplot(6, 1, (1, 4))
@@ -1337,11 +1440,12 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     # Bootstrap fit uncertainties
     tpars = np.random.multivariate_normal(logL.values, logL.covariance, size=10000)
     tmorph = tpars[:, -2:]
-    tmass = tpars[:, 1]
+    tmass = tpars[:, 2]
     
-    yields = getYields(tpars[:, 2], tpars[:, 3], tpars[:, 4], tpars[:, 5], tpars[:, 6], tpars[:, 7], tpars[:, 8])
-    tpars = np.column_stack((tpars[:, 0], yields.transpose(), tpars[:, 9], tpars[:, 10]))
-    yields = np.array([nSig, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15])
+    yields = getYields(tpars[:, 3], tpars[:, 4], tpars[:, 5], tpars[:, 6], tpars[:, 7], tpars[:, 8], tpars[:, 9])
+    sigYields = getSignalYields(tpars[:, 0], tpars[:, 1])
+    tpars = np.column_stack((sigYields.transpose(), yields.transpose(), tpars[:, 10], tpars[:, 11]))
+    yields = np.array([nX17_176, nX17_181, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15])
     print(yields)
     morph = [alphaRes, alphaField]
     
@@ -1386,9 +1490,16 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     plt.gca().axes.xaxis.set_ticklabels([])
     
     popNames = np.copy(BKGnames)
-    popNames = np.insert(popNames, 0, 'Signal')
+    popNames = np.insert(popNames, 0, 'Sig. 18.1 MeV')
+    popNames = np.insert(popNames, 0, 'Sig. 17.6 MeV')
     print(popNames)
-    for i in range(0,len(yields)):
+    for i in range(2,len(yields)):
+        singleYields = np.zeros(len(yields))
+        singleYields[i] = yields[i]
+        histTempEstimate = estimateFunction(singleYields, betas, morph=morph, mass=mass)
+        plt.step(binSides, np.append(histTempEstimate, histTempEstimate[-1]), where='post',color = f'C{i}', linewidth=3, label = popNames[i])
+        print(popNames[i], ':', yields[i])
+    for i in range(0,2):
         singleYields = np.zeros(len(yields))
         singleYields[i] = yields[i]
         histTempEstimate = estimateFunction(singleYields, betas, morph=morph, mass=mass)
@@ -1413,10 +1524,11 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
             plt.vlines(binSides[index], 0, 1e5, colors='k', linestyles='dashed')
             # Text inside the box
             xticks.append(0.5*(binSides[index] + binSides[index-Hists.channels[channel]['Angle'][2]]))
-            xtickslabels.append(f'[{esumMin}, {esumMax}] MeV\n[{minAngle}, {maxAngle}] deg')
+            xtickslabels.append(f'[{esumMin:.2f}, {esumMax:.2f}] MeV\n[{minAngle}, {maxAngle}] deg')
     
     plt.legend(loc='upper right', ncol=int(len(BKGnames)*0.5), fontsize=20)
     
+    #plt.ylim(0.5, 7e2)
     plt.ylim(0.5, 1e5)
     
     plt.subplot(6, 1, (5,6))
@@ -1732,14 +1844,14 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0):
 
 def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothesis = False, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = []):
     startTime = time.time()
-    newP176 = logL.values[5]
-    newP179 = logL.values[6]
-    newP181 = logL.values[7]
-    _p176 = logL.values[5]
-    _p179 = logL.values[6]
-    _p181 = logL.values[7]
-    newAlphaField = logL.values[12]
-    _alphaField = logL.values[12]
+    newP176 = logL.values[6]
+    newP179 = logL.values[7]
+    newP181 = logL.values[8]
+    _p176 = logL.values[6]
+    _p179 = logL.values[7]
+    _p181 = logL.values[8]
+    newAlphaField = logL.values[13]
+    _alphaField = logL.values[13]
     MAXLikelihood = logL.fval
     
     startToy = len(PARS)
@@ -1754,67 +1866,43 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
         
         # Sample the nuisances
         if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
-            if FixedParameters[5] == False:
-                #tpars[5] = np.random.normal(newP176, dP176)
-                #while tpars[5] < 0 or tpars[5] > 1:
-                #    tpars[5] = np.random.normal(newP176, dP176)
+            if FixedParameters[6] == False:
                 _p176 = np.random.normal(newP176, dP176)
                 while _p176 < 0 or _p176 > 1:
                     _p176 = np.random.normal(newP176, dP176)
-            if FixedParameters[6] == False:
-                #tpars[6] = np.random.normal(newP179, dP179)
-                #while tpars[6] < 0 or tpars[6] > 1:
-                #    tpars[6] = np.random.normal(newP179, dP179)
+            if FixedParameters[7] == False:
                 _p179 = np.random.normal(newP179, dP179)
                 while _p179 < 0 or _p179 > 1:
                     _p179 = np.random.normal(newP179, dP179)
-            if FixedParameters[7] == False:
-                #tpars[7] = np.random.normal(newP181, dP181)
-                #while tpars[7] < 0 or tpars[7] > 1:
-                #    tpars[7] = np.random.normal(newP181, dP181)
+            if FixedParameters[8] == False:
                 _p181 = np.random.normal(newP181, dP181)
                 while _p181 < 0 or _p181 > 1:
                     _p181 = np.random.normal(newP181, dP181)
-            if FixedParameters[12] == False:
-                #tpars[12] = np.random.normal(newAlphaField, dAlphaField)
-                #while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
-                #    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+            if FixedParameters[13] == False:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
                 while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                     _alphaField = np.random.normal(newAlphaField, dAlphaField)
         elif FixedParameters == False:
-            #tpars[5] = np.random.normal(newP176, dP176)
-            #while tpars[5] < 0 or tpars[5] > 1:
-            #    tpars[5] = np.random.normal(newP176, dP176)
             _p176 = np.random.normal(newP176, dP176)
             while _p176 < 0 or _p176 > 1:
                 _p176 = np.random.normal(newP176, dP176)
-            #tpars[6] = np.random.normal(newP179, dP179)
-            #while tpars[6] < 0 or tpars[6] > 1:
-            #    tpars[6] = np.random.normal(newP179, dP179)
             _p179 = np.random.normal(newP179, dP179)
             while _p179 < 0 or _p179 > 1:
                 _p179 = np.random.normal(newP179, dP179)
-            #tpars[7] = np.random.normal(newP181, dP181)
-            #while tpars[7] < 0 or tpars[7] > 1:
-            #    tpars[7] = np.random.normal(newP181, dP181)
             _p181 = np.random.normal(newP181, dP181)
             while _p181 < 0 or _p181 > 1:
                 _p181 = np.random.normal(newP181, dP181)
-            #tpars[12] = np.random.normal(newAlphaField, dAlphaField)
-            #while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
-            #    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
             _alphaField = np.random.normal(newAlphaField, dAlphaField)
             while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
         
-        yields = np.concatenate([[tpars[0]], getYields(tpars[2], tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8]), [tpars[9], tpars[10]]])
+        yields = np.concatenate([getSignalYields(tpars[0], tpars[1]), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11]]])
         
         # Sample the toy
         if doNullHypothesis:
-            Hists.generateToy(yields[1:], betas = betas, fluctuateTemplates = True, morph = tpars[-2:], mass=None)
+            Hists.generateToy(yields[2:], betas = betas, fluctuateTemplates = True, morph = tpars[-2:], mass=None)
         else:
-            Hists.generateToy(yields, betas = betas, fluctuateTemplates = True, morph = tpars[-2:], mass=tpars[1])
+            Hists.generateToy(yields, betas = betas, fluctuateTemplates = True, morph = tpars[-2:], mass=tpars[2])
         
         # Fit
         logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = doNullHypothesis, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
@@ -1903,16 +1991,16 @@ def plotCheck(PARS, Likelihood, Toy, logLToy, SEED = 0, prefix = '', TIME = [], 
     
     return
 
-def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './', doingDataToy = False):
+def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './', doingDataToy = False):
     TIME = []
-    newP176 = pars[5]
-    newP179 = pars[6]
-    newP181 = pars[7]
-    _p176 = pars[5]
-    _p179 = pars[6]
-    _p181 = pars[7]
-    newAlphaField = pars[12]
-    _alphaField = pars[12]
+    newP176 = pars[6]
+    newP179 = pars[7]
+    newP181 = pars[8]
+    _p176 = pars[6]
+    _p179 = pars[7]
+    _p181 = pars[8]
+    newAlphaField = pars[13]
+    _alphaField = pars[13]
     storeFixedParameters = np.copy(FixedParameters)
     
     startToy = len(PARS)
@@ -1924,11 +2012,13 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
     tpars = np.copy(pars)
     
     tpars[0] = SignalYield
-    tpars[1] = SignalMass
+    tpars[1] = SignalFraction
+    tpars[2] = SignalMass
     logL.values = np.copy(tpars)
     
     FixedParameters[0] = True
     FixedParameters[1] = True
+    FixedParameters[2] = True
     
     logL, _, locLikelihood = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
     
@@ -1972,7 +2062,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
     
     datalRatio = locLikelihood - MAXLikelihood
     
-    prefix = 'AlternativeFC_N%.0f_m%.2f' % (SignalYield, SignalMass) + '_T' + str(fluctuateTemplates)
+    prefix = 'AlternativeFC_N%.0f_p%.3f_m%.2f' % (SignalYield, SignalFraction, SignalMass) + '_T' + str(fluctuateTemplates)
     outputFileName = prefix + '_S' + str(SEED) + '.txt'
     
     # Append result to file
@@ -1984,11 +2074,11 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         Valid.append(logL.valid)
         Toy.append(False)
         if doingDataToy:
-            return SignalYield, SignalMass, False, MAXLikelihood, locLikelihood, datalRatio, logL.accurate, logL.valid, SEED, FixedParameters, logL.values[0], logL.values[1]
+            return SignalYield, SignalFraction, SignalMass, False, MAXLikelihood, locLikelihood, datalRatio, logL.accurate, logL.valid, SEED, FixedParameters, logL.values[0], logL.values[1]
         else:
             with open(workDir + outputFileName, 'w') as file:
-                file.write('# SignalYield\tSignalMass\tFitYield\tFitMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')
-                file.write(f'{SignalYield}\t{SignalMass}\t{logL.values[0]}\t{logL.values[1]}\t{False}\t{MAXLikelihood}\t{locLikelihood}\t{datalRatio}\t{logL.accurate}\t{logL.valid}\t{SEED}\n')
+                file.write('# SignalYield\tSignalFraction\tSignalMass\tFitYield\tFitMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')
+                file.write(f'{SignalYield}\t{SignalFraction}\t{SignalMass}\t{logL.values[0]}\t{logL.values[1]}\t{False}\t{MAXLikelihood}\t{locLikelihood}\t{datalRatio}\t{logL.accurate}\t{logL.valid}\t{SEED}\n')
     
     ############################################
     # Generate lratio distribution with toys
@@ -2009,60 +2099,37 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         np.random.seed(i + SEED)
         tpars = np.copy(pars)
         tpars[0] = SignalYield
-        tpars[1] = SignalMass
+        tpars[1] = SignalFraction
+        tpars[2] = SignalMass
         
         # Sample the nuisances
         if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
-            if FixedParameters[5] == False:
-                #tpars[5] = np.random.normal(newP176, dP176)
-                #while tpars[5] < 0 or tpars[5] > 1:
-                #    tpars[5] = np.random.normal(newP176, dP176)
+            if FixedParameters[6] == False:
                 _p176 = np.random.normal(newP176, dP176)
                 while _p176 < 0 or _p176 > 1:
                     _p176 = np.random.normal(newP176, dP176)
-            if FixedParameters[6] == False:
-                #tpars[6] = np.random.normal(newP179, dP179)
-                #while tpars[6] < 0 or tpars[6] > 1:
-                #    tpars[6] = np.random.normal(newP179, dP179)
+            if FixedParameters[7] == False:
                 _p179 = np.random.normal(newP179, dP179)
                 while _p179 < 0 or _p179 > 1:
                     _p179 = np.random.normal(newP179, dP179)
-            if FixedParameters[7] == False:
-                #tpars[7] = np.random.normal(newP181, dP181)
-                #while tpars[7] < 0 or tpars[7] > 1:
-                #    tpars[7] = np.random.normal(newP181, dP181)
+            if FixedParameters[8] == False:
                 _p181 = np.random.normal(newP181, dP181)
                 while _p181 < 0 or _p181 > 1:
                     _p181 = np.random.normal(newP181, dP181)
-            if FixedParameters[12] == False:
-                #tpars[12] = np.random.normal(newAlphaField, dAlphaField)
-                #while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
-                #    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
+            if FixedParameters[13] == False:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
                 while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                     _alphaField = np.random.normal(newAlphaField, dAlphaField)
         elif FixedParameters == False:
-            #tpars[5] = np.random.normal(newP176, dP176)
-            #while tpars[5] < 0 or tpars[5] > 1:
-            #    tpars[5] = np.random.normal(newP176, dP176)
             _p176 = np.random.normal(newP176, dP176)
             while _p176 < 0 or _p176 > 1:
                 _p176 = np.random.normal(newP176, dP176)
-            #tpars[6] = np.random.normal(newP179, dP179)
-            #while tpars[6] < 0 or tpars[6] > 1:
-            #    tpars[6] = np.random.normal(newP179, dP179)
             _p179 = np.random.normal(newP179, dP179)
             while _p179 < 0 or _p179 > 1:
                 _p179 = np.random.normal(newP179, dP179)
-            #tpars[7] = np.random.normal(newP181, dP181)
-            #while tpars[7] < 0 or tpars[7] > 1:
-            #    tpars[7] = np.random.normal(newP181, dP181)
             _p181 = np.random.normal(newP181, dP181)
             while _p181 < 0 or _p181 > 1:
                 _p181 = np.random.normal(newP181, dP181)
-            #tpars[12] = np.random.normal(newAlphaField, dAlphaField)
-            #while tpars[12] < Hists.alphavalues[1][0] or tpars[12] > Hists.alphavalues[1][-1]:
-            #    tpars[12] = np.random.normal(newAlphaField, dAlphaField)
             _alphaField = np.random.normal(newAlphaField, dAlphaField)
             while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
@@ -2070,15 +2137,17 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         print('Toy', i, ' - Time:', time.time() - startTime)
         print('Parameters:', tpars)
         
-        yields = np.concatenate([[SignalYield], getYields(tpars[2], tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8]), [tpars[9], tpars[10]]])
+        yields = np.concatenate([getYields(SignalYield, SignalFraction), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11]]])
         
         Hists.generateToy(yields, betas = betas, fluctuateTemplates = fluctuateTemplates, morph = tpars[-2:], mass=SignalMass)
         
         # Fit the toy for current grid point
         FixedParameters[0] = True
         FixedParameters[1] = True
+        FixedParameters[2] = True
         tpars[0] = SignalYield
-        tpars[1] = SignalMass
+        tpars[1] = SignalFraction
+        tpars[2] = SignalMass
         logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
         
         logLToy1, betasToy1, locLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
@@ -2144,7 +2213,7 @@ def FCgenerator(SignalYield, SignalMass, logL, Hists, pars, SEED = 0, nToys = 10
         TIME.append(time.time() - _TIME)
         print(FixedParameters)
         with open(workDir + outputFileName, 'a') as file:
-            file.write(f'{SignalYield}\t{SignalMass}\t{logLToy.values[0]}\t{logLToy.values[1]}\t{True}\t{MAXLikelihoodToy}\t{locLikelihoodToy}\t{lratio}\t{logLToy.accurate}\t{logLToy.valid}\t{SEED+i}\n')
+            file.write(f'{SignalYield}\t{SignalFraction}\t{SignalMass}\t{logLToy.values[0]}\t{logLToy.values[1]}\t{True}\t{MAXLikelihoodToy}\t{locLikelihoodToy}\t{lratio}\t{logLToy.accurate}\t{logLToy.valid}\t{SEED+i}\n')
     
     PARS = np.array(PARS)
     Likelihood = np.array(Likelihood)
