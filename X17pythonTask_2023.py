@@ -1844,14 +1844,22 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0):
 
 def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothesis = False, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = []):
     startTime = time.time()
-    newP176 = logL.values[6]
-    newP179 = logL.values[7]
-    newP181 = logL.values[8]
-    _p176 = logL.values[6]
-    _p179 = logL.values[7]
-    _p181 = logL.values[8]
-    newAlphaField = logL.values[13]
-    _alphaField = logL.values[13]
+    newP176 = pars[6]
+    newP179 = pars[7]
+    newP181 = pars[8]
+    _p176 = pars[6]
+    _p179 = pars[7]
+    _p181 = pars[8]
+    newAlphaField = pars[13]
+    _alphaField = pars[13]
+    #newP176 = logL.values[6]
+    #newP179 = logL.values[7]
+    #newP181 = logL.values[8]
+    #_p176 = logL.values[6]
+    #_p179 = logL.values[7]
+    #_p181 = logL.values[8]
+    #newAlphaField = logL.values[13]
+    #_alphaField = logL.values[13]
     MAXLikelihood = logL.fval
     
     startToy = len(PARS)
@@ -2137,7 +2145,7 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
         print('Toy', i, ' - Time:', time.time() - startTime)
         print('Parameters:', tpars)
         
-        yields = np.concatenate([getYields(SignalYield, SignalFraction), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11]]])
+        yields = np.concatenate([getSignalYields(SignalYield, SignalFraction), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11]]])
         
         Hists.generateToy(yields, betas = betas, fluctuateTemplates = fluctuateTemplates, morph = tpars[-2:], mass=SignalMass)
         
@@ -2198,9 +2206,9 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
         #ys = []
         #for n in ns:
         #    ys.append(logLToy.fcn(np.concatenate([[n], logLToy.values[1:]])))
-        #
+        #ys = np.array(ys)
         #fig = plt.figure(figsize=(14, 14), dpi=100)
-        #plt.plot(ns, ys)
+        #plt.plot(ns[ys < 1e6], ys[ys < 1e6])
         #plt.savefig(workDir + '../' + prefix + '_S' + str(SEED) + '_T' + str(i) + '.png')
         
         #plotComparison(Hists, logLToy.values, betasToy, Hists.channels, compareWithBetas=False, logL = logLToy, Toy = True, BKGnames=Hists.BKGnames, subfix='_' + prefix + '_S' + str(SEED) + '_T' + str(i))
