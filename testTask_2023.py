@@ -69,6 +69,7 @@ dataRunMax = 511000
 workDir = './results/'
 dataFile = 'data2023.root'
 MCFile = 'MC2023tot.root'
+#MCFile = 'MC2023tot_initialX17statistics.root'
 
 ECODETYPE = 'ecode'
 
@@ -206,10 +207,10 @@ angleCutLow = 180
 angleCutHigh = 0
 TotalMCStatistics = []
 
-SignalYield = 10000
+SignalYield = 100
 SignalFraction = 70./270
 SignalMass = 16.9
-#BestBetas = 1
+BestBetas = 1
 
 startingPars[0] = SignalYield
 startingPars[1] = SignalFraction
@@ -231,7 +232,7 @@ angleCutLow = 180
 angleCutHigh = 0
 TotalMCStatistics = []
 
-np.random.seed(0)
+np.random.seed(1)
 TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor, simbeamEnergy = simbeamEnergy)
 
 HistsTest = X17pythonTask_2023.histHandler(channels, 'dataHist', ['X17_17.6', 'X17_18.1'], BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
@@ -247,8 +248,10 @@ HistsTest.SignalArrayNuisance5SigmaArray = np.copy(HistsTest.SignalArrayNuisance
 HistsTest.BKGarray = np.copy(HistsTest.BKGarrayToy)
 HistsTest.BKGarrayNuisance5Sigma = np.copy(HistsTest.BKGarrayNuisance5SigmaToy)
 HistsTest.BKGarrayNuisance5SigmaArray = np.copy(HistsTest.BKGarrayNuisance5SigmaArrayToy)
-#
 
+startingPars = np.array(logL.values)
+startingPars[:3] = [SignalYield, SignalFraction, SignalMass]
+print('Starting pars: ', startingPars)
 FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False])
 
 logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, HistsTest, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
@@ -260,26 +263,36 @@ testPars = ['nSig', 'pSig181', 'mass']
 for name in testPars:
     matplotlib.rcParams.update({'font.size': 30})
     fig = plt.figure(figsize=(21, 14), dpi=100)
-    if name == 'pSig181':
-        logL.draw_profile(name, bound = [0,1])
-        logL.draw_mnprofile(name, bound = [0,1])
-    else:
-        logL.draw_profile(name)
-        logL.draw_mnprofile(name)
+    #if name == 'pSig181':
+    #    logL.draw_profile(name, bound = [0,1])
+    #    logL.draw_mnprofile(name, bound = [0,1])
+    #else:
+    #    logL.draw_profile(name)
+    #    logL.draw_mnprofile(name)
+    logL.draw_profile(name)
+    logL.draw_mnprofile(name)
     plt.axhline(1, color='red')
     plt.ylim(0, plt.gca().get_ylim()[1])
 
 X17pythonTask_2023.plotComparison(HistsTest, logL.values, toyBestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames)
 
-#BestPars[0] = 270
-#BestPars[1] = 70./270
-#BestPars[2] = 16.9
+toyBestPars = np.array([0, 0.5, 16.9, 1.2e5, 0, 8e4, p176, p179, p181, 1, 2.2e5, 1.1e5, 0, 0])
+
+toyBestBetas = 1
+
+toyBestPars[0] = SignalYield
+toyBestPars[1] = SignalFraction
+toyBestPars[2] = SignalMass
+
 PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, HistsTest, toyBestBetas, toyBestPars, channels, nToys = 1000, doNullHypothesis = False, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
 
 
-'''
 # Signal grid point
-SignalYield = logL.values[0]
-SignalMass = logL.values[1]
-PARS, Likelihood, Accurate, Valid, Toy, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalMass, logL, HistsTest, BestPars, SEED = 0, nToys = 10, betas = betas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir)
-'''
+#SignalYield = logL.values[0]
+#SignalMass = logL.values[1]
+#SignalYield = 100
+#SignalFraction = 70./270
+#SignalMass = 16.9
+#
+#PARS, Likelihood, Accurate, Valid, Toy, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalFraction, SignalMass, logL, HistsTest, toyBestPars, SEED = 0, nToys = 10, betas = toyBestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir)
+
