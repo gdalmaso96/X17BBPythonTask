@@ -165,7 +165,7 @@ if __name__ == '__main__':
     ################################################################################################################################################
     # Fit sidebands
     startingPars = np.array([100, 0.5, 16.9, 4e5, 1e4, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0])
-    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, True, False])
+    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False])
 
     logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = True, FixedParameters = FixedParameters)
 
@@ -218,7 +218,7 @@ if __name__ == '__main__':
     # Signal grid point
     print('Start FC generation after ', time.time() - startTime, ' seconds')
     if generateDataSets:
-        outputFileName = 'DataAlternativeFC_N%d_m%.2f_NGrid%d_MGrid%.2f_SEED%d.txt' % (DataSignalYield, DataSignalMass, SignalYield, SignalMass, DataSEED)
+        outputFileName = 'DataAlternativeFC_N%d_p%.3f_m%.2f_NGrid%d_pGrid%.3f_MGrid%.2f_SEED%d.txt' % (DataSignalYield, DataSignalFraction, DataSignalMass, SignalYield, SignalFraction, SignalMass, DataSEED)
         #outputFileName = 'DataFC_N%d_m%.2f_NGrid%d_MGrid%.2f_SEED%d.txt' % (DataSignalYield, DataSignalMass, SignalYield, SignalMass, DataSEED)
         with open(workDir + outputFileName, 'w') as f:
             f.write('#DataSignalYield DataSignalFraction DataSignalMass SignalYield SignalFraction SignalMass FitYield FitFraction FitMass MAXLikelihood locLikelihood datalRatio accurate valid DataSEED\n')
