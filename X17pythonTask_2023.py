@@ -853,10 +853,12 @@ def combinedBins(channels, sample='dataHist'):
 
 def readData(channels, workDir = './results/', dataFile = 'data2023.root', dataRunMax = 511000, angleUS = 180):
     TotalDataNumber = 0
+    
+    runSelection = '((run>484912)*(run<511000))+((run>483899)*(run<484652))'
     with uproot.open(workDir + dataFile + ':ntuple') as f:
-        esum = f.arrays(['esum'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * (run < ' + str(dataRunMax) + ')', library='np')['esum']*1e3
-        angle = f.arrays(['angle'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * (run < ' + str(dataRunMax) + ')', library='np')['angle']
-        theta_gamma = f.arrays(['theta_gamma'], 'run < ' + str(dataRunMax), library='np')['theta_gamma']
+        esum = f.arrays(['esum'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * ' + runSelection, library='np')['esum']*1e3
+        angle = f.arrays(['angle'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * ' + runSelection, library='np')['angle']
+        theta_gamma = f.arrays(['theta_gamma'], runSelection, library='np')['theta_gamma']
         
         TotalDataNumber = len(theta_gamma)
         print('Total number of data events: ', TotalDataNumber)
@@ -2082,7 +2084,7 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
         Valid.append(logL.valid)
         Toy.append(False)
         if doingDataToy:
-            return SignalYield, SignalFraction, SignalMass, False, MAXLikelihood, locLikelihood, datalRatio, logL.accurate, logL.valid, SEED, FixedParameters, logL.values[0], logL.values[1]
+            return SignalYield, SignalFraction, SignalMass, False, MAXLikelihood, locLikelihood, datalRatio, logL.accurate, logL.valid, SEED, FixedParameters, logL.values[0], logL.values[1], logL.values[2]
         else:
             with open(workDir + outputFileName, 'w') as file:
                 file.write('# SignalYield\tSignalFraction\tSignalMass\tFitYield\tFitMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')
