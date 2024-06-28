@@ -1280,7 +1280,7 @@ def logLSetLimits(logL, alphavalues):
     # Signal
     logL.limits[0] = (0, 100000)
     logL.limits[1] = (0, 1)
-    logL.limits[2] = (16.5, 17.3)
+    logL.limits[2] = (16.5, 17.1)
     
     # IPC
     # Yields

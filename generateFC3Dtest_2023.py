@@ -128,7 +128,7 @@ alphaNames = ['res', 'field']
 
 scalingFactor = [1/2., 1/2., 1/2., 1/2., 1/2., 1/2., 1., 1.]
 
-angleUS = 180
+angleUS = 50
 
 simbeamEnergy = {
     'IPC400': [0.42, 0.46], # energy in MeV of simulated proton beam
