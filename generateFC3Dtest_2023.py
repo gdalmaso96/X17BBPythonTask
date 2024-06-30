@@ -12,7 +12,7 @@ startTime = time.time()
 def argparser():
     parser = argparse.ArgumentParser(description='Generate FC test')
     parser.add_argument('--SignalYield', type=int, default=0, help='Signal yield')
-    parser.add_argument('--SignalFraction', type=int, default=0, help='Signal fraction')
+    parser.add_argument('--SignalFraction', type=float, default=0, help='Signal fraction')
     parser.add_argument('--SignalMass', type=float, default=16.9, help='Signal mass')
     parser.add_argument('--SEED', type=int, default=0, help='Seed')
     parser.add_argument('--nToys', type=int, default=10, help='Number of toys')
