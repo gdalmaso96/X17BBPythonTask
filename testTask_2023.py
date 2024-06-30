@@ -74,7 +74,7 @@ MCFile = 'MC2023tot.root'
 ECODETYPE = 'ecode'
 
 X17masses = np.array([16.3, 16.5, 16.7, 16.9, 17.1, 17.3])
-dX17mass = 0.0001
+dX17mass = 0.001
 massRef = 16.9
 fitFakes = False
 
@@ -137,18 +137,16 @@ channelsUp = {
 
 #channels = channelsUp
 
-BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15']
+BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15', 'Fakes']
 
-scalingFactor = [1/2., 1/2., 1/2., 1/2., 1/2., 1/2., 1., 1.]
+scalingFactor = [1/2., 1/2., 1/2., 1/2., 1/2., 1/2., 1., 1., 1,]
+scalingFactor = [1/3., 1/3., 1/3., 1/3., 1/3., 1/3., 1., 1., 1,]
 #scalingFactor = 1
-
-if fitFakes:
-    BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15', 'Fakes']
 
 alphaNames = ['res', 'field']
 
 ################################################################################################################################################
-angleUS = 180
+angleUS = 50
 
 # Load data
 TotalDataNumber, channels = X17pythonTask_2023.readData(channels, workDir = workDir, dataFile = dataFile, dataRunMax = dataRunMax, angleUS = angleUS)
@@ -164,20 +162,23 @@ simbeamEnergy = {
 
 TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor, simbeamEnergy = simbeamEnergy, angleUS = angleUS)
 
+print('TotalMCStatistics: ', len(TotalMCStatistics))
+
 alphavalues = [np.linspace(-5*alphares, 5*alphares, 11), np.linspace(-5*alphafield, 5*alphafield, 11)]
 alphaRefs = [0, 0]
 Hists = X17pythonTask_2023.histHandler(channels, 'dataHist', ['X17_17.6', 'X17_18.1'], BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
 
+print(Hists.BKGarrayNuisance5SigmaArray.shape)
+
 
 ################################################################################################################################################
 # Fit sidebands
-startingPars = np.array([100, 0.5,  16.9, 4e5, 1e4, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0])
-FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False])
-if fitFakes:
-    startingPars = np.concatenate([startingPars, [1e2]])
-    FixedParameters = np.concatenate([FixedParameters, [False]])
+startingPars = np.array([100, 0.5,  16.9, 4e5, 1e4, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0, 0])
+FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True, False])
 
-logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = True, FixedParameters = FixedParameters)
+nullHypothesis = True
+
+logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters)
 
 BestBetas = np.copy(betas)
 BestPars = np.copy(logL.values)
@@ -194,11 +195,11 @@ Valid = []
 totPars = logL.values
 BETAS = betas
 
-#PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 10, doNullHypothesis = True, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
+PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 1000, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
 
 print('Time elapsed: ', time.time() - startTime)
 
-
+'''
 ################################################################################################################################################
 # FC test
 esumCutLow = 20
@@ -207,7 +208,7 @@ angleCutLow = 180
 angleCutHigh = 0
 TotalMCStatistics = []
 
-SignalYield = 100
+SignalYield = 1000
 SignalFraction = 70./270
 SignalMass = 16.9
 BestBetas = 1
@@ -220,9 +221,7 @@ TotalMCStatistics, nBKGs, channelsTest = X17pythonTask_2023.readMC(channels, CUT
 
 HistsTest = X17pythonTask_2023.histHandler(channelsTest, 'dataHist', ['X17_17.6', 'X17_18.1'], BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
 
-FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False])
-
-yields = np.concatenate([X17pythonTask_2023.getSignalYields(SignalYield, SignalFraction), X17pythonTask_2023.getYields(BestPars[3], BestPars[4], BestPars[5], BestPars[6], BestPars[7], BestPars[8], BestPars[2]), [BestPars[10], BestPars[11]]])
+yields = np.concatenate([X17pythonTask_2023.getSignalYields(SignalYield, SignalFraction), X17pythonTask_2023.getYields(BestPars[3], BestPars[4], BestPars[5], BestPars[6], BestPars[7], BestPars[8], BestPars[2]), [BestPars[10], BestPars[11], BestPars[12]]])
 
 
 # Do Toy
@@ -252,7 +251,6 @@ HistsTest.BKGarrayNuisance5SigmaArray = np.copy(HistsTest.BKGarrayNuisance5Sigma
 startingPars = np.array(logL.values)
 startingPars[:3] = [SignalYield, SignalFraction, SignalMass]
 print('Starting pars: ', startingPars)
-FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False])
 
 logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, HistsTest, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
 
@@ -276,7 +274,7 @@ for name in testPars:
 
 X17pythonTask_2023.plotComparison(HistsTest, logL.values, toyBestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames)
 
-toyBestPars = np.array([0, 0.5, 16.9, 1.2e5, 0, 8e4, p176, p179, p181, 1, 2.2e5, 1.1e5, 0, 0])
+toyBestPars = np.array([0, 0.5, 16.9, 1.2e5, 0, 8e4, p176, p179, p181, 1, 2.2e5, 1.1e5, 0, 0, 800])
 
 toyBestBetas = 1
 
@@ -284,15 +282,21 @@ toyBestPars[0] = SignalYield
 toyBestPars[1] = SignalFraction
 toyBestPars[2] = SignalMass
 
-PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, HistsTest, toyBestBetas, toyBestPars, channels, nToys = 1000, doNullHypothesis = False, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
+PARS = []
+Likelihood = []
+Accurate = []
+Valid = []
+
+PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, HistsTest, toyBestBetas, toyBestPars, channels, nToys = 100, doNullHypothesis = False, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
 
 
 # Signal grid point
-#SignalYield = logL.values[0]
-#SignalMass = logL.values[1]
-#SignalYield = 100
-#SignalFraction = 70./270
-#SignalMass = 16.9
-#
-#PARS, Likelihood, Accurate, Valid, Toy, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalFraction, SignalMass, logL, HistsTest, toyBestPars, SEED = 0, nToys = 10, betas = toyBestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir)
+SignalYield = logL.values[0]
+SignalMass = logL.values[1]
+SignalYield = 100
+SignalFraction = 70./270
+SignalMass = 16.9
 
+PARS, Likelihood, Accurate, Valid, Toy, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalFraction, SignalMass, logL, HistsTest, toyBestPars, SEED = 0, nToys = 10, betas = toyBestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir)
+
+'''

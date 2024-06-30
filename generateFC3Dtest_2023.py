@@ -119,14 +119,15 @@ MCFile = 'MC2023tot.root'
 ECODETYPE = 'ecode'
 
 X17masses = np.array([16.3, 16.5, 16.7, 16.9, 17.1, 17.3])
-dX17mass = 0.0001
+dX17mass = 0.001
 massRef = 16.9
 
-BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15']
+BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15', 'Fakes']
 
 alphaNames = ['res', 'field']
 
-scalingFactor = [1/2., 1/2., 1/2., 1/2., 1/2., 1/2., 1., 1.]
+scalingFactor = [1/2., 1/2., 1/2., 1/2., 1/2., 1/2., 1., 1., 1.]
+scalingFactor = [1/3., 1/3., 1/3., 1/3., 1/3., 1/3., 1., 1., 1.]
 
 angleUS = 50
 
@@ -164,8 +165,8 @@ if __name__ == '__main__':
 
     ################################################################################################################################################
     # Fit sidebands
-    startingPars = np.array([100, 0.5, 16.9, 4e5, 1e4, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0])
-    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False])
+    startingPars = np.array([100, 0.5, 16.9, 4e5, 1e4, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0, 0])
+    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True, False])
 
     logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = True, FixedParameters = FixedParameters)
 
@@ -180,11 +181,11 @@ if __name__ == '__main__':
     newP176 = logL.values[6]
     newP179 = logL.values[7]
     newP181 = logL.values[8]
-    newAlphaField = logL.values[13]
+    newAlphaField = logL.values[14]
     _p176 = logL.values[6]
     _p179 = logL.values[7]
     _p181 = logL.values[8]
-    _alphaField = logL.values[13]
+    _alphaField = logL.values[14]
 
     print('Time elapsed to prepare the parameters: ', time.time() - startTime)
     
@@ -202,9 +203,9 @@ if __name__ == '__main__':
 
     HistsTest = X17pythonTask_2023.histHandler(channelsTest, 'dataHist', ['X17_17.6', 'X17_18.1'], BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
     
-    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False])
+    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True, False])
 
-    yields = np.concatenate([X17pythonTask_2023.getSignalYields(BestPars[0], BestPars[1]), X17pythonTask_2023.getYields(BestPars[3], BestPars[4], BestPars[5], BestPars[6], BestPars[7], BestPars[8], BestPars[9]), [BestPars[10], BestPars[11]]])
+    yields = np.concatenate([X17pythonTask_2023.getSignalYields(BestPars[0], BestPars[1]), X17pythonTask_2023.getYields(BestPars[3], BestPars[4], BestPars[5], BestPars[6], BestPars[7], BestPars[8], BestPars[9]), [BestPars[10], BestPars[11], BestPars[12]]])
 
     np.random.seed(0)
     HistsTest.generateToy(yields, betas = BestBetas, fluctuateTemplates = True, morph = BestPars[-2:], mass=BestPars[2])
@@ -213,7 +214,7 @@ if __name__ == '__main__':
 
     print(HistsTest.DataArray)
 
-    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, True, False])
+    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True, False])
     
     # Signal grid point
     print('Start FC generation after ', time.time() - startTime, ' seconds')
@@ -233,7 +234,7 @@ if __name__ == '__main__':
             HistsTest = X17pythonTask_2023.histHandler(channelsTest, 'dataHist', ['X17_17.6', 'X17_18.1'], BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
             
             np.random.seed(DataSEED + i)
-            yields = np.concatenate([X17pythonTask_2023.getSignalYields(BestPars[0], BestPars[1]), X17pythonTask_2023.getYields(BestPars[3], BestPars[4], BestPars[5], BestPars[6], BestPars[7], BestPars[8], BestPars[9]), [BestPars[10], BestPars[11]]])
+            yields = np.concatenate([X17pythonTask_2023.getSignalYields(BestPars[0], BestPars[1]), X17pythonTask_2023.getYields(BestPars[3], BestPars[4], BestPars[5], BestPars[6], BestPars[7], BestPars[8], BestPars[9]), [BestPars[10], BestPars[11], BestPars[12]]])
             HistsTest.generateToy(yields, betas = BestBetas, fluctuateTemplates = True, morph = BestPars[-2:], mass=BestPars[2])
             HistsTest.DataArray = np.copy(HistsTest.DataArrayToy)
             HistsTest.SignalArray = np.copy(HistsTest.SignalArrayToy)

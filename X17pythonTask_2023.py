@@ -854,7 +854,8 @@ def combinedBins(channels, sample='dataHist'):
 def readData(channels, workDir = './results/', dataFile = 'data2023.root', dataRunMax = 511000, angleUS = 180):
     TotalDataNumber = 0
     
-    runSelection = '((run>484912)*(run<511000))+((run>483899)*(run<484652))'
+    runSelection = '(((run>484912)*(run<511000))+((run>483899)*(run<484652)))'
+    #runSelection = '(run<511000)'
     with uproot.open(workDir + dataFile + ':ntuple') as f:
         esum = f.arrays(['esum'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * ' + runSelection, library='np')['esum']*1e3
         angle = f.arrays(['angle'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * ' + runSelection, library='np')['angle']
@@ -904,7 +905,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             
             # Select from MC only events in common with MCCUT
             selectionCUT = np.isin(MC['run'], runCUT) & np.isin(MC['event'], eventCUT)
-            selectionCUT = selectionCUT | (MC[ECODETYPE] == 0) | (MC[ECODETYPE] == 20) | (MC[ECODETYPE] == 7) | (MC[ECODETYPE] == 8)
+            selectionCUT = selectionCUT | (MC[ECODETYPE] == 0) | (MC[ECODETYPE] == 20) | (MC[ECODETYPE] == 7) | (MC[ECODETYPE] == 8) | (MC[ECODETYPE] == 10)
             
             # Reduce proton beam energy bins
             selectionCUT400  = ( (MC[ECODETYPE] == 1) | (MC[ECODETYPE] == 4)) 
@@ -929,8 +930,9 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             
             # Get TotalMCStatistics
             ecode = MC[ECODETYPE][selectionCUT]
+            ecode[ecode == 10] = 9
             
-            for i in range(1, 9):
+            for i in range(1, 10):
                 TotalMCStatistics.append(np.sum(ecode == i)*scalingFactor[i - 1])
             
             _ecode = MC[ECODETYPE][selectionCUT]
@@ -974,6 +976,10 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                 _simpz_ele[(_ecode == 7) | (_ecode == 8)] = _simpz_ele[(_ecode == 7) | (_ecode == 8)]*0.152/0.1537
             
             _ecode = _ecode[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
+            
+            # Change fakes' ecode from 10 to 9 so that i - 1 index still works
+            _ecode[_ecode == 10] = 9
+            
             _esum = _esum[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
             _angle = _angle[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
             _px_pos = _px_pos[((theta_gamma >= 80) & (angle < angleUS))|(angle >= angleUS)]
@@ -1133,7 +1139,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
             #plt.show()
             
             # Get Backgrounds
-            for i in range(1, 9): # running on ecode
+            for i in range(1, 10): # running on ecode
                 esum = _esum[_ecode == i]
                 angle = _angle[_ecode == i]
                 
@@ -1185,7 +1191,7 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                     
         print('nData:', np.sum([channels[channel]['dataHist'].sum() for channel in channels.keys()]))
         nBKGs = {}
-        for i in range(1, 9):
+        for i in range(1, 10):
             nBKGs[BKGnames[i-1]] = np.sum([channels[channel][BKGnames[i-1]].sum() for channel in channels.keys()])
             print('n' + BKGnames[i-1], ':', nBKGs[BKGnames[i-1]])
     
@@ -1220,10 +1226,10 @@ def ll(Di, fPar = 0, mu = 0, mueff = 0, betas = 1, alphas = 0, P = 0):
 
 def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0):
     # Prepare yields vector
-    nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = pars
+    nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, nFakes, alphaRes, alphaField = pars
     nX17_176, nX17_181 = getSignalYields(nSig, pSig181)
     nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151 = getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15)
-    yields = np.array([nX17_176, nX17_181, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15])
+    yields = np.array([nX17_176, nX17_181, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15, nFakes])
     if doNullHypothesis:
         mass = None
         yields = yields[2:]
@@ -1300,9 +1306,12 @@ def logLSetLimits(logL, alphavalues):
     logL.limits[10] = (0, None)
     logL.limits[11] = (0, None)
     
+    # Fakes yields
+    logL.limits[12] = (None, None)
+    
     # Scales
-    logL.limits[12] = (alphavalues[0][0], alphavalues[0][-1])
-    logL.limits[13] = (alphavalues[1][0], alphavalues[1][-1])
+    logL.limits[13] = (alphavalues[0][0], alphavalues[0][-1])
+    logL.limits[14] = (alphavalues[1][0], alphavalues[1][-1])
     return logL
 
 # This function finds the best parameters
@@ -1313,7 +1322,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     
     ############################################
     # Find suitable starting point
-    names = ['nSig', 'pSig181', 'mass', 'nIPC400', 'nIPC700', 'nIPC1000', 'percent176', 'percent179', 'percent181', 'FIPC15', 'nEPC18', 'nEPC15', 'alphaRes', 'alphaField']
+    names = ['nSig', 'pSig181', 'mass', 'nIPC400', 'nIPC700', 'nIPC1000', 'percent176', 'percent179', 'percent181', 'FIPC15', 'nEPC18', 'nEPC15', 'Fakes', 'alphaRes', 'alphaField']
     logL = None
     if DoPreliminaryFit:
         def lambdaLikelihood(pars):
@@ -1396,10 +1405,10 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
         estimateFunction = Hists.getEstimate
         data = Hists.DataArray
         
-    nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = logL.values
+    nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, nFakes, alphaRes, alphaField = logL.values
     nX17_176, nX17_181 = getSignalYields(nSig, pSig181)
     nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151 = getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15)
-    yields = np.array([nX17_176, nX17_181, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15])
+    yields = np.array([nX17_176, nX17_181, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15, nFakes])
     mu0 = estimateFunction(yields, betas = 1, morph = [alphaRes, alphaField], mass = mass)
     Vmu0 = estimateVarianceFunction(yields, betas = 1, morph = [alphaRes, alphaField], mass = mass)
     mueff = np.power(mu0, 2)/(Vmu0 + (mu0==0))
@@ -1407,9 +1416,9 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     
     return logL, betas, logL.fval
 
-def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8'], subfix = ''):
+def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8', 'BKG9'], subfix = ''):
     PARS = np.copy(pars)
-    nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, alphaRes, alphaField = pars
+    nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, nFakes, alphaRes, alphaField = pars
     nX17_176, nX17_181 = getSignalYields(nSig, pSig181)
     nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151 = getYields(nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15)
     
@@ -1446,8 +1455,8 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     
     yields = getYields(tpars[:, 3], tpars[:, 4], tpars[:, 5], tpars[:, 6], tpars[:, 7], tpars[:, 8], tpars[:, 9])
     sigYields = getSignalYields(tpars[:, 0], tpars[:, 1])
-    tpars = np.column_stack((sigYields.transpose(), yields.transpose(), tpars[:, 10], tpars[:, 11]))
-    yields = np.array([nX17_176, nX17_181, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15])
+    tpars = np.column_stack((sigYields.transpose(), yields.transpose(), tpars[:, 10], tpars[:, 11], tpars[:, 12]))
+    yields = np.array([nX17_176, nX17_181, nIPC176, nIPC179, nIPC181, nIPC146, nIPC149, nIPC151, nEPC18, nEPC15, nFakes])
     print(yields)
     morph = [alphaRes, alphaField]
     
@@ -1852,16 +1861,16 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
     _p176 = pars[6]
     _p179 = pars[7]
     _p181 = pars[8]
-    newAlphaField = pars[13]
-    _alphaField = pars[13]
+    newAlphaField = pars[14]
+    _alphaField = pars[14]
     #newP176 = logL.values[6]
     #newP179 = logL.values[7]
     #newP181 = logL.values[8]
     #_p176 = logL.values[6]
     #_p179 = logL.values[7]
     #_p181 = logL.values[8]
-    #newAlphaField = logL.values[13]
-    #_alphaField = logL.values[13]
+    #newAlphaField = logL.values[14]
+    #_alphaField = logL.values[14]
     MAXLikelihood = logL.fval
     
     startToy = len(PARS)
@@ -1888,7 +1897,7 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
                 _p181 = np.random.normal(newP181, dP181)
                 while _p181 < 0 or _p181 > 1:
                     _p181 = np.random.normal(newP181, dP181)
-            if FixedParameters[13] == False:
+            if FixedParameters[14] == False:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
                 while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                     _alphaField = np.random.normal(newAlphaField, dAlphaField)
@@ -1906,7 +1915,7 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
             while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
         
-        yields = np.concatenate([getSignalYields(tpars[0], tpars[1]), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11]]])
+        yields = np.concatenate([getSignalYields(tpars[0], tpars[1]), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11], tpars[12]]])
         
         # Sample the toy
         if doNullHypothesis:
@@ -2009,8 +2018,8 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
     _p176 = pars[6]
     _p179 = pars[7]
     _p181 = pars[8]
-    newAlphaField = pars[13]
-    _alphaField = pars[13]
+    newAlphaField = pars[14]
+    _alphaField = pars[14]
     storeFixedParameters = np.copy(FixedParameters)
     
     startToy = len(PARS)
@@ -2126,7 +2135,7 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
                 _p181 = np.random.normal(newP181, dP181)
                 while _p181 < 0 or _p181 > 1:
                     _p181 = np.random.normal(newP181, dP181)
-            if FixedParameters[13] == False:
+            if FixedParameters[14] == False:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
                 while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                     _alphaField = np.random.normal(newAlphaField, dAlphaField)
@@ -2147,7 +2156,7 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
         print('Toy', i, ' - Time:', time.time() - startTime)
         print('Parameters:', tpars)
         
-        yields = np.concatenate([getSignalYields(SignalYield, SignalFraction), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11]]])
+        yields = np.concatenate([getSignalYields(SignalYield, SignalFraction), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11], tpars[12]]])
         
         Hists.generateToy(yields, betas = betas, fluctuateTemplates = fluctuateTemplates, morph = tpars[-2:], mass=SignalMass)
         
