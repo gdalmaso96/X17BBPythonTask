@@ -2096,8 +2096,8 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
             return SignalYield, SignalFraction, SignalMass, False, MAXLikelihood, locLikelihood, datalRatio, logL.accurate, logL.valid, SEED, FixedParameters, logL.values[0], logL.values[1], logL.values[2]
         else:
             with open(workDir + outputFileName, 'w') as file:
-                file.write('# SignalYield\tSignalFraction\tSignalMass\tFitYield\tFitMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')
-                file.write(f'{SignalYield}\t{SignalFraction}\t{SignalMass}\t{logL.values[0]}\t{logL.values[1]}\t{False}\t{MAXLikelihood}\t{locLikelihood}\t{datalRatio}\t{logL.accurate}\t{logL.valid}\t{SEED}\n')
+                file.write('# SignalYield\tSignalFraction\tSignalMass\tFitYield\tFitFraction\tFitMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')
+                file.write(f'{SignalYield}\t{SignalFraction}\t{SignalMass}\t{logL.values[0]}\t{logL.values[1]}\t{logL.values[2]}\t{False}\t{MAXLikelihood}\t{locLikelihood}\t{datalRatio}\t{logL.accurate}\t{logL.valid}\t{SEED}\n')
     
     ############################################
     # Generate lratio distribution with toys
