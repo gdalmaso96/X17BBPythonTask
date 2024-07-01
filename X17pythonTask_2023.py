@@ -857,12 +857,15 @@ def readData(channels, workDir = './results/', dataFile = 'data2023.root', dataR
     runSelection = '(((run>484912)*(run<511000))+((run>483899)*(run<484652)))'
     #runSelection = '(run<511000)'
     with uproot.open(workDir + dataFile + ':ntuple') as f:
-        esum = f.arrays(['esum'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * ' + runSelection, library='np')['esum']*1e3
-        angle = f.arrays(['angle'], f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * ' + runSelection, library='np')['angle']
+        selection = f'(((theta_gamma >= 80) * (angle < {angleUS}))+(angle >= {angleUS})) * ' + runSelection
+        esum = f.arrays(['esum'], selection, library='np')['esum']*1e3
+        angle = f.arrays(['angle'], selection, library='np')['angle']
+        #print(selection)
         theta_gamma = f.arrays(['theta_gamma'], runSelection, library='np')['theta_gamma']
         
         TotalDataNumber = len(theta_gamma)
         print('Total number of data events: ', TotalDataNumber)
+        print('Total number of data events in the selected region: ', len(esum))
         
         for channel in channels.keys():
             dataHist = np.histogram2d(esum, angle, bins=[channels[channel]['Esum'][2], channels[channel]['Angle'][2]], range=[channels[channel]['Esum'][:2], channels[channel]['Angle'][:2]])
@@ -1508,7 +1511,7 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
         singleYields = np.zeros(len(yields))
         singleYields[i] = yields[i]
         histTempEstimate = estimateFunction(singleYields, betas, morph=morph, mass=mass)
-        plt.step(binSides, np.append(histTempEstimate, histTempEstimate[-1]), where='post',color = f'C{i}', linewidth=3, label = popNames[i])
+        plt.step(binSides, np.append(histTempEstimate, histTempEstimate[-1]), where='post',color = f'C{i-1}', linewidth=3, label = popNames[i])
         print(popNames[i], ':', yields[i])
     for i in range(0,2):
         singleYields = np.zeros(len(yields))
