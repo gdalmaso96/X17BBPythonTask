@@ -1193,6 +1193,11 @@ def readMC(channels, CUTfile = '/Users/giovanni/PhD/Analysis/X17BBPythonTask/res
                 #plotChannels(channels, sample=samples, title=BKGnames[i-1])
                     
         print('nData:', np.sum([channels[channel]['dataHist'].sum() for channel in channels.keys()]))
+        nSigs = {}
+        nSigs['X17_17.6'] = np.sum([channels[channel]['X17_17.6_16.9'].sum() for channel in channels.keys()])
+        nSigs['X17_18.1'] = np.sum([channels[channel]['X17_18.1_16.9'].sum() for channel in channels.keys()])
+        print('nX17_17.6:', nSigs['X17_17.6'])
+        print('nX17_18.1:', nSigs['X17_18.1'])
         nBKGs = {}
         for i in range(1, 10):
             nBKGs[BKGnames[i-1]] = np.sum([channels[channel][BKGnames[i-1]].sum() for channel in channels.keys()])
@@ -1288,6 +1293,7 @@ def logLSetLimits(logL, alphavalues):
     # Set limits
     # Signal
     logL.limits[0] = (0, 100000)
+    #logL.limits[0] = (-100000, 100000)
     logL.limits[1] = (0, 1)
     logL.limits[2] = (16.5, 17.1)
     
@@ -1419,7 +1425,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     
     return logL, betas, logL.fval
 
-def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8', 'BKG9'], subfix = ''):
+def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8', 'BKG9'], subfix = '', CHANNEL = '', LOGARITMIC = True, TITLE = ''):
     PARS = np.copy(pars)
     nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, nFakes, alphaRes, alphaField = pars
     nX17_176, nX17_181 = getSignalYields(nSig, pSig181)
@@ -1436,18 +1442,21 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
         estimateUncertaintyFunction = Hists.getEstimateUncertainty
         data = Hists.DataArray
     
-    matplotlib.rcParams.update({'font.size': 30})
+    matplotlib.rcParams.update({'font.size': 35})
     binWidths = np.array(combinedBins(Hists.channels))
     binCenters = [np.sum(binWidths[:i]) + binWidths[i]/2 for i in range(len(binWidths))]
     binSides = [np.sum(binWidths[:i]) for i in range(len(binWidths))]
     binSides.append(np.sum(binWidths))
 
-    if (binWidths.sum()/800) < 1:
+    if CHANNEL != '':
+        fig = plt.figure(figsize=(21, 14), dpi=100)
+    elif (binWidths.sum()/800) < 1:
         fig = plt.figure(figsize=(28, 14), dpi=100)
     else:
         fig = plt.figure(figsize=(28*binWidths.sum()/800, 14), dpi=100)
         #fig = plt.figure(figsize=(2*28*binWidths.sum()/800, 14/2), dpi=100)
-
+    if TITLE != '':
+        plt.suptitle(TITLE)
     plt.subplots_adjust(hspace=0.0, top=0.98, bottom=0.15)
     plt.subplot(6, 1, (1, 4))
 
@@ -1475,7 +1484,8 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
         histEstimate.append(estimateFunction(p, tbetas, morph=m, mass = M))
     histFitUncertainty = np.std(np.array(histEstimate), axis=0)
 
-
+    histEstimateBKG = estimateFunction(np.concatenate((0, 0, yields[2:]), axis=None), betas, morph=morph, mass=mass)
+    histEstimateSig = estimateFunction(np.concatenate((nX17_176, nX17_181, 0, 0, 0, 0, 0, 0, 0, 0, 0), axis=None), betas, morph=morph, mass=mass)
     histEstimate = estimateFunction(yields, betas, morph=morph, mass=mass)
     histEstimateError = estimateUncertaintyFunction(yields, betas, morph=morph, mass=mass)
     effectiveHist = np.power(histEstimate/histEstimateError, 2)
@@ -1496,10 +1506,12 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
 
     # Plot data and fit
     plt.step(binSides, np.append(histEstimate, histEstimate[-1]), where='post',color = cm.coolwarm(0))
-    plt.bar(binCenters, histEstimate, label='Fit', alpha=0.5, color = cm.coolwarm(0),  width=binWidths)
+    plt.bar(binCenters, histEstimateBKG, label='BKG', alpha=0.5, color = cm.coolwarm(0),  width=binWidths)
+    plt.bar(binCenters, histEstimateSig, bottom= histEstimateBKG, label='Signal', alpha=0.5, color = cm.coolwarm(0.99),  width=binWidths)
     plt.errorbar(binCenters, estimateFunction(yields, betas, morph=morph, mass=mass), yerr=[histEstimateLowerTot, histEstimateUpperTot], fmt='none', label='Fit uncertainty', color = cm.coolwarm(0))
     plt.errorbar(binCenters, data, yerr=np.sqrt(data), label='Data', color = 'black', fmt='o')
-    plt.yscale('log')
+    if LOGARITMIC:
+        plt.yscale('log')
     plt.xlim(0, binSides[-1])
     plt.gca().axes.xaxis.set_ticklabels([])
     
@@ -1528,22 +1540,31 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     index = 0
     xticks = []
     xtickslabels = []
+    minx = 1e6
+    maxx = 0
     for channel in Hists.channels.keys():
         esumBins = np.linspace(Hists.channels[channel]['Esum'][0], Hists.channels[channel]['Esum'][1], Hists.channels[channel]['Esum'][2]+1)
         #esumBins = (esumBins[1:] + esumBins[:-1])/2
         minAngle = Hists.channels[channel]['Angle'][0]
         maxAngle = Hists.channels[channel]['Angle'][1]
+        if CHANNEL == channel:
+            minx = binSides[index]
         for esumMin, esumMax in zip(esumBins[:-1], esumBins[1:]):
             index = index + Hists.channels[channel]['Angle'][2]
             plt.vlines(binSides[index], 0, 1e5, colors='k', linestyles='dashed')
             # Text inside the box
             xticks.append(0.5*(binSides[index] + binSides[index-Hists.channels[channel]['Angle'][2]]))
             xtickslabels.append(f'[{esumMin:.2f}, {esumMax:.2f}] MeV\n[{minAngle}, {maxAngle}] deg')
+        if CHANNEL == channel:
+            maxx = binSides[index-Hists.channels[channel]['Angle'][2]]
     
-    plt.legend(loc='upper right', ncol=int(len(BKGnames)*0.5), fontsize=20)
+    plt.legend(loc='upper right', ncol=int(len(BKGnames)*0.5), fontsize=30)
     
-    #plt.ylim(0.5, 7e2)
-    plt.ylim(0.5, 1e5)
+    plt.ylim(0.5, 1e3)
+    if LOGARITMIC:
+        plt.ylim(0.5, 1e5)
+    if CHANNEL != '':
+        plt.xlim(minx, maxx)
     
     plt.subplot(6, 1, (5,6))
     if compareWithBetas:
@@ -1578,7 +1599,7 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     
     plt.errorbar(binCenters, redResiduals, yerr=reddData, fmt='o', color = 'k', label='Residuals', linewidth=3)
     plt.xlim(0, binSides[-1])
-    plt.legend(loc='upper right', fontsize=20)
+    plt.legend(loc='lower right', fontsize=25)
     plt.ylabel('Red. res.\n' + r'[$\Delta$data]')
     miny = plt.ylim()[0]
     maxy = plt.ylim()[1]
@@ -1594,14 +1615,16 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
             index = index + channels[channel]['Angle'][2]
             plt.vlines(binSides[index], miny, maxy, colors='k', linestyles='dashed')
     plt.hlines(0, 0, binSides[-1], colors='k', linestyles='dotted')
-
     plt.ylim(miny, maxy)
 
     plt.gca().set_xticks(xticks)
-    plt.gca().set_xticklabels(xtickslabels, fontsize=20)
+    plt.gca().set_xticklabels(xtickslabels, fontsize=25)
     plt.xticks(rotation=45)
+    if CHANNEL != '':
+        plt.xlim(minx, maxx)
     plt.savefig('Comparison' + subfix + '.png', bbox_inches='tight')
-    
+                
+            
     fig = plt.figure(figsize=(14, 14), dpi=100)
     if compareWithBetas:
         pulls = (data - histEstimate)/np.sqrt(dDataHist**2 +  + histEstimateError**2  + (dDataHist == 0)) * (dDataHist > 0)
@@ -1624,6 +1647,7 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     plt.legend()
     plt.xlabel(r'$\beta$')
     plt.savefig('Betas' + subfix + '.png')
+    matplotlib.rcParams.update({'font.size': 30})
 
 def minos (logL, name1, name2, x1, x2, pars, MAXLikelihood = 0):
     fixed = np.copy(logL.fixed)
