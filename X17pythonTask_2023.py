@@ -1447,6 +1447,10 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     binCenters = [np.sum(binWidths[:i]) + binWidths[i]/2 for i in range(len(binWidths))]
     binSides = [np.sum(binWidths[:i]) for i in range(len(binWidths))]
     binSides.append(np.sum(binWidths))
+    
+    figHeight = 14
+    if TITLE != '':
+        figHeight /= (0.93/0.98)
 
     if CHANNEL != '':
         fig = plt.figure(figsize=(21, 14), dpi=100)
@@ -1457,7 +1461,9 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
         #fig = plt.figure(figsize=(2*28*binWidths.sum()/800, 14/2), dpi=100)
     if TITLE != '':
         plt.suptitle(TITLE)
-    plt.subplots_adjust(hspace=0.0, top=0.98, bottom=0.15)
+        plt.subplots_adjust(hspace=0.0, top=0.93, bottom=0.15)
+    else:
+        plt.subplots_adjust(hspace=0.0, top=0.98, bottom=0.15)
     plt.subplot(6, 1, (1, 4))
 
     # Bootstrap fit uncertainties
@@ -2108,7 +2114,7 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
     
     datalRatio = locLikelihood - MAXLikelihood
     
-    prefix = 'AlternativeFC_N%.0f_p%.3f_m%.2f' % (SignalYield, SignalFraction, SignalMass) + '_T' + str(fluctuateTemplates)
+    prefix = 'FC2023_N%.0f_p%.3f_m%.2f' % (SignalYield, SignalFraction, SignalMass) + '_T' + str(fluctuateTemplates)
     outputFileName = prefix + '_S' + str(SEED) + '.txt'
     
     # Append result to file
