@@ -53,6 +53,7 @@ angleCutHigh = 0  # No cut
 dataRunMax = 511000
 
 workDir = './results/'
+#workDir = '/data/project/general/muonGroup/simulations/giovanni/X17BBPythonTask/results/'
 dataFile = 'data2023.root'
 MCFile = 'MC2023tot.root'
 
@@ -133,7 +134,7 @@ BestPars = np.copy(logL.values)
 print('Best fit values: ', BestPars)
 print('Correlation matrix: ', logL.covariance.correlation())
 
-X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True)
+X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'NullHypothesisFit_LogScale_Full', TITLE='Null hypothesis')
 
 nullHypothesis = False
 
@@ -145,9 +146,9 @@ BestPars = np.copy(logL.values)
 print('Best fit values: ', BestPars)
 print('Correlation matrix: ', logL.covariance.correlation())
 
-X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True)
-X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True)
-X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=False)
+X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'SignalHypothesisFit_LogScale_Full', TITLE='Signal hypothesis')
+X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'SignalHypothesisFit_LogScale_SignalRegion', TITLE='Signal hypothesis')
+X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=False, subfix = 'SignalHypothesisFit_LinearScale_SignalRegion', TITLE='Signal hypothesis')
 
 PARS = []
 Likelihood = []
@@ -179,4 +180,4 @@ logL.values[0] = 0
 logL.covariance[0,0] = 0
 logL.covariance[1,1] = 0
 logL.covariance[2,2] = 0
-X17pythonTask_2023.plotComparison(Hists, logL.values, BestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, TITLE='')
+X17pythonTask_2023.plotComparison(Hists, logL.values, BestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'SignalHypothesisFit_NullSignal_LogScale_SignalRegion', TITLE='Signal hypothesis, best fit with ' + r'\mathcal{N}_{\mathrm{Sig}} = 0')
