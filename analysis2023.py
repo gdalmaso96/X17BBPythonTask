@@ -160,19 +160,20 @@ BETAS = betas
 PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 1000, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
 
 testPars = ['nSig', 'pSig181', 'mass']
-#for name in testPars:
-#    matplotlib.rcParams.update({'font.size': 30})
-#    fig = plt.figure(figsize=(21, 14), dpi=100)
-#    if name == 'pSig181':
-#        logL.draw_profile(name, bound = [0,1])
-#        logL.draw_mnprofile(name, bound = [0,1])
-#    else:
-#        logL.draw_profile(name)
-#        logL.draw_mnprofile(name)
-#    logL.draw_profile(name)
-#    logL.draw_mnprofile(name)
-#    plt.axhline(1, color='red')
-#    plt.ylim(0, plt.gca().get_ylim()[1])
+for name in testPars:
+    matplotlib.rcParams.update({'font.size': 30})
+    fig = plt.figure(figsize=(21, 14), dpi=100)
+    if name == 'pSig181':
+        logL.draw_profile(name, bound = [0,1])
+        logL.draw_mnprofile(name, bound = [0,1])
+    else:
+        logL.draw_profile(name)
+        logL.draw_mnprofile(name)
+    logL.draw_profile(name)
+    logL.draw_mnprofile(name)
+    plt.axhline(1, color='red')
+    plt.ylim(0, plt.gca().get_ylim()[1])
+    plt.savefig(workDir + name + '_profile.png')
 
 print('Time elapsed: ', time.time() - startTime)
 
