@@ -1295,7 +1295,7 @@ def logLSetLimits(logL, alphavalues):
     logL.limits[0] = (0, 100000)
     #logL.limits[0] = (-100000, 100000)
     logL.limits[1] = (0, 1)
-    logL.limits[2] = (16.3, 17.1)
+    logL.limits[2] = (16.5, 17.1)
     #logL.limits[2] = (16.3, 17.4)
     
     # IPC
