@@ -1295,7 +1295,8 @@ def logLSetLimits(logL, alphavalues):
     logL.limits[0] = (0, 100000)
     #logL.limits[0] = (-100000, 100000)
     logL.limits[1] = (0, 1)
-    logL.limits[2] = (16.5, 17.1)
+    logL.limits[2] = (16.3, 17.1)
+    #logL.limits[2] = (16.3, 17.4)
     
     # IPC
     # Yields
@@ -1805,7 +1806,7 @@ def minosError(logL, name, pars, errors, MAXLikelihood=0):
     
     return xmin, xmax
 
-def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0):
+def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0, singlePlots = False):
     nParameters = len(logL.parameters)
     
     matplotlib.rcParams.update({'font.size': 15})
@@ -1818,7 +1819,10 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0):
             if i > j:
                 print('Doing profile on', logL.parameters[i], logL.parameters[j])
                 #try:
-                plt.subplot(nParameters, nParameters, nParameters*i + j + 1)
+                if singlePlots:
+                    fig = plt.figure(figsize=(14, 14), dpi=100)
+                else:
+                    plt.subplot(nParameters, nParameters, nParameters*i + j + 1)
                 
                 
                 if logL.fixed[i] == False and logL.fixed[j] == False:
@@ -1865,10 +1869,16 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0):
                     plt.ylabel(logL.parameters[i])
                     
                 plt.plot(logL.values[logL.parameters[j]], logL.values[logL.parameters[i]], '+', label='Best fit', markersize = 25)
+                if singlePlots:
+                    plt.show()
+                    plt.savefig(f'Profile_{logL.parameters[i]}_{logL.parameters[j]}.png')
                 
             elif i == j:
                 print('Doing profile on', logL.parameters[i])
-                plt.subplot(nParameters, nParameters, nParameters*i + j + 1)
+                if singlePlots:
+                    fig = plt.figure(figsize=(14, 14), dpi=100)
+                else:
+                    plt.subplot(nParameters, nParameters, nParameters*i + j + 1)
                 if logL.fixed[i] == False:
                     xmin, xmax = minosError(logL, logL.parameters[j], BestPars, BestErrors, MAXLikelihood=MAXLikelihood)
                     
@@ -1880,6 +1890,9 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0):
                 plt.legend()
                 plt.xlabel(logL.parameters[j])
                 plt.gca().set_title(logL.parameters[j] + ' = ' + f'{logL.values[logL.parameters[j]]:.2e}')
+                if singlePlots:
+                    plt.show()
+                    plt.savefig(f'Profile_{logL.parameters[i]}.png')
             #print(logL.fval)
             #print(BestPars)
             #print(logL.values)
@@ -2265,7 +2278,7 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
         TIME.append(time.time() - _TIME)
         print(FixedParameters)
         with open(workDir + outputFileName, 'a') as file:
-            file.write(f'{SignalYield}\t{SignalFraction}\t{SignalMass}\t{logLToy.values[0]}\t{logLToy.values[1]}\t{True}\t{MAXLikelihoodToy}\t{locLikelihoodToy}\t{lratio}\t{logLToy.accurate}\t{logLToy.valid}\t{SEED+i}\n')
+            file.write(f'{SignalYield}\t{SignalFraction}\t{SignalMass}\t{logLToy.values[0]}\t{logLToy.values[1]}\t{logLToy.values[2]}\t{True}\t{MAXLikelihoodToy}\t{locLikelihoodToy}\t{lratio}\t{logLToy.accurate}\t{logLToy.valid}\t{SEED+i}\n')
     
     PARS = np.array(PARS)
     Likelihood = np.array(Likelihood)
