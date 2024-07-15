@@ -88,97 +88,325 @@ channels = {
 }
 
 BKGnames = ['IPC 17.6', 'IPC 17.9', 'IPC 18.1', 'IPC 14.6', 'IPC 14.9', 'IPC 15.1', 'EPC 18', 'EPC 15', 'Fakes']
-
-scalingFactor = [1/3., 1/3., 1/3., 1/3., 1/3., 1/3., 1., 1., 1,]
 alphaNames = ['res', 'field']
 
 ################################################################################################################################################
-angleUS = 50
+# Positive signal hypothesis fit
+if True:
+    print('Starting positive signal hypothesis fit')
+    scalingFactor = [1/3., 1/3., 1/3., 1/3., 1/3., 1/3., 1., 1., 1,]
+    angleUS = 50
+    negSignal = False
 
-# Load data
-TotalDataNumber, channels = X17pythonTask_2023.readData(channels, workDir = workDir, dataFile = dataFile, dataRunMax = dataRunMax, angleUS = angleUS)
-print('TotalDataNumber: ', TotalDataNumber)
+    # Load data
+    TotalDataNumber, channels = X17pythonTask_2023.readData(channels, workDir = workDir, dataFile = dataFile, dataRunMax = dataRunMax, angleUS = angleUS)
+    print('TotalDataNumber: ', TotalDataNumber)
 
-X17pythonTask_2023.plotChannels(channels, sample='dataHist', title='Data')
+    X17pythonTask_2023.plotChannels(channels, sample='dataHist', title='Data')
 
-# Load MC
-simbeamEnergy = {
-    'IPC400': [0.42, 0.46], # energy in MeV of simulated proton beam
-    'IPC700': [0.593, 0.836], # energy in MeV of simulated proton beam
-    'IPC1000': [0.980, 1.060] # energy in MeV of simulated proton beam
-    }
+    # Load MC
+    simbeamEnergy = {
+        'IPC400': [0.42, 0.46], # energy in MeV of simulated proton beam
+        'IPC700': [0.593, 0.836], # energy in MeV of simulated proton beam
+        'IPC1000': [0.980, 1.060] # energy in MeV of simulated proton beam
+        }
 
-TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor, simbeamEnergy = simbeamEnergy, angleUS = angleUS)
+    TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor, simbeamEnergy = simbeamEnergy, angleUS = angleUS)
 
-print('TotalMCStatistics: ', len(TotalMCStatistics))
+    print('TotalMCStatistics: ', len(TotalMCStatistics))
 
-alphavalues = [np.linspace(-5*alphares, 5*alphares, 11), np.linspace(-5*alphafield, 5*alphafield, 11)]
-alphaRefs = [0, 0]
-Hists = X17pythonTask_2023.histHandler(channels, 'dataHist', ['X17_17.6', 'X17_18.1'], BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
+    alphavalues = [np.linspace(-5*alphares, 5*alphares, 11), np.linspace(-5*alphafield, 5*alphafield, 11)]
+    alphaRefs = [0, 0]
+    Hists = X17pythonTask_2023.histHandler(channels, 'dataHist', ['X17_17.6', 'X17_18.1'], BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
 
-print(Hists.BKGarrayNuisance5SigmaArray.shape)
+    print(Hists.BKGarrayNuisance5SigmaArray.shape)
 
+
+    ################################################################################################################################################
+    # Fit
+    startingPars = np.array([100, 0.5,  16.9, 4e5, 0, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0, 0])
+    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True, False])
+
+    nullHypothesis = True
+
+    logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, negSignal = negSignal)
+
+    BestBetas = np.copy(betas)
+    BestPars = np.copy(logL.values)
+
+    print('Best fit values: ', BestPars)
+    print('Correlation matrix: ', logL.covariance.correlation())
+
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'NullHypothesisFit_LogScale_Full', TITLE='Null hypothesis')
+
+    nullHypothesis = False
+
+    logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, negSignal = negSignal)
+
+    BestBetas = np.copy(betas)
+    BestPars = np.copy(logL.values)
+    BestErrors = np.copy(logL.errors)
+
+    print('Best fit values: ', BestPars)
+    print('Correlation matrix: ', logL.covariance.correlation())
+
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'SignalHypothesisFit_LogScale_Full', TITLE='Signal hypothesis')
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'SignalHypothesisFit_LogScale_SignalRegion', TITLE='Signal hypothesis', SHOWBACKGROUNDS = False)
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=False, subfix = 'SignalHypothesisFit_LinearScale_SignalRegion', TITLE='Signal hypothesis', SHOWBACKGROUNDS = False)
+
+    PARS = []
+    Likelihood = []
+    Accurate = []
+    Valid = []
+    totPars = logL.values
+    BETAS = betas
+
+    #PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 1000, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid, negSignal = negSignal)
+
+    #X17pythonTask_2023.drawMNmatrix(logL, BestPars, BestErrors, steps = 7, MAXLikelihood=logL.fval, singlePlots = True)
+
+    #testPars = ['nSig', 'pSig181', 'mass']
+    #testPars = logL.parameters
+    #for name in testPars:
+    #    matplotlib.rcParams.update({'font.size': 30})
+    #    fig = plt.figure(figsize=(21, 14), dpi=100)
+    #    #if name == 'nSig':
+    #    #    logL.draw_profile(name, bound = [0,80])
+    #    #    logL.draw_mnprofile(name, bound = [0,80])
+    #    if name == 'pSig181':
+    #        logL.draw_profile(name, bound = [0,1])
+    #        logL.draw_mnprofile(name, bound = [0,1])
+    #        plt.xlim(0, 1)
+    #    elif name == 'mass':
+    #        logL.draw_profile(name, bound = [17.2,17.4])
+    #        logL.draw_mnprofile(name, bound = [17.2,17.4])
+    #        plt.xlim(17.1, 17.5)
+    #    else:
+    #        logL.draw_profile(name)
+    #        logL.draw_mnprofile(name)
+    #    #logL.draw_profile(name)
+    #    #logL.draw_mnprofile(name)
+    #    plt.axhline(1, color='red')
+    #    plt.ylim(0, plt.gca().get_ylim()[1])
+    #    plt.savefig(workDir + name + '_profile.png', bbox_inches='tight')
+    #    #print(name + ' error: ', X17pythonTask_2023.minosError(logL, name, BestPars, logL.errors, MAXLikelihood=logL.fval))
+
+    print('Time elapsed: ', time.time() - startTime)
+
+    logL.values[0] = 0
+    logL.covariance[0,0] = 0
+    logL.covariance[1,1] = 0
+    logL.covariance[2,2] = 0
+    X17pythonTask_2023.plotComparison(Hists, logL.values, BestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'SignalHypothesisFit_NullSignal_LogScale_SignalRegion', TITLE='Signal hypothesis, best fit with ' + r'$\mathcal{N}_{\mathrm{Sig}} = 0$', SHOWBACKGROUNDS = False)
+
+    X17pythonTask_2023.plotComparison(Hists, logL.values, BestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=False, subfix = 'SignalHypothesisFit_NullSignal_LinearScale_SignalRegion', TITLE='Signal hypothesis, best fit with ' + r'$\mathcal{N}_{\mathrm{Sig}} = 0$', SHOWBACKGROUNDS = False)
 
 ################################################################################################################################################
-# Fit sidebands
-startingPars = np.array([100, 0.5,  16.9, 4e5, 1e4, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0, 0])
-FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True, False])
+# Unbound signal hypothesis fit
+if False:
+    print('Starting unbound signal hypothesis fit')
+    scalingFactor = [1/3., 1/3., 1/3., 1/3., 1/3., 1/3., 1., 1., 1,]
+    angleUS = 50
+    negSignal = True
 
-nullHypothesis = True
+    # Load data
+    TotalDataNumber, channels = X17pythonTask_2023.readData(channels, workDir = workDir, dataFile = dataFile, dataRunMax = dataRunMax, angleUS = angleUS)
+    print('TotalDataNumber: ', TotalDataNumber)
 
-logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters)
+    X17pythonTask_2023.plotChannels(channels, sample='dataHist', title='Data')
 
-BestBetas = np.copy(betas)
-BestPars = np.copy(logL.values)
+    # Load MC
+    TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor, simbeamEnergy = simbeamEnergy, angleUS = angleUS)
 
-print('Best fit values: ', BestPars)
-print('Correlation matrix: ', logL.covariance.correlation())
+    print('TotalMCStatistics: ', len(TotalMCStatistics))
 
-X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'NullHypothesisFit_LogScale_Full', TITLE='Null hypothesis')
+    alphavalues = [np.linspace(-5*alphares, 5*alphares, 11), np.linspace(-5*alphafield, 5*alphafield, 11)]
+    alphaRefs = [0, 0]
+    Hists = X17pythonTask_2023.histHandler(channels, 'dataHist', ['X17_17.6', 'X17_18.1'], BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
 
-nullHypothesis = False
+    print(Hists.BKGarrayNuisance5SigmaArray.shape)
 
-logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters)
 
-BestBetas = np.copy(betas)
-BestPars = np.copy(logL.values)
+    ################################################################################################################################################
+    # Fit
+    startingPars = np.array([100, 0.5,  16.9, 4e5, 0, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0, 0])
+    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True, False])
 
-print('Best fit values: ', BestPars)
-print('Correlation matrix: ', logL.covariance.correlation())
+    nullHypothesis = True
 
-X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'SignalHypothesisFit_LogScale_Full', TITLE='Signal hypothesis')
-X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'SignalHypothesisFit_LogScale_SignalRegion', TITLE='Signal hypothesis')
-X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=False, subfix = 'SignalHypothesisFit_LinearScale_SignalRegion', TITLE='Signal hypothesis')
+    logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, negSignal = negSignal)
 
-PARS = []
-Likelihood = []
-Accurate = []
-Valid = []
-totPars = logL.values
-BETAS = betas
+    BestBetas = np.copy(betas)
+    BestPars = np.copy(logL.values)
 
-PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 1000, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid)
+    print('Best fit values: ', BestPars)
+    print('Correlation matrix: ', logL.covariance.correlation())
 
-testPars = ['nSig', 'pSig181', 'mass']
-for name in testPars:
-    matplotlib.rcParams.update({'font.size': 30})
-    fig = plt.figure(figsize=(21, 14), dpi=100)
-    if name == 'pSig181':
-        logL.draw_profile(name, bound = [0,1])
-        logL.draw_mnprofile(name, bound = [0,1])
-    else:
-        logL.draw_profile(name)
-        logL.draw_mnprofile(name)
-    logL.draw_profile(name)
-    logL.draw_mnprofile(name)
-    plt.axhline(1, color='red')
-    plt.ylim(0, plt.gca().get_ylim()[1])
-    plt.savefig(workDir + name + '_profile.png')
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'NullHypothesisFit_LogScale_Full', TITLE='Null hypothesis')
 
-print('Time elapsed: ', time.time() - startTime)
+    nullHypothesis = False
 
-logL.values[0] = 0
-logL.covariance[0,0] = 0
-logL.covariance[1,1] = 0
-logL.covariance[2,2] = 0
-X17pythonTask_2023.plotComparison(Hists, logL.values, BestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'SignalHypothesisFit_NullSignal_LogScale_SignalRegion', TITLE='Signal hypothesis, best fit with ' + r'\mathcal{N}_{\mathrm{Sig}} = 0')
+    logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, negSignal = negSignal)
+
+    BestBetas = np.copy(betas)
+    BestPars = np.copy(logL.values)
+    BestErrors = np.copy(logL.errors)
+
+    print('Best fit values: ', BestPars)
+    print('Correlation matrix: ', logL.covariance.correlation())
+
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'NegativeSignalHypothesisFit_LogScale_Full', TITLE='Negative signal hypothesis')
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'NegativeSignalHypothesisFit_LogScale_SignalRegion', TITLE='Negative signal hypothesis', SHOWBACKGROUNDS = False)
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=False, subfix = 'NegativeSignalHypothesisFit_LinearScale_SignalRegion', TITLE='Negative signal hypothesis', SHOWBACKGROUNDS = False)
+
+    PARS = []
+    Likelihood = []
+    Accurate = []
+    Valid = []
+    totPars = logL.values
+    BETAS = betas
+
+    #PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 1000, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid, negSignal = negSignal)
+
+    #X17pythonTask_2023.drawMNmatrix(logL, BestPars, BestErrors, steps = 7, MAXLikelihood=logL.fval, singlePlots = True)
+
+    #testPars = ['nSig', 'pSig181', 'mass']
+    #testPars = logL.parameters
+    #for name in testPars:
+    #    matplotlib.rcParams.update({'font.size': 30})
+    #    fig = plt.figure(figsize=(21, 14), dpi=100)
+    #    #if name == 'nSig':
+    #    #    logL.draw_profile(name, bound = [0,80])
+    #    #    logL.draw_mnprofile(name, bound = [0,80])
+    #    if name == 'pSig181':
+    #        logL.draw_profile(name, bound = [0,1])
+    #        logL.draw_mnprofile(name, bound = [0,1])
+    #        plt.xlim(0, 1)
+    #    elif name == 'mass':
+    #        logL.draw_profile(name, bound = [17.2,17.4])
+    #        logL.draw_mnprofile(name, bound = [17.2,17.4])
+    #        plt.xlim(17.1, 17.5)
+    #    else:
+    #        logL.draw_profile(name)
+    #        logL.draw_mnprofile(name)
+    #    #logL.draw_profile(name)
+    #    #logL.draw_mnprofile(name)
+    #    plt.axhline(1, color='red')
+    #    plt.ylim(0, plt.gca().get_ylim()[1])
+    #    plt.savefig(workDir + name + '_profile.png', bbox_inches='tight')
+    #    #print(name + ' error: ', X17pythonTask_2023.minosError(logL, name, BestPars, logL.errors, MAXLikelihood=logL.fval))
+
+    print('Time elapsed: ', time.time() - startTime)
+
+    logL.values[0] = 0
+    logL.covariance[0,0] = 0
+    logL.covariance[1,1] = 0
+    logL.covariance[2,2] = 0
+    X17pythonTask_2023.plotComparison(Hists, logL.values, BestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'NegativeSignalHypothesisFit_NullSignal_LogScale_SignalRegion', TITLE='Negative signal hypothesis, best fit with ' + r'$\mathcal{N}_{\mathrm{Sig}} = 0$', SHOWBACKGROUNDS = False)
+
+    X17pythonTask_2023.plotComparison(Hists, logL.values, BestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=False, subfix = 'NegativeSignalHypothesisFit_NullSignal_LinearScale_SignalRegion', TITLE='Negative signal hypothesis, best fit with ' + r'$\mathcal{N}_{\mathrm{Sig}} = 0$', SHOWBACKGROUNDS = False)
+
+################################################################################################################################################
+# Scaling factor set to 1
+if False:
+    print('Starting positive signal hypothesis fit with scaling factor set to 1')
+    scalingFactor = 1
+    angleUS = 50
+    negSignal = False
+
+    # Load data
+    TotalDataNumber, channels = X17pythonTask_2023.readData(channels, workDir = workDir, dataFile = dataFile, dataRunMax = dataRunMax, angleUS = angleUS)
+    print('TotalDataNumber: ', TotalDataNumber)
+
+    X17pythonTask_2023.plotChannels(channels, sample='dataHist', title='Data')
+
+    # Load MC
+    TotalMCStatistics, nBKGs, channels = X17pythonTask_2023.readMC(channels, CUTfile = workDir + 'MC2023totOLDmerge.root:ntuple', workDir = workDir, MCFile = MCFile, ECODETYPE = ECODETYPE, X17masses = X17masses, dX17mass = dX17mass, alphares = alphares, alphafield = alphafield, esumCutLow = esumCutLow, esumCutHigh = esumCutHigh, angleCutLow = angleCutLow, angleCutHigh = angleCutHigh, BKGnames = BKGnames, alphaNames = alphaNames, scalingFactor = scalingFactor, simbeamEnergy = simbeamEnergy, angleUS = angleUS)
+
+    print('TotalMCStatistics: ', len(TotalMCStatistics))
+
+    alphavalues = [np.linspace(-5*alphares, 5*alphares, 11), np.linspace(-5*alphafield, 5*alphafield, 11)]
+    alphaRefs = [0, 0]
+    Hists = X17pythonTask_2023.histHandler(channels, 'dataHist', ['X17_17.6', 'X17_18.1'], BKGnames, 'Esum', 'Angle', alphaNames, alphavalues, alphaRefs, TotalMCStatistics=np.array(TotalMCStatistics), masses=X17masses, massRef=massRef)
+
+    print(Hists.BKGarrayNuisance5SigmaArray.shape)
+
+
+    ################################################################################################################################################
+    # Fit
+    startingPars = np.array([100, 0.5,  16.9, 4e5, 0, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0, 0])
+    FixedParameters = np.array([False, False, False, False, False, False, False, False, False, False, False, False, False, True, False])
+
+    nullHypothesis = True
+
+    logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, negSignal = negSignal)
+
+    BestBetas = np.copy(betas)
+    BestPars = np.copy(logL.values)
+
+    print('Best fit values: ', BestPars)
+    print('Correlation matrix: ', logL.covariance.correlation())
+
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'NullHypothesisFit_LogScale_Full', TITLE='Null hypothesis')
+
+    nullHypothesis = False
+
+    logL, betas, MAXLikelihood = X17pythonTask_2023.bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, negSignal = negSignal)
+
+    BestBetas = np.copy(betas)
+    BestPars = np.copy(logL.values)
+    BestErrors = np.copy(logL.errors)
+
+    print('Best fit values: ', BestPars)
+    print('Correlation matrix: ', logL.covariance.correlation())
+
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='', LOGARITMIC=True, subfix = 'Scaling1SignalHypothesisFit_LogScale_Full', TITLE='Signal hypothesis, scaling factors to 1')
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'Scaling1SignalHypothesisFit_LogScale_SignalRegion', TITLE='Signal hypothesis, scaling factors to 1', SHOWBACKGROUNDS = False)
+    X17pythonTask_2023.plotComparison(Hists, logL.values, betas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=False, subfix = 'Scaling1SignalHypothesisFit_LinearScale_SignalRegion', TITLE='Signal hypothesis, scaling factors to 1', SHOWBACKGROUNDS = False)
+
+    PARS = []
+    Likelihood = []
+    Accurate = []
+    Valid = []
+    totPars = logL.values
+    BETAS = betas
+
+    #PARS, Likelihood, Accurate, Valid = X17pythonTask_2023.GoodnessOfFit(logL, Hists, BestBetas, BestPars, channels, nToys = 1000, doNullHypothesis = nullHypothesis, FixedParameters = FixedParameters, PARS = PARS, Likelihood = Likelihood, Accurate = Accurate, Valid = Valid, negSignal = negSignal)
+
+    #X17pythonTask_2023.drawMNmatrix(logL, BestPars, BestErrors, steps = 7, MAXLikelihood=logL.fval, singlePlots = True)
+
+    #testPars = ['nSig', 'pSig181', 'mass']
+    #testPars = logL.parameters
+    #for name in testPars:
+    #    matplotlib.rcParams.update({'font.size': 30})
+    #    fig = plt.figure(figsize=(21, 14), dpi=100)
+    #    #if name == 'nSig':
+    #    #    logL.draw_profile(name, bound = [0,80])
+    #    #    logL.draw_mnprofile(name, bound = [0,80])
+    #    if name == 'pSig181':
+    #        logL.draw_profile(name, bound = [0,1])
+    #        logL.draw_mnprofile(name, bound = [0,1])
+    #        plt.xlim(0, 1)
+    #    elif name == 'mass':
+    #        logL.draw_profile(name, bound = [17.2,17.4])
+    #        logL.draw_mnprofile(name, bound = [17.2,17.4])
+    #        plt.xlim(17.1, 17.5)
+    #    else:
+    #        logL.draw_profile(name)
+    #        logL.draw_mnprofile(name)
+    #    #logL.draw_profile(name)
+    #    #logL.draw_mnprofile(name)
+    #    plt.axhline(1, color='red')
+    #    plt.ylim(0, plt.gca().get_ylim()[1])
+    #    plt.savefig(workDir + name + '_profile.png', bbox_inches='tight')
+    #    #print(name + ' error: ', X17pythonTask_2023.minosError(logL, name, BestPars, logL.errors, MAXLikelihood=logL.fval))
+
+    print('Time elapsed: ', time.time() - startTime)
+
+    logL.values[0] = 0
+    logL.covariance[0,0] = 0
+    logL.covariance[1,1] = 0
+    logL.covariance[2,2] = 0
+    X17pythonTask_2023.plotComparison(Hists, logL.values, BestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=True, subfix = 'Scaling1SignalHypothesisFit_NullSignal_LogScale_SignalRegion', TITLE='Signal hypothesis, scaling factors to 1, best fit with ' + r'$\mathcal{N}_{\mathrm{Sig}} = 0$', SHOWBACKGROUNDS = False)
+
+    X17pythonTask_2023.plotComparison(Hists, logL.values, BestBetas, channels, compareWithBetas=False, logL = logL, BKGnames = BKGnames, CHANNEL='ch4', LOGARITMIC=False, subfix = 'Scaling1SignalHypothesisFit_NullSignal_LinearScale_SignalRegion', TITLE='Signal hypothesis, scaling factors to 1, best fit with ' + r'$\mathcal{N}_{\mathrm{Sig}} = 0$', SHOWBACKGROUNDS = False)
