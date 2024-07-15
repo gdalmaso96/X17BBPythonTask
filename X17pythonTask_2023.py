@@ -1289,14 +1289,15 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
     
     return ll(data, mu = mu, mueff = mueff, betas = betas, P=P)
 
-def logLSetLimits(logL, alphavalues):
+def logLSetLimits(logL, alphavalues, negSignal = False):
     # Set limits
     # Signal
     logL.limits[0] = (0, 100000)
-    #logL.limits[0] = (-100000, 100000)
     logL.limits[1] = (0, 1)
     logL.limits[2] = (16.5, 17.1)
-    #logL.limits[2] = (16.3, 17.4)
+    if negSignal:
+        logL.limits[0] = (-100000, 100000)
+        logL.limits[2] = (16.3, 17.4)
     
     # IPC
     # Yields
@@ -1325,7 +1326,7 @@ def logLSetLimits(logL, alphavalues):
     return logL
 
 # This function finds the best parameters
-def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0, DoPreliminaryFit = True):
+def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0, DoPreliminaryFit = True, negSignal = False):
     # First, find the best fit with doBB = False
     # Then, minimize for each parameter independently twice
     # Finally, minimize the full log likelihood
@@ -1342,7 +1343,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
         logL = Minuit(lambdaLikelihood, startingPars, name = names)
         
         # Set limits
-        logL = logLSetLimits(logL, Hists.alphavalues)
+        logL = logLSetLimits(logL, Hists.alphavalues, negSignal = negSignal)
         
         # Fix parameters
         if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
@@ -1368,7 +1369,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     logL = Minuit(lambdaLikelihood, startingPars, name = names)
     
     # Set limits
-    logL = logLSetLimits(logL, Hists.alphavalues)
+    logL = logLSetLimits(logL, Hists.alphavalues, negSignal)
     
     # Fix parameters
     if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
@@ -1426,7 +1427,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     
     return logL, betas, logL.fval
 
-def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8', 'BKG9'], subfix = '', CHANNEL = '', LOGARITMIC = True, TITLE = ''):
+def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = None, Toy = False, BKGnames = ['BKG1', 'BKG2', 'BKG3', 'BKG4', 'BKG5', 'BKG6', 'BKG7', 'BKG8', 'BKG9'], subfix = '', CHANNEL = '', LOGARITMIC = True, TITLE = '', SHOWBACKGROUNDS = True):
     PARS = np.copy(pars)
     nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, nFakes, alphaRes, alphaField = pars
     nX17_176, nX17_181 = getSignalYields(nSig, pSig181)
@@ -1512,10 +1513,15 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     histEstimateLowerTot = np.sqrt(np.power(histEstimateLower, 2) + np.power(histFitUncertainty, 2))
 
     # Plot data and fit
-    plt.step(binSides, np.append(histEstimate, histEstimate[-1]), where='post',color = cm.coolwarm(0))
+    plt.step(binSides, np.append(histEstimate, histEstimate[-1]), where='post',color = cm.coolwarm(0), linewidth = 5, label = 'Fit')
     plt.bar(binCenters, histEstimateBKG, label='BKG', alpha=0.5, color = cm.coolwarm(0),  width=binWidths)
-    plt.bar(binCenters, histEstimateSig, bottom= histEstimateBKG, label='Signal', alpha=0.5, color = cm.coolwarm(0.99),  width=binWidths)
-    plt.errorbar(binCenters, estimateFunction(yields, betas, morph=morph, mass=mass), yerr=[histEstimateLowerTot, histEstimateUpperTot], fmt='none', label='Fit uncertainty', color = cm.coolwarm(0))
+    if nSig >= 0:
+        plt.bar(binCenters, histEstimateSig, bottom= histEstimateBKG, label='Signal', alpha=0.5, color = cm.coolwarm(0.99),  width=binWidths)
+    elif nSig < 0 and LOGARITMIC:
+        plt.bar(binCenters, histEstimateSig, bottom = histEstimate, label='Signal', alpha=0.5, color = cm.coolwarm(0.99),  width=binWidths)
+    else:
+        plt.bar(binCenters, histEstimateSig, bottom = 0, label='Signal', alpha=0.5, color = cm.coolwarm(0.99),  width=binWidths)
+    #plt.errorbar(binCenters, estimateFunction(yields, betas, morph=morph, mass=mass), yerr=[histEstimateLowerTot, histEstimateUpperTot], fmt='none', label='Fit uncertainty', color = cm.coolwarm(0))
     plt.errorbar(binCenters, data, yerr=np.sqrt(data), label='Data', color = 'black', fmt='o')
     if LOGARITMIC:
         plt.yscale('log')
@@ -1526,12 +1532,13 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     popNames = np.insert(popNames, 0, 'Sig. 18.1 MeV')
     popNames = np.insert(popNames, 0, 'Sig. 17.6 MeV')
     print(popNames)
-    for i in range(2,len(yields)):
-        singleYields = np.zeros(len(yields))
-        singleYields[i] = yields[i]
-        histTempEstimate = estimateFunction(singleYields, betas, morph=morph, mass=mass)
-        plt.step(binSides, np.append(histTempEstimate, histTempEstimate[-1]), where='post',color = f'C{i-1}', linewidth=3, label = popNames[i])
-        print(popNames[i], ':', yields[i])
+    if SHOWBACKGROUNDS:
+        for i in range(2,len(yields)):
+            singleYields = np.zeros(len(yields))
+            singleYields[i] = yields[i]
+            histTempEstimate = estimateFunction(singleYields, betas, morph=morph, mass=mass)
+            plt.step(binSides, np.append(histTempEstimate, histTempEstimate[-1]), where='post',color = f'C{i-1}', linewidth=3, label = popNames[i])
+            print(popNames[i], ':', yields[i])
     for i in range(0,2):
         singleYields = np.zeros(len(yields))
         singleYields[i] = yields[i]
@@ -1558,18 +1565,20 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
             minx = binSides[index]
         for esumMin, esumMax in zip(esumBins[:-1], esumBins[1:]):
             index = index + Hists.channels[channel]['Angle'][2]
-            plt.vlines(binSides[index], 0, 1e5, colors='k', linestyles='dashed')
+            plt.vlines(binSides[index], -1e5, 1e5, colors='k', linestyles='dashed')
             # Text inside the box
             xticks.append(0.5*(binSides[index] + binSides[index-Hists.channels[channel]['Angle'][2]]))
             xtickslabels.append(f'[{esumMin:.2f}, {esumMax:.2f}] MeV\n[{minAngle}, {maxAngle}] deg')
         if CHANNEL == channel:
-            maxx = binSides[index-Hists.channels[channel]['Angle'][2]]
+            maxx = binSides[index]
     
     plt.legend(loc='upper right', ncol=int(len(BKGnames)*0.5), fontsize=30)
     
     plt.ylim(0.5, 1e3)
     if LOGARITMIC:
         plt.ylim(0.5, 1e5)
+    elif nSig < 0:
+        plt.ylim(histEstimateSig.min()*1.1, 1e3)
     if CHANNEL != '':
         plt.xlim(minx, maxx)
     
@@ -1601,12 +1610,12 @@ def plotComparison(Hists, pars, betas, channels, compareWithBetas=True, logL = N
     if compareWithBetas:
         plt.bar(binCenters, redExpectedHistLowerTot + redExpectedHistUpperTot, bottom = -redExpectedHistLowerTot, color = cm.coolwarm(0), alpha=0.5, label='Total model uncertainty', width=binWidths)
         plt.bar(binCenters, redExpectedHistLower + redExpectedHistUpper, bottom = -redExpectedHistLower, color = cm.coolwarm(0.99), alpha=0.5, label='MC statistical uncertainty', width=binWidths)
-    else:
-        plt.bar(binCenters, 2*redExpectedFit, bottom = -redExpectedFit, color = cm.coolwarm(0), alpha=0.5, label='Fit uncertainty', width=binWidths)
+    #else:
+    #    plt.bar(binCenters, 2*redExpectedFit, bottom = -redExpectedFit, color = cm.coolwarm(0), alpha=0.5, label='Fit uncertainty', width=binWidths)
     
     plt.errorbar(binCenters, redResiduals, yerr=reddData, fmt='o', color = 'k', label='Residuals', linewidth=3)
     plt.xlim(0, binSides[-1])
-    plt.legend(loc='lower right', fontsize=25)
+    #plt.legend(loc='lower right', fontsize=25)
     plt.ylabel('Red. res.\n' + r'[$\Delta$data]')
     miny = plt.ylim()[0]
     maxy = plt.ylim()[1]
@@ -1679,38 +1688,38 @@ def minos (logL, name1, name2, x1, x2, pars, MAXLikelihood = 0):
     logL.tol = 1e-10
     logL.migrad(ncall=100000, iterate=5)
         
-    for i in range(len(pars)):
-        if indexes[i]:
-            logL.fixed[i] = fixed[i]
-            if (np.array(logL.fixed) == False).any():
-                logL.simplex(ncall=100000)
-                logL.strategy = 2
-                logL.tol = 1e-10
-                logL.migrad(ncall=100000, iterate=5)
-            logL.fixed[i] = True
-    
-    for i in range(len(pars)):
-        if indexes[i]:
-            logL.fixed[i] = fixed[i]
-    
-    logL.simplex(ncall=100000)
-    logL.strategy = 2
-    logL.tol = 1e-10
-    logL.migrad(ncall=100000, iterate=5)
-
-    if (not logL.valid):
-        I = 0
-        while(not logL.valid):
-            for j in range(5):
-                logL.scan(ncall=10000)
-            #logL.simplex(ncall=100000)
-            logL.strategy = 2
-            logL.tol = 1e-10
-            logL.migrad(ncall=100000, iterate=5)
-            I += 1
-            if I == 10:
-                break
-    logL.hesse()
+    #for i in range(len(pars)):
+    #    if indexes[i]:
+    #        logL.fixed[i] = fixed[i]
+    #        if (np.array(logL.fixed) == False).any():
+    #            logL.simplex(ncall=100000)
+    #            logL.strategy = 2
+    #            logL.tol = 1e-10
+    #            logL.migrad(ncall=100000, iterate=5)
+    #        logL.fixed[i] = True
+    #
+    #for i in range(len(pars)):
+    #    if indexes[i]:
+    #        logL.fixed[i] = fixed[i]
+    #
+    #logL.simplex(ncall=100000)
+    #logL.strategy = 2
+    #logL.tol = 1e-10
+    #logL.migrad(ncall=100000, iterate=5)
+#
+    #if (not logL.valid):
+    #    I = 0
+    #    while(not logL.valid):
+    #        for j in range(5):
+    #            logL.scan(ncall=10000)
+    #        #logL.simplex(ncall=100000)
+    #        logL.strategy = 2
+    #        logL.tol = 1e-10
+    #        logL.migrad(ncall=100000, iterate=5)
+    #        I += 1
+    #        if I == 10:
+    #            break
+    #logL.hesse()
     
     for i in range(len(logL.values)):
         logL.fixed[i] = fixed[i]
@@ -1742,6 +1751,7 @@ def minosContour(logL, name1, name2, pars, errors, bounds = 2, steps = 11, MAXLi
     Y = []
     for x1 in np.linspace(vmin1, vmax1, steps):
         for x2 in np.linspace(vmin2, vmax2, steps):
+            print('Doing profile on', name1, name2, ':', x1, x2)
             contour.append(minos(logL, name1, name2, x1, x2, pars, MAXLikelihood = MAXLikelihood))
             X.append(x1)
             Y.append(x2)
@@ -1782,27 +1792,43 @@ def minosError(logL, name, pars, errors, MAXLikelihood=0):
     # Use fsolve, set the bounds equal to logL.limits[name]
     x0 = pars[logL.parameters.index(name)] - errors[logL.parameters.index(name)]
     
-    x = fsolve(lambda x: profile(logL, name, pars, errors, x, MAXLikelihood=MAXLikelihood) - 5, x0=x0)
+    x = fsolve(lambda x: profile(logL, name, pars, errors, x, MAXLikelihood=MAXLikelihood) - 25, x0=x0)
     
     x0 = pars[logL.parameters.index(name)] + errors[logL.parameters.index(name)]
-    x1 = fsolve(lambda x: profile(logL, name, pars, errors, x, MAXLikelihood=MAXLikelihood) - 5, x0=x0)
+    x1 = fsolve(lambda x: profile(logL, name, pars, errors, x, MAXLikelihood=MAXLikelihood) - 25, x0=x0)
     
     # If the two roots are the same, check if the best fit is at the edge on one side. In that case only the other side error is different than 0
-    if np.abs(x - x1) < 1e-5:
+    if np.abs(x - x1)/(np.abs(x + x1)) < 1e-5:
         if x > pars[logL.parameters.index(name)]:
             xmax = x - pars[logL.parameters.index(name)]
-            xmin = 0
+            xmin = logL.limits[logL.parameters.index(name)][0]
         else:
             xmin = pars[logL.parameters.index(name)] - x
-            xmax = 0
+            xmax = logL.limits[logL.parameters.index(name)][1]
         return xmin, xmax
     
     # If the two values are different, the lower gives the error on the left side, the higher on the right side
     if x < x1:
         x, x1 = x1, x
     
+    # Check if the error is within the limits
+    print('Limits:', logL.limits[logL.parameters.index(name)])
+    print('Values:', x, x1)
+    
+    if x < logL.limits[logL.parameters.index(name)][0] or x1 > logL.limits[logL.parameters.index(name)][1]:
+        x = logL.limits[logL.parameters.index(name)][1]
+        x1 = logL.limits[logL.parameters.index(name)][0]
+    
+    if x1 < logL.limits[logL.parameters.index(name)][0]:
+        x1 = logL.limits[logL.parameters.index(name)][0]
+    if x > logL.limits[logL.parameters.index(name)][1]:
+        x = logL.limits[logL.parameters.index(name)][1]
+    
+    
     xmin = pars[logL.parameters.index(name)] - x1
     xmax = x - pars[logL.parameters.index(name)]
+    
+    print('Error on', name, pars[logL.parameters.index(name)], ':', xmin, xmax)
     
     return xmin, xmax
 
@@ -1836,13 +1862,24 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0, single
                     x = np.linspace(np.min(X), np.max(X), steps)
                     y = np.linspace(np.min(Y), np.max(Y), steps)
                     X, Y = np.meshgrid(x, y)
-                    Z = np.array(contour).reshape(steps, steps).transpose()
-                    spline = RectBivariateSpline(x, y, Z)
+                    Z = np.abs(np.array(contour).reshape(steps, steps).transpose())
+                    print(Z)
+                    
+                    
+                    # Transform likelihood ratio to z-score
+                    Z = norm.isf(chi2.sf(Z, 2)*0.5)
+                    
+                    spline = RectBivariateSpline(x, y, Z, kx=1, ky=1)
                     x = np.linspace(np.min(X), np.max(X), steps*steps)
                     y = np.linspace(np.min(Y), np.max(Y), steps*steps)
                     X, Y = np.meshgrid(x, y)
                     Z = spline(x, y)
                     
+                    #plt.pcolormesh(X, Y, Z, shading='auto')
+                    
+                    print(Z)
+                    
+                    #plt.imshow(Z, extent=(np.min(X), np.max(X), np.min(Y), np.max(Y)), origin='lower', aspect='auto')
                     CS = plt.contour(X, Y, Z, levels = [1, 2, 3, 4], colors = ['red', 'purple', 'brown', 'grey'])
                     plt.clabel(CS, inline=True)
                     
@@ -1881,6 +1918,7 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0, single
                     plt.subplot(nParameters, nParameters, nParameters*i + j + 1)
                 if logL.fixed[i] == False:
                     xmin, xmax = minosError(logL, logL.parameters[j], BestPars, BestErrors, MAXLikelihood=MAXLikelihood)
+                    print('Error on', logL.parameters[j], ':', xmin, xmax)
                     
                     logL.draw_mnprofile(logL.parameters[j], bound = [BestPars[j] - xmin, BestPars[j] + xmax])
                 
@@ -1899,7 +1937,7 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0, single
             #print(logL.errors)
     plt.text(0.65, 0.65, 'Profile\nlikelihoods', fontsize=100, ha='center', va='center', transform=plt.gcf().transFigure)
 
-def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothesis = False, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = []):
+def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothesis = False, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], negSignal = False):
     startTime = time.time()
     newP176 = pars[6]
     newP179 = pars[7]
@@ -1970,7 +2008,7 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
             Hists.generateToy(yields, betas = betas, fluctuateTemplates = True, morph = tpars[-2:], mass=tpars[2])
         
         # Fit
-        logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = doNullHypothesis, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
+        logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = doNullHypothesis, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, negSignal = negSignal)
         
         PARS.append(logLToy.values)
         Likelihood.append(MAXLikelihoodToy)
@@ -2056,7 +2094,7 @@ def plotCheck(PARS, Likelihood, Toy, logLToy, SEED = 0, prefix = '', TIME = [], 
     
     return
 
-def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './', doingDataToy = False):
+def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './', doingDataToy = False, negSignal = False):
     TIME = []
     newP176 = pars[6]
     newP179 = pars[7]
@@ -2085,9 +2123,9 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
     FixedParameters[1] = True
     FixedParameters[2] = True
     
-    logL, _, locLikelihood = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
+    logL, _, locLikelihood = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
     
-    logL1, _, locLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+    logL1, _, locLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
     
     if locLikelihood1 < locLikelihood:
         locLikelihood = locLikelihood1
@@ -2098,20 +2136,20 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
     #print('Local', _best)
     FixedParameters = np.copy(storeFixedParameters)
     
-    logL, _, MAXLikelihood = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
+    logL, _, MAXLikelihood = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
     
     # Alternative fit
     FixedParameters = np.copy(storeFixedParameters)
-    logL1, _, MAXLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
+    logL1, _, MAXLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
     
     # Alternative fit 2
     FixedParameters = np.copy(storeFixedParameters)
     
-    logL2, _, MAXLikelihood2 = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+    logL2, _, MAXLikelihood2 = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
     
     # Alternative fit
     FixedParameters = np.copy(storeFixedParameters)
-    logL3, _, MAXLikelihood3 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+    logL3, _, MAXLikelihood3 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
     
     if MAXLikelihood1 < MAXLikelihood:
         MAXLikelihood = MAXLikelihood1
@@ -2213,9 +2251,9 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
         tpars[0] = SignalYield
         tpars[1] = SignalFraction
         tpars[2] = SignalMass
-        logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
+        logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
         
-        logLToy1, betasToy1, locLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        logLToy1, betasToy1, locLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
         
         if locLikelihoodToy1 < locLikelihoodToy:
             locLikelihoodToy = locLikelihoodToy1
@@ -2227,26 +2265,26 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
         _best = np.copy(logLToy.values)
         FixedParameters = np.copy(storeFixedParameters)
         
-        logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
+        logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
         
         
         FixedParameters = np.copy(storeFixedParameters)
-        logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
+        logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
         
         #FixedParameters = np.copy(storeFixedParameters)
-        #logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(logLToy1.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False)
+        #logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(logLToy1.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
         
         ##
         FixedParameters = np.copy(storeFixedParameters)
         
-        logLToy2, betasToy2, MAXLikelihoodToy2 = bestFit(_best, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        logLToy2, betasToy2, MAXLikelihoodToy2 = bestFit(_best, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
         
         
         FixedParameters = np.copy(storeFixedParameters)
-        logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
         
         #FixedParameters = np.copy(storeFixedParameters)
-        #logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(logLToy3.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True)
+        #logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(logLToy3.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
         
         if MAXLikelihoodToy1 < MAXLikelihoodToy:
             logLToy, betasToy, MAXLikelihoodToy = logLToy1, betasToy1, MAXLikelihoodToy1
