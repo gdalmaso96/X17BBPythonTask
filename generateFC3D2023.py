@@ -168,10 +168,10 @@ if __name__ == '__main__':
     newP179 = logL.values[7]
     newP181 = logL.values[8]
     newAlphaField = logL.values[14]
-    _p176 = logL.values[6]
-    _p179 = logL.values[7]
-    _p181 = logL.values[8]
-    _alphaField = logL.values[14]
+    #_p176 = logL.values[6]
+    #_p179 = logL.values[7]
+    #_p181 = logL.values[8]
+    #_alphaField = logL.values[14]
 
     print('Time elapsed to prepare the parameters: ', time.time() - startTime)
     
@@ -197,6 +197,42 @@ if __name__ == '__main__':
             np.random.seed(DataSEED + i)
             yields = np.concatenate([X17pythonTask_2023.getSignalYields(BestPars[0], BestPars[1]), X17pythonTask_2023.getYields(BestPars[3], BestPars[4], BestPars[5], BestPars[6], BestPars[7], BestPars[8], BestPars[9]), [BestPars[10], BestPars[11], BestPars[12]]])
             HistsTest.generateToy(yields, betas = BestBetas, fluctuateTemplates = True, morph = BestPars[-2:], mass=BestPars[2])
+            
+            # Need to sample center of constraints
+            
+            # Sample the nuisances
+            if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
+                if FixedParameters[6] == False:
+                    _p176 = np.random.normal(newP176, dP176)
+                    while _p176 < 0 or _p176 > 1:
+                        _p176 = np.random.normal(newP176, dP176)
+                if FixedParameters[7] == False:
+                    _p179 = np.random.normal(newP179, dP179)
+                    while _p179 < 0 or _p179 > 1:
+                        _p179 = np.random.normal(newP179, dP179)
+                if FixedParameters[8] == False:
+                    _p181 = np.random.normal(newP181, dP181)
+                    while _p181 < 0 or _p181 > 1:
+                        _p181 = np.random.normal(newP181, dP181)
+                if FixedParameters[14] == False:
+                    _alphaField = np.random.normal(newAlphaField, dAlphaField)
+                    while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
+                        _alphaField = np.random.normal(newAlphaField, dAlphaField)
+            elif FixedParameters == False:
+                _p176 = np.random.normal(newP176, dP176)
+                while _p176 < 0 or _p176 > 1:
+                    _p176 = np.random.normal(newP176, dP176)
+                _p179 = np.random.normal(newP179, dP179)
+                while _p179 < 0 or _p179 > 1:
+                    _p179 = np.random.normal(newP179, dP179)
+                _p181 = np.random.normal(newP181, dP181)
+                while _p181 < 0 or _p181 > 1:
+                    _p181 = np.random.normal(newP181, dP181)
+                _alphaField = np.random.normal(newAlphaField, dAlphaField)
+                while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
+                    _alphaField = np.random.normal(newAlphaField, dAlphaField)
+        
+            
             HistsTest.DataArray = np.copy(HistsTest.DataArrayToy)
             HistsTest.SignalArray = np.copy(HistsTest.SignalArrayToy)
             HistsTest.SignalArrayNuisance = np.copy(HistsTest.SignalArrayNuisanceToy)
@@ -206,7 +242,7 @@ if __name__ == '__main__':
             HistsTest.BKGarrayNuisance5Sigma = np.copy(HistsTest.BKGarrayNuisance5SigmaToy)
             HistsTest.BKGarrayNuisance5SigmaArray = np.copy(HistsTest.BKGarrayNuisance5SigmaArrayToy)
             
-            SignalYield, SignalFraction, SignalMass, Toy, MAXLikelihood, locLikelihood, datalRatio, accurate, valid, SEED, FixedParameters, fitN, fitF, fitM = X17pythonTask_2023.FCgenerator(SignalYield, SignalFraction, SignalMass, logL, HistsTest, BestPars, SEED = SEED, nToys = 0, betas = BestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir, doingDataToy = True)
+            SignalYield, SignalFraction, SignalMass, Toy, MAXLikelihood, locLikelihood, datalRatio, accurate, valid, SEED, FixedParameters, fitN, fitF, fitM = X17pythonTask_2023.FCgenerator(SignalYield, SignalFraction, SignalMass, logL, HistsTest, BestPars, SEED = SEED, nToys = 0, betas = BestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir, doingDataToy = True, oldP176 = _p176, oldP179 = _p179, oldP181 = _p181, oldAlphaField = _alphaField)
             with open(workDir + outputFileName, 'a') as f:
                 f.write(f'{DataSignalYield} {DataSignalFraction} {DataSignalMass} {SignalYield} {SignalFraction} {SignalMass} {fitN} {fitF} {fitM} {MAXLikelihood} {locLikelihood} {datalRatio} {accurate} {valid} {DataSEED + i}\n')
     else:
@@ -225,5 +261,5 @@ if __name__ == '__main__':
     
         print(BestPars)
 
-        PARS, Likelihood, Accurate, Valid, Toy, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, BestPars, SEED = SEED, nToys = nToys, betas = BestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir)
+        PARS, Likelihood, Accurate, Valid, Toy, FixedParameters = X17pythonTask_2023.FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, BestPars, SEED = SEED, nToys = nToys, betas = BestBetas, fluctuateTemplates=True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir, oldP176 = p176, oldP179 = p179, oldP181 = p181, oldAlphaField = 0)
     print('Time elapsed to generate FC: ', time.time() - startTime)
