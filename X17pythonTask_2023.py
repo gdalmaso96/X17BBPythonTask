@@ -17,6 +17,8 @@ matplotlib.rcParams['figure.facecolor'] = 'white'
 
 massElectron = 0.5109989461 #MeV
 
+dmass = 0.21509303913335115
+
 #ratio176 = 3.84 # +- 0.27
 ratio176 = 1.97 # +- 0.15
 ratio179 = 0.93 # +- 0.07
@@ -1232,7 +1234,7 @@ def ll(Di, fPar = 0, mu = 0, mueff = 0, betas = 1, alphas = 0, P = 0):
     binnedTerm = -2*np.sum(binnedTerm)
     return binnedTerm + np.sum(np.power(alphas, 2)) + P
 
-def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0):
+def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0, _mass = 16.97, constrainMass = False):
     # Prepare yields vector
     nSig, pSig181, mass, nIPC400, nIPC700, nIPC1000, percent176, percent179, percent181, FIPC15, nEPC18, nEPC15, nFakes, alphaRes, alphaField = pars
     nX17_176, nX17_181 = getSignalYields(nSig, pSig181)
@@ -1248,6 +1250,8 @@ def logLikelihood(pars, Hists, doBB = True, FitToy = False, doNullHypothesis = F
     P += np.power((percent179 - _p179)/dP179, 2)
     P += np.power((percent181 - _p181)/dP181, 2)
     P += np.power((alphaField - _alphaField)/dAlphaField, 2)
+    if constrainMass:
+        P += np.power((mass - _mass)/dmass, 2)
     
     #pIPC181 = nIPC181/(nIPC176 + nIPC179 + nIPC181)
     #P += np.power((pIPC181 - 0.05)/0.01, 2)
@@ -1326,7 +1330,7 @@ def logLSetLimits(logL, alphavalues, negSignal = False):
     return logL
 
 # This function finds the best parameters
-def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0, DoPreliminaryFit = True, negSignal = False):
+def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = False, _p176 = p176, _p179 = p179, _p181 = p181, _alphaField = 0, DoPreliminaryFit = True, negSignal = False, _mass = 16.97, constrainMass = False):
     # First, find the best fit with doBB = False
     # Then, minimize for each parameter independently twice
     # Finally, minimize the full log likelihood
@@ -1337,7 +1341,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     logL = None
     if DoPreliminaryFit:
         def lambdaLikelihood(pars):
-            return logLikelihood(pars, Hists, doBB = False, FitToy = FitToy, doNullHypothesis = doNullHypothesis, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
+            return logLikelihood(pars, Hists, doBB = False, FitToy = FitToy, doNullHypothesis = doNullHypothesis, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, _mass = _mass, constrainMass = constrainMass)
         
         # Define minuit
         logL = Minuit(lambdaLikelihood, startingPars, name = names)
@@ -1365,7 +1369,7 @@ def bestFit(startingPars, Hists, FitToy = False, doNullHypothesis = False, Fixed
     ############################################
     # Find best fit
     def lambdaLikelihood(pars):
-        return logLikelihood(pars, Hists, doBB = True, FitToy = FitToy, doNullHypothesis = doNullHypothesis, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField)
+        return logLikelihood(pars, Hists, doBB = True, FitToy = FitToy, doNullHypothesis = doNullHypothesis, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, _mass = _mass, constrainMass = constrainMass)
     logL = Minuit(lambdaLikelihood, startingPars, name = names)
     
     # Set limits
@@ -1937,7 +1941,7 @@ def drawMNmatrix(logL, BestPars, BestErrors, steps = 11, MAXLikelihood=0, single
             #print(logL.errors)
     plt.text(0.65, 0.65, 'Profile\nlikelihoods', fontsize=100, ha='center', va='center', transform=plt.gcf().transFigure)
 
-def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothesis = False, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], negSignal = False):
+def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothesis = False, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], negSignal = False, constrainMass = False):
     startTime = time.time()
     newP176 = pars[6]
     newP179 = pars[7]
@@ -1947,6 +1951,7 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
     _p181 = pars[8]
     newAlphaField = pars[14]
     _alphaField = pars[14]
+    newMass = pars[2]
     #newP176 = logL.values[6]
     #newP179 = logL.values[7]
     #newP181 = logL.values[8]
@@ -1999,6 +2004,9 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
             while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
         
+        if constrainMass:
+            _mass = np.random.normal(newMass, dmass)
+        
         yields = np.concatenate([getSignalYields(tpars[0], tpars[1]), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11], tpars[12]]])
         
         # Sample the toy
@@ -2008,7 +2016,7 @@ def GoodnessOfFit(logL, Hists, betas, pars, channels, nToys = 100, doNullHypothe
             Hists.generateToy(yields, betas = betas, fluctuateTemplates = True, morph = tpars[-2:], mass=tpars[2])
         
         # Fit
-        logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = doNullHypothesis, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, negSignal = negSignal)
+        logLToy, betasToy, MAXLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = doNullHypothesis, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
         
         PARS.append(logLToy.values)
         Likelihood.append(MAXLikelihoodToy)
@@ -2094,16 +2102,18 @@ def plotCheck(PARS, Likelihood, Toy, logLToy, SEED = 0, prefix = '', TIME = [], 
     
     return
 
-def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './', doingDataToy = False, negSignal = False):
+def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './', doingDataToy = False, negSignal = False, oldMass = 16.97, constrainMass = False, oldP176 = p176, oldP179 = p179, oldP181 = p181, oldAlphaField = 0):
     TIME = []
     newP176 = pars[6]
     newP179 = pars[7]
     newP181 = pars[8]
-    _p176 = pars[6]
-    _p179 = pars[7]
-    _p181 = pars[8]
+    _p176 = oldP176
+    _p179 = oldP179
+    _p181 = oldP181
     newAlphaField = pars[14]
-    _alphaField = pars[14]
+    _alphaField = oldAlphaField
+    newMass = pars[2]
+    _mass = oldMass
     storeFixedParameters = np.copy(FixedParameters)
     
     startToy = len(PARS)
@@ -2123,9 +2133,9 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
     FixedParameters[1] = True
     FixedParameters[2] = True
     
-    logL, _, locLikelihood = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
+    logL, _, locLikelihood = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
     
-    logL1, _, locLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
+    logL1, _, locLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
     
     if locLikelihood1 < locLikelihood:
         locLikelihood = locLikelihood1
@@ -2136,20 +2146,20 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
     #print('Local', _best)
     FixedParameters = np.copy(storeFixedParameters)
     
-    logL, _, MAXLikelihood = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
+    logL, _, MAXLikelihood = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
     
     # Alternative fit
     FixedParameters = np.copy(storeFixedParameters)
-    logL1, _, MAXLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
+    logL1, _, MAXLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
     
     # Alternative fit 2
     FixedParameters = np.copy(storeFixedParameters)
     
-    logL2, _, MAXLikelihood2 = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
+    logL2, _, MAXLikelihood2 = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
     
     # Alternative fit
     FixedParameters = np.copy(storeFixedParameters)
-    logL3, _, MAXLikelihood3 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
+    logL3, _, MAXLikelihood3 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
     
     if MAXLikelihood1 < MAXLikelihood:
         MAXLikelihood = MAXLikelihood1
@@ -2237,6 +2247,9 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
             while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
                 _alphaField = np.random.normal(newAlphaField, dAlphaField)
         
+        if constrainMass:
+            _mass = np.random.normal(newMass, dmass)
+        
         print('Toy', i, ' - Time:', time.time() - startTime)
         print('Parameters:', tpars)
         
@@ -2251,9 +2264,9 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
         tpars[0] = SignalYield
         tpars[1] = SignalFraction
         tpars[2] = SignalMass
-        logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
+        logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
         
-        logLToy1, betasToy1, locLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
+        logLToy1, betasToy1, locLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
         
         if locLikelihoodToy1 < locLikelihoodToy:
             locLikelihoodToy = locLikelihoodToy1
@@ -2265,26 +2278,26 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
         _best = np.copy(logLToy.values)
         FixedParameters = np.copy(storeFixedParameters)
         
-        logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
+        logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
         
         
         FixedParameters = np.copy(storeFixedParameters)
-        logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
+        logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
         
         #FixedParameters = np.copy(storeFixedParameters)
-        #logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(logLToy1.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal)
+        #logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(logLToy1.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
         
         ##
         FixedParameters = np.copy(storeFixedParameters)
         
-        logLToy2, betasToy2, MAXLikelihoodToy2 = bestFit(_best, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
+        logLToy2, betasToy2, MAXLikelihoodToy2 = bestFit(_best, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
         
         
         FixedParameters = np.copy(storeFixedParameters)
-        logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
+        logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
         
         #FixedParameters = np.copy(storeFixedParameters)
-        #logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(logLToy3.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal)
+        #logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(logLToy3.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
         
         if MAXLikelihoodToy1 < MAXLikelihoodToy:
             logLToy, betasToy, MAXLikelihoodToy = logLToy1, betasToy1, MAXLikelihoodToy1
@@ -2329,3 +2342,257 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
     print(FixedParameters)
     
     return PARS, Likelihood, Accurate, Valid, Toy, FixedParameters
+
+def testHypothesis(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './', doingDataToy = False, negSignal = False, oldMass = 16.97, constrainMass = False, oldP176 = p176, oldP179 = p179, oldP181 = p181, oldAlphaField = 0):
+    TIME = []
+    #newP176 = pars[6]
+    #newP179 = pars[7]
+    #newP181 = pars[8]
+    _p176 = oldP176
+    _p179 = oldP179
+    _p181 = oldP181
+    #newAlphaField = pars[14]
+    _alphaField = oldAlphaField
+    newMass = oldMass
+    _mass = oldMass
+    storeFixedParameters = np.copy(FixedParameters)
+    
+    startToy = len(PARS)
+    
+    ############################################
+    # Get lratio for the data
+    ############################################
+    # Fit data for current grid point
+    tpars = np.copy(pars)
+    
+    tpars[0] = SignalYield
+    tpars[1] = SignalFraction
+    tpars[2] = SignalMass
+    logL.values = np.copy(tpars)
+    
+    FixedParameters[0] = True
+    FixedParameters[1] = True
+    FixedParameters[2] = True
+    
+    logL, bestBetas, locLikelihood = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+    bestPars = np.copy(logL.values)
+    
+    logL1, bestBetas1, locLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+    bestPars1 = np.copy(logL1.values)
+    
+    if locLikelihood1 < locLikelihood:
+        locLikelihood = locLikelihood1
+        logL = logL1
+        bestPars = np.copy(bestPars1)
+        bestBetas = bestBetas1
+    newP176 = logL.values[6]
+    newP179 = logL.values[7]
+    newP181 = logL.values[8]
+    newAlphaField = logL.values[14]
+    
+    # Fit data
+    _best = np.copy(logL.values)
+    #print('Local', _best)
+    FixedParameters = np.copy(storeFixedParameters)
+    
+    logL, _, MAXLikelihood = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+    
+    # Alternative fit
+    FixedParameters = np.copy(storeFixedParameters)
+    logL1, _, MAXLikelihood1 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+    
+    # Alternative fit 2
+    FixedParameters = np.copy(storeFixedParameters)
+    
+    logL2, _, MAXLikelihood2 = bestFit(_best, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+    
+    # Alternative fit
+    FixedParameters = np.copy(storeFixedParameters)
+    logL3, _, MAXLikelihood3 = bestFit(tpars, Hists, FitToy = False, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+    
+    if MAXLikelihood1 < MAXLikelihood:
+        MAXLikelihood = MAXLikelihood1
+        logL = logL1
+    if MAXLikelihood2 < MAXLikelihood:
+        MAXLikelihood = MAXLikelihood2
+        logL = logL2
+    if MAXLikelihood3 < MAXLikelihood:
+        MAXLikelihood = MAXLikelihood3
+        logL = logL3
+    
+    #print(logL.values)
+    
+    datalRatio = locLikelihood - MAXLikelihood
+    
+    prefix = 'testX17_2023_N%.0f_p%.3f_m%.2f' % (SignalYield, SignalFraction, SignalMass) + '_T' + str(fluctuateTemplates)
+    outputFileName = prefix + '_S' + str(SEED) + '.txt'
+    
+    # Append result to file
+    # if PARS is empty, the file is overwritten
+    if len(PARS) == 0:
+        Likelihood.append(datalRatio)
+        PARS.append(logL.values)
+        Accurate.append(logL.accurate)
+        Valid.append(logL.valid)
+        Toy.append(False)
+        if doingDataToy:
+            return SignalYield, SignalFraction, SignalMass, False, MAXLikelihood, locLikelihood, datalRatio, logL.accurate, logL.valid, SEED, FixedParameters, logL.values[0], logL.values[1], logL.values[2]
+        else:
+            with open(workDir + outputFileName, 'w') as file:
+                file.write('# SignalYield\tSignalFraction\tSignalMass\tFitYield\tFitFraction\tFitMass\tToy\tLikelihood\tConstrained likelihood\tlratio\tAccurate\tValid\tSEED\n')
+                file.write(f'{SignalYield}\t{SignalFraction}\t{SignalMass}\t{logL.values[0]}\t{logL.values[1]}\t{logL.values[2]}\t{False}\t{MAXLikelihood}\t{locLikelihood}\t{datalRatio}\t{logL.accurate}\t{logL.valid}\t{SEED}\n')
+    
+    ############################################
+    # Generate lratio distribution with toys
+    ############################################
+    
+    # For each toy, sample the not fixed nuisances, sample toys and templates, and compute the log likelihood
+    startTime = time.time()
+    MAXLikelihood = 0
+    
+    if startToy > nToys:
+        startToy = nToys
+    
+    for i in range(startToy, nToys):
+        _TIME = time.time()
+        if i % 10 == 0:
+            print('Process toy', i, ' - Time:', time.time() - startTime)
+        
+        np.random.seed(i + SEED)
+        tpars = np.copy(bestPars)
+        tpars[0] = SignalYield
+        tpars[1] = SignalFraction
+        tpars[2] = SignalMass
+        
+        # Sample the nuisances
+        if isinstance(FixedParameters, list) or isinstance(FixedParameters, np.ndarray):
+            if FixedParameters[6] == False:
+                _p176 = np.random.normal(newP176, dP176)
+                while _p176 < 0 or _p176 > 1:
+                    _p176 = np.random.normal(newP176, dP176)
+            if FixedParameters[7] == False:
+                _p179 = np.random.normal(newP179, dP179)
+                while _p179 < 0 or _p179 > 1:
+                    _p179 = np.random.normal(newP179, dP179)
+            if FixedParameters[8] == False:
+                _p181 = np.random.normal(newP181, dP181)
+                while _p181 < 0 or _p181 > 1:
+                    _p181 = np.random.normal(newP181, dP181)
+            if FixedParameters[14] == False:
+                _alphaField = np.random.normal(newAlphaField, dAlphaField)
+                while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
+                    _alphaField = np.random.normal(newAlphaField, dAlphaField)
+        elif FixedParameters == False:
+            _p176 = np.random.normal(newP176, dP176)
+            while _p176 < 0 or _p176 > 1:
+                _p176 = np.random.normal(newP176, dP176)
+            _p179 = np.random.normal(newP179, dP179)
+            while _p179 < 0 or _p179 > 1:
+                _p179 = np.random.normal(newP179, dP179)
+            _p181 = np.random.normal(newP181, dP181)
+            while _p181 < 0 or _p181 > 1:
+                _p181 = np.random.normal(newP181, dP181)
+            _alphaField = np.random.normal(newAlphaField, dAlphaField)
+            while _alphaField < Hists.alphavalues[1][0] or _alphaField > Hists.alphavalues[1][-1]:
+                _alphaField = np.random.normal(newAlphaField, dAlphaField)
+        
+        #if constrainMass:
+        #    _mass = np.random.normal(newMass, dmass)
+        
+        print('Toy', i, ' - Time:', time.time() - startTime)
+        print('Parameters:', tpars)
+        
+        yields = np.concatenate([getSignalYields(SignalYield, SignalFraction), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11], tpars[12]]])
+        
+        toymass = np.random.normal(newMass, dmass)
+        while toymass < logL.limits[2][0] or toymass > logL.limits[2][1]:
+            toymass = np.random.normal(newMass, dmass)
+        
+        Hists.generateToy(yields, betas = bestBetas, fluctuateTemplates = fluctuateTemplates, morph = tpars[-2:], mass=toymass)
+        
+        # Fit the toy for current grid point
+        FixedParameters[0] = True
+        FixedParameters[1] = True
+        FixedParameters[2] = True
+        tpars[0] = SignalYield
+        tpars[1] = SignalFraction
+        tpars[2] = SignalMass
+        logLToy, betasToy, locLikelihoodToy = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+        
+        logLToy1, betasToy1, locLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+        
+        if locLikelihoodToy1 < locLikelihoodToy:
+            locLikelihoodToy = locLikelihoodToy1
+            logLToy = logLToy1
+        
+        print(logLToy.values)
+        
+        # Fit the toy
+        _best = np.copy(logLToy.values)
+        FixedParameters = np.copy(storeFixedParameters)
+        
+        logLToy, betasToy, MAXLikelihoodToy = bestFit(logLToy.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+        
+        
+        FixedParameters = np.copy(storeFixedParameters)
+        logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+        
+        #FixedParameters = np.copy(storeFixedParameters)
+        #logLToy1, betasToy1, MAXLikelihoodToy1 = bestFit(logLToy1.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=False, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+        
+        ##
+        FixedParameters = np.copy(storeFixedParameters)
+        
+        logLToy2, betasToy2, MAXLikelihoodToy2 = bestFit(_best, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+        
+        
+        FixedParameters = np.copy(storeFixedParameters)
+        logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(tpars, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+        
+        #FixedParameters = np.copy(storeFixedParameters)
+        #logLToy3, betasToy3, MAXLikelihoodToy3 = bestFit(logLToy3.values, Hists, FitToy = True, doNullHypothesis = False, FixedParameters = FixedParameters, _p176 = _p176, _p179 = _p179, _p181 = _p181, _alphaField = _alphaField, DoPreliminaryFit=True, negSignal = negSignal, _mass = _mass, constrainMass = constrainMass)
+        
+        if MAXLikelihoodToy1 < MAXLikelihoodToy:
+            logLToy, betasToy, MAXLikelihoodToy = logLToy1, betasToy1, MAXLikelihoodToy1
+        if MAXLikelihoodToy2 < MAXLikelihoodToy:
+            logLToy, betasToy, MAXLikelihoodToy = logLToy2, betasToy2, MAXLikelihoodToy2
+        if MAXLikelihoodToy3 < MAXLikelihoodToy:
+            logLToy, betasToy, MAXLikelihoodToy = logLToy3, betasToy3, MAXLikelihoodToy3
+        
+        print(logLToy.fixed)
+        print(logLToy.values)
+        lratio = locLikelihoodToy - MAXLikelihoodToy
+        
+        #ns = np.linspace(-50, 50, 101)
+        #ys = []
+        #for n in ns:
+        #    ys.append(logLToy.fcn(np.concatenate([[n], logLToy.values[1:]])))
+        #ys = np.array(ys)
+        #fig = plt.figure(figsize=(14, 14), dpi=100)
+        #plt.plot(ns[ys < 1e6], ys[ys < 1e6])
+        #plt.savefig(workDir + '../' + prefix + '_S' + str(SEED) + '_T' + str(i) + '.png')
+        
+        #plotComparison(Hists, logLToy.values, betasToy, Hists.channels, compareWithBetas=False, logL = logLToy, Toy = True, BKGnames=Hists.BKGnames, subfix='_' + prefix + '_S' + str(SEED) + '_T' + str(i))
+        # Append result to file
+        Likelihood.append(lratio)
+        PARS.append(logLToy.values)
+        Accurate.append(logLToy.accurate)
+        Valid.append(logLToy.valid)
+        Toy.append(True)
+        TIME.append(time.time() - _TIME)
+        print(FixedParameters)
+        with open(workDir + outputFileName, 'a') as file:
+            file.write(f'{SignalYield}\t{SignalFraction}\t{SignalMass}\t{logLToy.values[0]}\t{logLToy.values[1]}\t{logLToy.values[2]}\t{True}\t{MAXLikelihoodToy}\t{locLikelihoodToy}\t{lratio}\t{logLToy.accurate}\t{logLToy.valid}\t{SEED+i}\n')
+    
+    PARS = np.array(PARS)
+    Likelihood = np.array(Likelihood)
+    Accurate = np.array(Accurate)
+    Valid = np.array(Valid)
+    Toy = np.array(Toy)
+    
+    #plotCheck(PARS, Likelihood, Toy, logLToy, SEED = SEED, prefix = prefix, TIME = TIME, workDir = workDir)
+
+    print(FixedParameters)
+    
+    return PARS, Likelihood, Accurate, Valid, Toy, FixedParameters
+
