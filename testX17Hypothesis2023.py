@@ -9,6 +9,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--nToys', type=int, default=100)
     parser.add_argument('--SEED', type=int, default=0)
+    parser.add_argument('--SampleBranch', type=int, default=0)
+    parser.add_argument('--nX17', type=float, default=16.97)
+    parser.add_argument('--pX17', type=float, default=1)
     return parser.parse_args()
 
 startTime = time.time()
@@ -101,6 +104,9 @@ if __name__ == '__main__':
     args = parse_args()
     nToys = args.nToys
     SEED = args.SEED
+    SampleBranch = bool(args.SampleBranch)
+    nX17 = args.nX17
+    pX17 = args.pX17
     
     
     startingPars = np.array([100, 0.5, 16.8, 4e5, 0, 1e4, p176, p179, p181, 1, 1e4, 1e4, 0, 0, 0])
@@ -162,9 +168,9 @@ if __name__ == '__main__':
 
 
     # Test X17 hypothesis
-    SignalYield = 74
-    SignalFraction = 1
+    SignalYield = nX17
+    SignalFraction = pX17
     SignalMass = 16.97
     FixedParameters[1] = True
-    X17pythonTask_2023.testHypothesis(SignalYield, SignalFraction, SignalMass, logL, Hists, BestPars, SEED = SEED, nToys = nToys, betas = BestBetas, nus = 1, fluctuateTemplates = True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir, doingDataToy = False, negSignal = False, oldMass = 16.97, constrainMass = True, oldP176 = p176, oldP179 = p179, oldP181 = p181, oldAlphaField = 0)
+    X17pythonTask_2023.testHypothesis(SignalYield, SignalFraction, SignalMass, logL, Hists, BestPars, SEED = SEED, nToys = nToys, betas = BestBetas, nus = 1, fluctuateTemplates = True, FixedParameters = FixedParameters, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = workDir, doingDataToy = False, negSignal = False, oldMass = 16.97, constrainMass = True, oldP176 = p176, oldP179 = p179, oldP181 = p181, oldAlphaField = 0, SampleBranching=SampleBranch)
     print('Time elapsed: ', time.time() - startTime)

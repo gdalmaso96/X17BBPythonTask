@@ -2343,7 +2343,7 @@ def FCgenerator(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED
     
     return PARS, Likelihood, Accurate, Valid, Toy, FixedParameters
 
-def testHypothesis(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './', doingDataToy = False, negSignal = False, oldMass = 16.97, constrainMass = False, oldP176 = p176, oldP179 = p179, oldP181 = p181, oldAlphaField = 0):
+def testHypothesis(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, SEED = 0, nToys = 100, betas = 1, nus = 1, fluctuateTemplates = True, FixedParameters = False, PARS = [], Likelihood = [], Accurate = [], Valid = [], Toy = [], workDir = './', doingDataToy = False, negSignal = False, oldMass = 16.97, constrainMass = False, oldP176 = p176, oldP179 = p179, oldP181 = p181, oldAlphaField = 0, SampleBranching = False):
     TIME = []
     #newP176 = pars[6]
     #newP179 = pars[7]
@@ -2461,6 +2461,8 @@ def testHypothesis(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, S
         np.random.seed(i + SEED)
         tpars = np.copy(bestPars)
         tpars[0] = SignalYield
+        if SampleBranching:
+            tpars[0] = SignalYield*np.random.normal()*1./6. # Gaussian sampling on branching ratio error from ATOMKI
         tpars[1] = SignalFraction
         tpars[2] = SignalMass
         
