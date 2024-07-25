@@ -2462,7 +2462,7 @@ def testHypothesis(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, S
         tpars = np.copy(bestPars)
         tpars[0] = SignalYield
         if SampleBranching:
-            tpars[0] = SignalYield*np.random.normal()*1./6. # Gaussian sampling on branching ratio error from ATOMKI
+            tpars[0] = SignalYield*(1 + np.random.normal()*1./6.) # Gaussian sampling on branching ratio error from ATOMKI
         tpars[1] = SignalFraction
         tpars[2] = SignalMass
         
@@ -2504,7 +2504,7 @@ def testHypothesis(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, S
         print('Toy', i, ' - Time:', time.time() - startTime)
         print('Parameters:', tpars)
         
-        yields = np.concatenate([getSignalYields(SignalYield, SignalFraction), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11], tpars[12]]])
+        yields = np.concatenate([getSignalYields(tpars[0], tpars[1]), getYields(tpars[3], tpars[4], tpars[5], tpars[6], tpars[7], tpars[8], tpars[9]), [tpars[10], tpars[11], tpars[12]]])
         
         toymass = np.random.normal(newMass, dmass)
         while toymass < logL.limits[2][0] or toymass > logL.limits[2][1]:

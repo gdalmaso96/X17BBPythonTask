@@ -104,7 +104,7 @@ if __name__ == '__main__':
     args = parse_args()
     nToys = args.nToys
     SEED = args.SEED
-    SampleBranch = bool(args.SampleBranch)
+    SampleBranch = bool(int(args.SampleBranch+0.5))
     nX17 = args.nX17
     pX17 = args.pX17
     
