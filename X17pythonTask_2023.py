@@ -2424,7 +2424,7 @@ def testHypothesis(SignalYield, SignalFraction, SignalMass, logL, Hists, pars, S
     
     datalRatio = locLikelihood - MAXLikelihood
     
-    prefix = 'testX17_2023_N%.0f_p%.3f_m%.2f' % (SignalYield, SignalFraction, SignalMass) + '_T' + str(fluctuateTemplates)
+    prefix = 'testX17_2023_N%.0f_p%.3f_m%.2f_SmearBranch%d' % (SignalYield, SignalFraction, SignalMass, SampleBranching) + '_T' + str(fluctuateTemplates)
     outputFileName = prefix + '_S' + str(SEED) + '.txt'
     
     # Append result to file
